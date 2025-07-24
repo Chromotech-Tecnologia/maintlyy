@@ -11,8 +11,23 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
+    {
+      name: 'security-headers',
+      configureServer(server: any) {
+        server.middlewares.use('/', (req: any, res: any, next: any) => {
+          res.setHeader('X-Content-Type-Options', 'nosniff')
+          res.setHeader('X-Frame-Options', 'DENY')
+          res.setHeader('X-XSS-Protection', '1; mode=block')
+          res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+          res.setHeader(
+            'Content-Security-Policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:;"
+          )
+          next()
+        })
+      }
+    }
   ].filter(Boolean),
   resolve: {
     alias: {
