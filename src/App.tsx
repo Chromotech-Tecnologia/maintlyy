@@ -3,57 +3,63 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
+import Manutencoes from "./pages/Manutencoes";
+import Empresas from "./pages/Empresas";
 import ComingSoon from "./pages/ComingSoon";
-import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppLayout>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route 
-              path="/manutencoes" 
-              element={<ComingSoon title="Manutenções" description="Módulo de gestão de manutenções mensais" />} 
-            />
-            <Route 
-              path="/empresas" 
-              element={<ComingSoon title="Empresas Terceiras" description="Módulo de gestão de empresas terceiras" />} 
-            />
-            <Route 
-              path="/equipes" 
-              element={<ComingSoon title="Equipes" description="Módulo de gestão de equipes" />} 
-            />
-            <Route 
-              path="/tipos-manutencao" 
-              element={<ComingSoon title="Tipos de Manutenção" description="Módulo de tipos de manutenção" />} 
-            />
-            <Route 
-              path="/cofre" 
-              element={<ComingSoon title="Cofre de Senhas" description="Módulo de cofre de senhas seguro" />} 
-            />
-            <Route 
-              path="/usuarios" 
-              element={<ComingSoon title="Usuários" description="Módulo de gestão de usuários" />} 
-            />
-            <Route 
-              path="/permissoes" 
-              element={<ComingSoon title="Permissões" description="Módulo de controle de permissões" />} 
-            />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/clientes" element={<Clientes />} />
+                    <Route path="/manutencoes" element={<Manutencoes />} />
+                    <Route path="/empresas" element={<Empresas />} />
+                    <Route 
+                      path="/equipes" 
+                      element={<ComingSoon title="Equipes" description="Módulo de gestão de equipes" />} 
+                    />
+                    <Route 
+                      path="/tipos-manutencao" 
+                      element={<ComingSoon title="Tipos de Manutenção" description="Módulo de tipos de manutenção" />} 
+                    />
+                    <Route 
+                      path="/cofre" 
+                      element={<ComingSoon title="Cofre de Senhas" description="Módulo de cofre de senhas seguro" />} 
+                    />
+                    <Route 
+                      path="/usuarios" 
+                      element={<ComingSoon title="Usuários" description="Módulo de gestão de usuários" />} 
+                    />
+                    <Route 
+                      path="/permissoes" 
+                      element={<ComingSoon title="Permissões" description="Módulo de controle de permissões" />} 
+                    />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
+            } />
           </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </TooltipProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
