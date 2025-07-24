@@ -14,7 +14,327 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clientes: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          empresa_terceira_id: string
+          endereco: string | null
+          id: string
+          nome_cliente: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          empresa_terceira_id: string
+          endereco?: string | null
+          id?: string
+          nome_cliente?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          empresa_terceira_id?: string
+          endereco?: string | null
+          id?: string
+          nome_cliente?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_empresa_terceira_id_fkey"
+            columns: ["empresa_terceira_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_terceiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cofre_senhas: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          descricao: string | null
+          empresa_terceira_id: string | null
+          grupo: string | null
+          id: string
+          login: string | null
+          nome_acesso: string
+          senha: string
+          updated_at: string
+          url_acesso: string | null
+          user_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_terceira_id?: string | null
+          grupo?: string | null
+          id?: string
+          login?: string | null
+          nome_acesso: string
+          senha: string
+          updated_at?: string
+          url_acesso?: string | null
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_terceira_id?: string | null
+          grupo?: string | null
+          id?: string
+          login?: string | null
+          nome_acesso?: string
+          senha?: string
+          updated_at?: string
+          url_acesso?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cofre_senhas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cofre_senhas_empresa_terceira_id_fkey"
+            columns: ["empresa_terceira_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_terceiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas_terceiras: {
+        Row: {
+          created_at: string
+          id: string
+          nome_empresa: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_empresa: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_empresa?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      equipes: {
+        Row: {
+          created_at: string
+          id: string
+          membros: string | null
+          nome_equipe: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membros?: string | null
+          nome_equipe: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membros?: string | null
+          nome_equipe?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      manutencoes: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          empresa_terceira_id: string
+          equipe_id: string | null
+          hora_fim: string | null
+          hora_inicio: string
+          id: string
+          responsavel: string | null
+          solicitante: string | null
+          status: string | null
+          tempo_total: number | null
+          tipo_manutencao_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          empresa_terceira_id: string
+          equipe_id?: string | null
+          hora_fim?: string | null
+          hora_inicio: string
+          id?: string
+          responsavel?: string | null
+          solicitante?: string | null
+          status?: string | null
+          tempo_total?: number | null
+          tipo_manutencao_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          empresa_terceira_id?: string
+          equipe_id?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string
+          id?: string
+          responsavel?: string | null
+          solicitante?: string | null
+          status?: string | null
+          tempo_total?: number | null
+          tipo_manutencao_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_empresa_terceira_id_fkey"
+            columns: ["empresa_terceira_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_terceiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_tipo_manutencao_id_fkey"
+            columns: ["tipo_manutencao_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_manutencao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pacotes_manutencao: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          id: string
+          limite_horas_mensais: number | null
+          updated_at: string
+          user_id: string
+          valor_mensal: number | null
+          valor_por_hora: number | null
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          id?: string
+          limite_horas_mensais?: number | null
+          updated_at?: string
+          user_id: string
+          valor_mensal?: number | null
+          valor_por_hora?: number | null
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          limite_horas_mensais?: number | null
+          updated_at?: string
+          user_id?: string
+          valor_mensal?: number | null
+          valor_por_hora?: number | null
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pacotes_manutencao_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_manutencao: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome_tipo_manutencao: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_tipo_manutencao: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_tipo_manutencao?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
