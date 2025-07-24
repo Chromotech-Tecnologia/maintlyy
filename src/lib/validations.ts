@@ -21,6 +21,27 @@ export const clienteSchema = z.object({
   empresa_terceira_id: z.string().uuid('ID da empresa inválido'),
 })
 
+export const equipeSchema = z.object({
+  nome_equipe: z.string().min(1, 'Nome da equipe é obrigatório').max(255, 'Nome muito longo'),
+  membros: z.string().optional(),
+})
+
+export const tipoManutencaoSchema = z.object({
+  nome_tipo_manutencao: z.string().min(1, 'Nome do tipo é obrigatório').max(255, 'Nome muito longo'),
+  descricao: z.string().optional(),
+})
+
+export const cofreSenhaSchema = z.object({
+  nome_acesso: z.string().min(1, 'Nome do acesso é obrigatório').max(255, 'Nome muito longo'),
+  senha: z.string().min(1, 'Senha é obrigatória'),
+  login: z.string().optional(),
+  url_acesso: z.string().url('URL inválida').optional().or(z.literal('')),
+  descricao: z.string().optional(),
+  grupo: z.string().optional(),
+  cliente_id: z.string().uuid('Cliente inválido').optional().or(z.literal('')),
+  empresa_terceira_id: z.string().uuid('Empresa inválida').optional().or(z.literal('')),
+})
+
 export const manutencaoSchema = z.object({
   cliente_id: z.string().uuid('Cliente é obrigatório'),
   empresa_terceira_id: z.string().uuid('Empresa terceira é obrigatória'),
@@ -35,4 +56,7 @@ export const manutencaoSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>
 export type SignupFormData = z.infer<typeof signupSchema>
 export type ClienteFormData = z.infer<typeof clienteSchema>
+export type EquipeFormData = z.infer<typeof equipeSchema>
+export type TipoManutencaoFormData = z.infer<typeof tipoManutencaoSchema>
+export type CofreSenhaFormData = z.infer<typeof cofreSenhaSchema>
 export type ManutencaoFormData = z.infer<typeof manutencaoSchema>

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { StatCard } from "@/components/dashboard/StatCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,10 +9,118 @@ import {
   TrendingUp, 
   Plus,
   Calendar,
-  DollarSign
+  DollarSign,
+  KeyRound
 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { supabase } from "@/integrations/supabase/client"
+import { useNavigate } from "react-router-dom"
+
+interface DashboardStats {
+  totalManutencoes: number
+  totalClientes: number
+  manutencoesPendentes: number
+  totalSenhas: number
+}
+
+interface ManutencaoRecente {
+  id: string
+  created_at: string
+  status: string
+  clientes?: { nome_cliente: string }
+  tipos_manutencao?: { nome_tipo_manutencao: string }
+  tempo_total?: number
+}
 
 export default function Dashboard() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [stats, setStats] = useState<DashboardStats>({
+    totalManutencoes: 0,
+    totalClientes: 0,
+    manutencoesPendentes: 0,
+    totalSenhas: 0
+  })
+  const [recentManutencoes, setRecentManutencoes] = useState<ManutencaoRecente[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchDashboardData = async () => {
+    if (!user) return
+
+    try {
+      const [
+        manutencaoCount,
+        clienteCount,
+        pendentesCount,
+        senhaCount,
+        recentData
+      ] = await Promise.all([
+        supabase
+          .from('manutencoes')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('clientes')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('manutencoes')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'Em andamento'),
+        supabase
+          .from('cofre_senhas')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('manutencoes')
+          .select(`
+            id,
+            created_at,
+            status,
+            tempo_total,
+            clientes(nome_cliente),
+            tipos_manutencao(nome_tipo_manutencao)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(3)
+      ])
+
+      setStats({
+        totalManutencoes: manutencaoCount.count || 0,
+        totalClientes: clienteCount.count || 0,
+        manutencoesPendentes: pendentesCount.count || 0,
+        totalSenhas: senhaCount.count || 0
+      })
+
+      setRecentManutencoes(recentData.data || [])
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [user])
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Finalizado':
+        return 'bg-success/20 text-success'
+      case 'Em andamento':
+        return 'bg-warning/20 text-warning'
+      default:
+        return 'bg-muted text-muted-foreground'
+    }
+  }
+
+  if (loading) {
+    return <div className="p-6">Carregando...</div>
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -22,7 +131,10 @@ export default function Dashboard() {
             Visão geral do sistema de manutenções
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
+        <Button 
+          className="bg-primary hover:bg-primary/90"
+          onClick={() => navigate('/manutencoes')}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Nova Manutenção
         </Button>
@@ -31,31 +143,28 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Horas Trabalhadas (Mês)"
-          value="124.5h"
-          description="Total de horas no mês atual"
-          icon={Clock}
-          trend={{ value: 12, isPositive: true }}
-        />
-        <StatCard
-          title="Clientes Ativos"
-          value="18"
-          description="Clientes com contratos vigentes"
-          icon={Users}
-          trend={{ value: 5, isPositive: true }}
-        />
-        <StatCard
-          title="Manutenções Pendentes"
-          value="7"
-          description="Aguardando finalização"
+          title="Total de Manutenções"
+          value={stats.totalManutencoes.toString()}
+          description="Manutenções cadastradas"
           icon={Wrench}
         />
         <StatCard
-          title="Receita Mensal"
-          value="R$ 15.240"
-          description="Valor faturado no mês"
-          icon={DollarSign}
-          trend={{ value: 8, isPositive: true }}
+          title="Clientes Ativos"
+          value={stats.totalClientes.toString()}
+          description="Clientes cadastrados"
+          icon={Users}
+        />
+        <StatCard
+          title="Manutenções Pendentes"
+          value={stats.manutencoesPendentes.toString()}
+          description="Aguardando finalização"
+          icon={Clock}
+        />
+        <StatCard
+          title="Senhas no Cofre"
+          value={stats.totalSenhas.toString()}
+          description="Senhas armazenadas"
+          icon={KeyRound}
         />
       </div>
 
@@ -69,47 +178,34 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                {
-                  client: "Empresa ABC Ltda",
-                  type: "Manutenção Preventiva",
-                  status: "Em Andamento",
-                  hours: "2.5h"
-                },
-                {
-                  client: "Tech Solutions",
-                  type: "Suporte Técnico",
-                  status: "Finalizado",
-                  hours: "1.5h"
-                },
-                {
-                  client: "Digital Corp",
-                  type: "Instalação",
-                  status: "Pendente",
-                  hours: "4.0h"
-                }
-              ].map((maintenance, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{maintenance.client}</p>
-                    <p className="text-xs text-muted-foreground">{maintenance.type}</p>
+            {recentManutencoes.length > 0 ? (
+              <div className="space-y-4">
+                {recentManutencoes.map((manutencao) => (
+                  <div key={manutencao.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">
+                        {manutencao.clientes?.nome_cliente || 'Cliente não informado'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {manutencao.tipos_manutencao?.nome_tipo_manutencao || 'Tipo não informado'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(manutencao.status)}`}>
+                        {manutencao.status}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(manutencao.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      maintenance.status === 'Finalizado' 
-                        ? 'bg-success/20 text-success'
-                        : maintenance.status === 'Em Andamento'
-                        ? 'bg-warning/20 text-warning'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {maintenance.status}
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-1">{maintenance.hours}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhuma manutenção cadastrada ainda
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -126,7 +222,7 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => window.location.href = '/manutencoes'}
+                onClick={() => navigate('/manutencoes')}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Registrar Nova Manutenção
@@ -134,7 +230,7 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => window.location.href = '/clientes'}
+                onClick={() => navigate('/clientes')}
               >
                 <Users className="mr-2 h-4 w-4" />
                 Gerenciar Clientes
@@ -142,10 +238,18 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => window.location.href = '/cofre'}
+                onClick={() => navigate('/cofre')}
               >
-                <Clock className="mr-2 h-4 w-4" />
+                <KeyRound className="mr-2 h-4 w-4" />
                 Acessar Cofre de Senhas
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate('/equipes')}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Gerenciar Equipes
               </Button>
             </div>
           </CardContent>

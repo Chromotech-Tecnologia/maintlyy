@@ -10,6 +10,9 @@ import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Manutencoes from "./pages/Manutencoes";
 import Empresas from "./pages/Empresas";
+import Equipes from "./pages/Equipes";
+import TiposManutencao from "./pages/TiposManutencao";
+import CofreSenhas from "./pages/CofreSenhas";
 import ComingSoon from "./pages/ComingSoon";
 import Login from "./pages/Login";
 
@@ -32,22 +35,9 @@ const App = () => (
                     <Route path="/clientes" element={<Clientes />} />
                     <Route path="/manutencoes" element={<Manutencoes />} />
                     <Route path="/empresas" element={<Empresas />} />
-                    <Route 
-                      path="/equipes" 
-                      element={<ComingSoon title="Equipes" description="Módulo de gestão de equipes" />} 
-                    />
-                    <Route 
-                      path="/tipos-manutencao" 
-                      element={<ComingSoon title="Tipos de Manutenção" description="Módulo de tipos de manutenção" />} 
-                    />
-                    <Route 
-                      path="/cofre" 
-                      element={<ComingSoon title="Cofre de Senhas" description="Módulo de cofre de senhas seguro" />} 
-                    />
-                    <Route 
-                      path="/usuarios" 
-                      element={<ComingSoon title="Usuários" description="Módulo de gestão de usuários" />} 
-                    />
+                    <Route path="/equipes" element={<Equipes />} />
+                    <Route path="/tipos-manutencao" element={<TiposManutencao />} />
+                    <Route path="/cofre" element={<CofreSenhas />} />
                     <Route 
                       path="/permissoes" 
                       element={<ComingSoon title="Permissões" description="Módulo de controle de permissões" />} 
