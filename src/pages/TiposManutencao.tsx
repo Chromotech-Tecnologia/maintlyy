@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { tipoManutencaoSchema, type TipoManutencaoFormData } from "@/lib/validations"
+import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 
 interface TipoManutencao {
   id: string
@@ -48,7 +49,7 @@ export default function TiposManutencao() {
       if (error) throw error
       setTipos(data || [])
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -61,11 +62,17 @@ export default function TiposManutencao() {
   const handleSubmit = async (data: TipoManutencaoFormData) => {
     if (!user) return
 
+    if (isRateLimited(`tipo_${user.id}`, 10, 60000)) {
+      toast.error("Muitas tentativas. Aguarde um minuto.")
+      return
+    }
+
     try {
+      const sanitizedData = sanitizeFormData(data)
       if (editingId) {
         const { error } = await supabase
           .from('tipos_manutencao')
-          .update(data)
+          .update(sanitizedData)
           .eq('id', editingId)
           .eq('user_id', user.id)
 
@@ -74,7 +81,7 @@ export default function TiposManutencao() {
       } else {
         const { error } = await supabase
           .from('tipos_manutencao')
-          .insert([{ ...data, user_id: user.id }])
+          .insert([{ ...sanitizedData, user_id: user.id }])
 
         if (error) throw error
         toast.success("Tipo de manutenção criado com sucesso!")
@@ -85,7 +92,7 @@ export default function TiposManutencao() {
       form.reset()
       fetchTipos()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 
@@ -113,7 +120,7 @@ export default function TiposManutencao() {
       toast.success("Tipo de manutenção excluído com sucesso!")
       fetchTipos()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 

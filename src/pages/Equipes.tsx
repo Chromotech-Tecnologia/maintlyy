@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { equipeSchema, type EquipeFormData } from "@/lib/validations"
+import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 
 interface Equipe {
   id: string
@@ -48,7 +49,7 @@ export default function Equipes() {
       if (error) throw error
       setEquipes(data || [])
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -61,11 +62,17 @@ export default function Equipes() {
   const handleSubmit = async (data: EquipeFormData) => {
     if (!user) return
 
+    if (isRateLimited(`equipe_${user.id}`, 10, 60000)) {
+      toast.error("Muitas tentativas. Aguarde um minuto.")
+      return
+    }
+
     try {
+      const sanitizedData = sanitizeFormData(data)
       if (editingId) {
         const { error } = await supabase
           .from('equipes')
-          .update(data)
+          .update(sanitizedData)
           .eq('id', editingId)
           .eq('user_id', user.id)
 
@@ -74,7 +81,7 @@ export default function Equipes() {
       } else {
         const { error } = await supabase
           .from('equipes')
-          .insert([{ ...data, user_id: user.id }])
+          .insert([{ ...sanitizedData, user_id: user.id }])
 
         if (error) throw error
         toast.success("Equipe criada com sucesso!")
@@ -85,7 +92,7 @@ export default function Equipes() {
       form.reset()
       fetchEquipes()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 
@@ -113,7 +120,7 @@ export default function Equipes() {
       toast.success("Equipe excluída com sucesso!")
       fetchEquipes()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 

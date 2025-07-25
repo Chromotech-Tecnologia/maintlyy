@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { clienteSchema, type ClienteFormData } from "@/lib/validations"
+import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 
 interface Cliente {
   id: string
@@ -75,7 +76,7 @@ export default function Clientes() {
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -88,11 +89,17 @@ export default function Clientes() {
   const handleSubmit = async (data: ClienteFormData) => {
     if (!user) return
 
+    if (isRateLimited(`cliente_${user.id}`, 10, 60000)) {
+      toast.error("Muitas tentativas. Aguarde um minuto.")
+      return
+    }
+
     try {
+      const sanitizedData = sanitizeFormData(data)
       if (editingId) {
         const { error } = await supabase
           .from('clientes')
-          .update(data)
+          .update(sanitizedData)
           .eq('id', editingId)
           .eq('user_id', user.id)
 
@@ -101,7 +108,7 @@ export default function Clientes() {
       } else {
         const { error } = await supabase
           .from('clientes')
-          .insert([{ ...data, user_id: user.id }])
+          .insert([{ ...sanitizedData, user_id: user.id }])
 
         if (error) throw error
         toast.success("Cliente criado com sucesso!")
@@ -112,7 +119,7 @@ export default function Clientes() {
       form.reset()
       fetchData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 
@@ -144,7 +151,7 @@ export default function Clientes() {
       toast.success("Cliente excluído com sucesso!")
       fetchData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 

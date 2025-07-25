@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
+import { encryptPassword, decryptPassword, sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 
 interface CofreSenha {
   id: string
@@ -91,11 +92,17 @@ export default function CofreSenhas() {
       if (clientesResult.error) throw clientesResult.error
       if (empresasResult.error) throw empresasResult.error
 
-      setSenhas(senhasResult.data || [])
+      // Decrypt passwords for display
+      const decryptedSenhas = (senhasResult.data || []).map(senha => ({
+        ...senha,
+        senha: decryptPassword(senha.senha, user.id)
+      }))
+
+      setSenhas(decryptedSenhas)
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -108,13 +115,22 @@ export default function CofreSenhas() {
   const handleSubmit = async (data: CofreSenhaFormData) => {
     if (!user) return
 
+    // Rate limiting check
+    if (isRateLimited(`cofre_${user.id}`, 10, 60000)) {
+      toast.error("Muitas tentativas. Aguarde um minuto.")
+      return
+    }
+
     try {
-      // Clean empty strings
+      // Sanitize and clean data
+      const sanitizedData = sanitizeFormData(data)
       const cleanData = {
-        ...data,
-        cliente_id: data.cliente_id === "" ? null : data.cliente_id,
-        empresa_terceira_id: data.empresa_terceira_id === "" ? null : data.empresa_terceira_id,
-        url_acesso: data.url_acesso === "" ? null : data.url_acesso,
+        ...sanitizedData,
+        cliente_id: sanitizedData.cliente_id === "" ? null : sanitizedData.cliente_id,
+        empresa_terceira_id: sanitizedData.empresa_terceira_id === "" ? null : sanitizedData.empresa_terceira_id,
+        url_acesso: sanitizedData.url_acesso === "" ? null : sanitizedData.url_acesso,
+        // Encrypt password before saving
+        senha: encryptPassword(sanitizedData.senha, user.id),
       }
 
       if (editingId) {
@@ -140,7 +156,7 @@ export default function CofreSenhas() {
       form.reset()
       fetchData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 
@@ -148,7 +164,7 @@ export default function CofreSenhas() {
     setEditingId(senha.id)
     form.reset({
       nome_acesso: senha.nome_acesso,
-      senha: senha.senha,
+      senha: senha.senha, // Already decrypted for display
       login: senha.login || "",
       url_acesso: senha.url_acesso || "",
       descricao: senha.descricao || "",
@@ -174,7 +190,7 @@ export default function CofreSenhas() {
       toast.success("Senha excluída com sucesso!")
       fetchData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(getGenericErrorMessage(error))
     }
   }
 

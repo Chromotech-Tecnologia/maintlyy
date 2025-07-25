@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
+import { getGenericErrorMessage, isRateLimited } from '@/lib/security'
 
 interface AuthContextType {
   user: User | null
@@ -39,14 +40,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    // Rate limiting for login attempts
+    if (isRateLimited(`auth_${email}`, 5, 15 * 60 * 1000)) {
+      return { error: { message: 'Muitas tentativas de login. Aguarde 15 minutos.' } }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
-    return { error }
+    
+    // Transform error to generic message for security
+    return { error: error ? { message: getGenericErrorMessage(error) } : null }
   }
 
   const signUp = async (email: string, password: string) => {
+    // Rate limiting for signup attempts
+    if (isRateLimited(`signup_${email}`, 3, 60 * 60 * 1000)) {
+      return { error: { message: 'Muitas tentativas de cadastro. Aguarde 1 hora.' } }
+    }
+
     const redirectUrl = `${window.location.origin}/`
     
     const { error } = await supabase.auth.signUp({
@@ -56,7 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailRedirectTo: redirectUrl
       }
     })
-    return { error }
+    
+    // Transform error to generic message for security
+    return { error: error ? { message: getGenericErrorMessage(error) } : null }
   }
 
   const signOut = async () => {
