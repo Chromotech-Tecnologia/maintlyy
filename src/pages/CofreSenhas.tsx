@@ -108,9 +108,14 @@ export default function CofreSenhas() {
   }, [user])
 
   const handleSubmit = async (data: CofreSenhaFormData) => {
-    if (!user) return
+    console.log('handleSubmit called with data:', data)
+    if (!user) {
+      console.log('No user found')
+      return
+    }
 
     try {
+      console.log('Processing form data...')
       const cleanData = {
         ...data,
         cliente_id: data.cliente_id === "" ? null : data.cliente_id,
