@@ -124,6 +124,7 @@ export default function CofreSenhas() {
       }
 
       if (editingId) {
+        console.log('Updating password with id:', editingId)
         const { error } = await supabase
           .from('cofre_senhas')
           .update(cleanData)
@@ -133,6 +134,7 @@ export default function CofreSenhas() {
         if (error) throw error
         toast.success("Senha atualizada com sucesso!")
       } else {
+        console.log('Creating new password')
         const { error } = await supabase
           .from('cofre_senhas')
           .insert([{ ...cleanData, user_id: user.id }])
@@ -206,6 +208,7 @@ export default function CofreSenhas() {
   }
 
   const openNewDialog = () => {
+    console.log('Opening new dialog')
     setEditingId(null)
     form.reset()
     setOpen(true)

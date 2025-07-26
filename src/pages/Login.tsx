@@ -36,8 +36,14 @@ export default function Login() {
   }
 
   const handleSignIn = async (data: LoginFormData) => {
+    console.log('handleSignIn called with:', data)
+    
     const { error } = await signIn(data.email, data.password)
+    
+    console.log('signIn response:', { error })
+    
     if (error) {
+      console.error('Sign in error:', error)
       toast.error(error.message || "Erro ao fazer login")
     } else {
       toast.success("Login realizado com sucesso!")
@@ -45,11 +51,17 @@ export default function Login() {
   }
 
   const handleSignUp = async (data: SignupFormData) => {
+    console.log('handleSignUp called with:', data)
+    
     const { error } = await signUp(data.email, data.password)
+    
+    console.log('signUp response:', { error })
+    
     if (error) {
+      console.error('Sign up error:', error)
       toast.error(error.message || "Erro ao criar conta")
     } else {
-      toast.success("Cadastro realizado com sucesso! Verifique seu email.")
+      toast.success("Cadastro realizado com sucesso!")
     }
   }
 
