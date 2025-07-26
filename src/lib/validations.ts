@@ -35,11 +35,17 @@ export const cofreSenhaSchema = z.object({
   nome_acesso: z.string().min(1, 'Nome do acesso é obrigatório').max(255, 'Nome muito longo'),
   senha: z.string().min(1, 'Senha é obrigatória'),
   login: z.string().optional(),
-  url_acesso: z.string().url('URL inválida').optional().or(z.literal('')),
+  url_acesso: z.string().optional().refine((val) => !val || z.string().url().safeParse(val).success, {
+    message: 'URL inválida'
+  }),
   descricao: z.string().optional(),
   grupo: z.string().optional(),
-  cliente_id: z.string().uuid('Cliente inválido').optional().or(z.literal('')),
-  empresa_terceira_id: z.string().uuid('Empresa inválida').optional().or(z.literal('')),
+  cliente_id: z.string().optional().refine((val) => !val || z.string().uuid().safeParse(val).success, {
+    message: 'Cliente inválido'
+  }),
+  empresa_terceira_id: z.string().optional().refine((val) => !val || z.string().uuid().safeParse(val).success, {
+    message: 'Empresa inválida'
+  }),
 })
 
 export const manutencaoSchema = z.object({
