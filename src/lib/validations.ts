@@ -40,12 +40,8 @@ export const cofreSenhaSchema = z.object({
   }),
   descricao: z.string().optional(),
   grupo: z.string().optional(),
-  cliente_id: z.string().optional().refine((val) => !val || z.string().uuid().safeParse(val).success, {
-    message: 'Cliente inválido'
-  }),
-  empresa_terceira_id: z.string().optional().refine((val) => !val || z.string().uuid().safeParse(val).success, {
-    message: 'Empresa inválida'
-  }),
+  cliente_id: z.string().optional(),
+  empresa_terceira_id: z.string().optional(),
 })
 
 export const manutencaoSchema = z.object({

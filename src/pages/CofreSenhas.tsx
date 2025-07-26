@@ -118,9 +118,9 @@ export default function CofreSenhas() {
       console.log('Processing form data...')
       const cleanData = {
         ...data,
-        cliente_id: data.cliente_id === "" ? null : data.cliente_id,
-        empresa_terceira_id: data.empresa_terceira_id === "" ? null : data.empresa_terceira_id,
-        url_acesso: data.url_acesso === "" ? null : data.url_acesso,
+        cliente_id: data.cliente_id || null,
+        empresa_terceira_id: data.empresa_terceira_id || null,
+        url_acesso: data.url_acesso || null,
       }
 
       if (editingId) {
@@ -157,13 +157,13 @@ export default function CofreSenhas() {
     setEditingId(senha.id)
     form.reset({
       nome_acesso: senha.nome_acesso,
-      senha: senha.senha, // Already decrypted for display
+      senha: senha.senha,
       login: senha.login || "",
       url_acesso: senha.url_acesso || "",
       descricao: senha.descricao || "",
       grupo: senha.grupo || "",
-      cliente_id: senha.cliente_id || "",
-      empresa_terceira_id: senha.empresa_terceira_id || "",
+      cliente_id: senha.cliente_id || undefined,
+      empresa_terceira_id: senha.empresa_terceira_id || undefined,
     })
     setOpen(true)
   }
@@ -321,14 +321,13 @@ export default function CofreSenhas() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Cliente (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Nenhum</SelectItem>
                             {clientes.map((cliente) => (
                               <SelectItem key={cliente.id} value={cliente.id}>
                                 {cliente.nome_cliente}
@@ -348,14 +347,13 @@ export default function CofreSenhas() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Empresa Terceira (Opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Nenhuma</SelectItem>
                           {empresas.map((empresa) => (
                             <SelectItem key={empresa.id} value={empresa.id}>
                               {empresa.nome_empresa}
