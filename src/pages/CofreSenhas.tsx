@@ -6,14 +6,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink } from "lucide-react"
+import { PasswordStrength } from "@/components/ui/password-strength"
+import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
-// Removido import de security functions para corrigir tela branca
 
 interface CofreSenha {
   id: string
@@ -49,6 +49,7 @@ export default function CofreSenhas() {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+  const [filtroGrupo, setFiltroGrupo] = useState("")
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -214,6 +215,30 @@ export default function CofreSenhas() {
     setOpen(true)
   }
 
+  // Filtrar senhas por grupo
+  const senhasFiltradas = senhas.filter(senha => 
+    !filtroGrupo || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
+  )
+
+  // Agrupar senhas por cliente
+  const senhasAgrupadasPorCliente = senhasFiltradas.reduce((acc, senha) => {
+    let chaveCliente = "Sem Cliente"
+    if (senha.clientes?.nome_cliente) {
+      chaveCliente = senha.clientes.nome_cliente
+    } else if (senha.empresas_terceiras?.nome_empresa) {
+      chaveCliente = senha.empresas_terceiras.nome_empresa
+    }
+    
+    if (!acc[chaveCliente]) {
+      acc[chaveCliente] = []
+    }
+    acc[chaveCliente].push(senha)
+    return acc
+  }, {} as Record<string, CofreSenha[]>)
+
+  // Obter grupos únicos para o filtro
+  const gruposUnicos = [...new Set(senhas.map(senha => senha.grupo).filter(Boolean))]
+
   if (loading) {
     return <div className="p-6">Carregando...</div>
   }
@@ -278,7 +303,10 @@ export default function CofreSenhas() {
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <div className="space-y-2">
+                            <Input type="password" placeholder="••••••••" {...field} />
+                            <PasswordStrength password={field.value} />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -399,130 +427,170 @@ export default function CofreSenhas() {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {senhas.map((senha) => (
-          <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <KeyRound className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{senha.nome_acesso}</CardTitle>
-                    {senha.grupo && (
-                      <p className="text-sm text-muted-foreground">{senha.grupo}</p>
-                    )}
-                  </div>
+      {/* Filtro por grupo */}
+      <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filtrar por grupo:</span>
+        </div>
+        <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
+          <SelectTrigger className="w-64">
+            <SelectValue placeholder="Todos os grupos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Todos os grupos</SelectItem>
+            {gruposUnicos.map((grupo) => (
+              <SelectItem key={grupo} value={grupo}>
+                {grupo}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {filtroGrupo && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFiltroGrupo("")}
+          >
+            Limpar filtro
+          </Button>
+        )}
+      </div>
+
+      {/* Senhas agrupadas por cliente */}
+      <div className="space-y-8">
+        {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, senhasCliente]) => (
+          <div key={nomeCliente} className="space-y-4">
+            <div className="border-b pb-2">
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <KeyRound className="h-5 w-5 text-primary" />
                 </div>
-              </div>
-            </CardHeader>
+                {nomeCliente}
+                <span className="text-sm text-muted-foreground font-normal">
+                  ({senhasCliente.length} senha{senhasCliente.length !== 1 ? 's' : ''})
+                </span>
+              </h2>
+            </div>
             
-            <CardContent className="space-y-4">
-              {senha.login && (
-                <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                  <span className="text-sm font-medium">Login:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{senha.login}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyToClipboard(senha.login!)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                <span className="text-sm font-medium">Senha:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono">
-                    {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => togglePasswordVisibility(senha.id)}
-                  >
-                    {visiblePasswords.has(senha.id) ? (
-                      <EyeOff className="h-3 w-3" />
-                    ) : (
-                      <Eye className="h-3 w-3" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {senhasCliente.map((senha) => (
+                <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <KeyRound className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{senha.nome_acesso}</CardTitle>
+                          {senha.grupo && (
+                            <p className="text-sm text-muted-foreground">{senha.grupo}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {senha.login && (
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm font-medium">Login:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{senha.login}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(senha.login!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
                     )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyToClipboard(senha.senha)}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
 
-              {senha.url_acesso && (
-                <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                  <span className="text-sm font-medium">URL:</span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => window.open(senha.url_acesso!, '_blank')}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyToClipboard(senha.url_acesso!)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <span className="text-sm font-medium">Senha:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-mono">
+                          {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePasswordVisibility(senha.id)}
+                        >
+                          {visiblePasswords.has(senha.id) ? (
+                            <EyeOff className="h-3 w-3" />
+                          ) : (
+                            <Eye className="h-3 w-3" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(senha.senha)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
 
-              {(senha.clientes || senha.empresas_terceiras) && (
-                <div className="p-2 bg-muted/30 rounded">
-                  <span className="text-sm font-medium">Vinculado:</span>
-                  <p className="text-sm text-muted-foreground">
-                    {senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa}
-                  </p>
-                </div>
-              )}
+                    {senha.url_acesso && (
+                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                        <span className="text-sm font-medium">URL:</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => window.open(senha.url_acesso!, '_blank')}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(senha.url_acesso!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-              {senha.descricao && (
-                <div className="p-2 bg-muted/30 rounded">
-                  <span className="text-sm font-medium">Descrição:</span>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {senha.descricao}
-                  </p>
-                </div>
-              )}
+                    {senha.descricao && (
+                      <div className="p-2 bg-muted/30 rounded">
+                        <span className="text-sm font-medium">Descrição:</span>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {senha.descricao}
+                        </p>
+                      </div>
+                    )}
 
-              <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEdit(senha)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(senha.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEdit(senha)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(senha.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

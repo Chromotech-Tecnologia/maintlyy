@@ -35,8 +35,8 @@ export const cofreSenhaSchema = z.object({
   nome_acesso: z.string().min(1, 'Nome do acesso é obrigatório').max(255, 'Nome muito longo'),
   senha: z.string().min(1, 'Senha é obrigatória'),
   login: z.string().optional(),
-  url_acesso: z.string().optional().refine((val) => !val || z.string().url().safeParse(val).success, {
-    message: 'URL inválida'
+  url_acesso: z.string().optional().refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
+    message: 'URL inválida. Use o formato: https://exemplo.com'
   }),
   descricao: z.string().optional(),
   grupo: z.string().optional(),
