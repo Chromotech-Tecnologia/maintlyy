@@ -41,7 +41,11 @@ interface EmpresaTerceira {
 }
 
 export default function CofreSenhas() {
+  console.log('CofreSenhas component rendering')
+  
   const { user } = useAuth()
+  console.log('CofreSenhas - user:', user)
+  
   const [senhas, setSenhas] = useState<CofreSenha[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
