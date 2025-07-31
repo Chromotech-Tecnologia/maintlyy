@@ -123,8 +123,8 @@ export default function CofreSenhas() {
       console.log('Processing form data...')
       const cleanData = {
         ...data,
-        cliente_id: data.cliente_id || null,
-        empresa_terceira_id: data.empresa_terceira_id || null,
+        cliente_id: data.cliente_id === "none" ? null : data.cliente_id || null,
+        empresa_terceira_id: data.empresa_terceira_id === "none" ? null : data.empresa_terceira_id || null,
         url_acesso: data.url_acesso || null,
       }
 
@@ -167,8 +167,8 @@ export default function CofreSenhas() {
       url_acesso: senha.url_acesso || "",
       descricao: senha.descricao || "",
       grupo: senha.grupo || "",
-      cliente_id: senha.cliente_id || undefined,
-      empresa_terceira_id: senha.empresa_terceira_id || undefined,
+      cliente_id: senha.cliente_id || "none",
+      empresa_terceira_id: senha.empresa_terceira_id || "none",
     })
     setOpen(true)
   }
@@ -221,7 +221,7 @@ export default function CofreSenhas() {
 
   // Filtrar senhas por grupo
   const senhasFiltradas = senhas.filter(senha => 
-    !filtroGrupo || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
+    !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
   )
 
   // Agrupar senhas por cliente
@@ -370,13 +370,14 @@ export default function CofreSenhas() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Cliente (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="none">Nenhum cliente</SelectItem>
                             {clientes.map((cliente) => (
                               <SelectItem key={cliente.id} value={cliente.id}>
                                 {cliente.nome_cliente}
@@ -396,13 +397,14 @@ export default function CofreSenhas() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Empresa Terceira (Opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="none">Nenhuma empresa</SelectItem>
                           {empresas.map((empresa) => (
                             <SelectItem key={empresa.id} value={empresa.id}>
                               {empresa.nome_empresa}
@@ -459,7 +461,7 @@ export default function CofreSenhas() {
             <SelectValue placeholder="Todos os grupos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os grupos</SelectItem>
+            <SelectItem value="todos">Todos os grupos</SelectItem>
             {gruposUnicos.map((grupo) => (
               <SelectItem key={grupo} value={grupo}>
                 {grupo}
@@ -467,11 +469,11 @@ export default function CofreSenhas() {
             ))}
           </SelectContent>
         </Select>
-        {filtroGrupo && (
+        {filtroGrupo && filtroGrupo !== "todos" && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setFiltroGrupo("")}
+            onClick={() => setFiltroGrupo("todos")}
           >
             Limpar filtro
           </Button>
