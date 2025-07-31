@@ -244,7 +244,24 @@ export default function CofreSenhas() {
   const gruposUnicos = [...new Set(senhas.map(senha => senha.grupo).filter(Boolean))]
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando cofre de senhas...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Usuário não autenticado</p>
+        </div>
+      </div>
+    )
   }
 
   return (
