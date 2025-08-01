@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { PasswordStrength } from "@/components/ui/password-strength"
-import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -45,6 +45,21 @@ interface GrupoCofre {
   nome_grupo: string
 }
 
+interface Manutencao {
+  id: string
+  data_inicio: string
+  hora_inicio: string
+  data_fim: string | null
+  hora_fim: string | null
+  descricao: string | null
+  status: string | null
+  responsavel: string | null
+  solicitante: string | null
+  tempo_total: number | null
+  tipos_manutencao?: { nome_tipo_manutencao: string }
+  equipes?: { nome_equipe: string }
+}
+
 export default function CofreSenhas() {
   console.log('CofreSenhas component rendering')
   
@@ -63,6 +78,7 @@ export default function CofreSenhas() {
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroEmpresa, setFiltroEmpresa] = useState("")
   const [clienteExpandido, setClienteExpandido] = useState<string | null>(null)
+  const [manutencoesPorCliente, setManutencoesPorCliente] = useState<Record<string, Manutencao[]>>({})
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -77,6 +93,29 @@ export default function CofreSenhas() {
       empresa_terceira_id: "",
     },
   })
+
+  const fetchManutencoesPorCliente = async (clienteId: string) => {
+    if (!user) return []
+
+    try {
+      const { data, error } = await supabase
+        .from('manutencoes')
+        .select(`
+          *,
+          tipos_manutencao(nome_tipo_manutencao),
+          equipes(nome_equipe)
+        `)
+        .eq('user_id', user.id)
+        .eq('cliente_id', clienteId)
+        .order('data_inicio', { ascending: false })
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Erro ao buscar manutenções:', error)
+      return []
+    }
+  }
 
   const fetchData = async () => {
     if (!user) return
@@ -595,7 +634,19 @@ export default function CofreSenhas() {
           <div key={nomeCliente} className="space-y-4">
             <Card 
               className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary"
-              onClick={() => setClienteExpandido(clienteExpandido === nomeCliente ? null : nomeCliente)}
+              onClick={async () => {
+                const novoExpandido = clienteExpandido === nomeCliente ? null : nomeCliente
+                setClienteExpandido(novoExpandido)
+                
+                // Carregar manutenções quando expandir e o cliente tem ID
+                if (novoExpandido && dadosCliente.clienteId && !dadosCliente.isEmpresa) {
+                  const manutencoes = await fetchManutencoesPorCliente(dadosCliente.clienteId)
+                  setManutencoesPorCliente(prev => ({
+                    ...prev,
+                    [dadosCliente.clienteId]: manutencoes
+                  }))
+                }
+              }}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -630,8 +681,15 @@ export default function CofreSenhas() {
             </Card>
 
             {clienteExpandido === nomeCliente && (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ml-6">
-                {dadosCliente.senhas.map((senha) => (
+              <div className="ml-6 space-y-6">
+                {/* Seção de Senhas */}
+                <div>
+                  <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-primary" />
+                    Senhas ({dadosCliente.senhas.length})
+                  </h4>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {dadosCliente.senhas.map((senha) => (
                   <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -745,7 +803,110 @@ export default function CofreSenhas() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                    ))}
+                  </div>
+                </div>
+
+                {/* Seção de Histórico de Manutenções */}
+                {dadosCliente.clienteId && !dadosCliente.isEmpresa && (
+                  <div>
+                    <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Wrench className="h-5 w-5 text-primary" />
+                      Histórico de Manutenções ({manutencoesPorCliente[dadosCliente.clienteId]?.length || 0})
+                    </h4>
+                    
+                    {manutencoesPorCliente[dadosCliente.clienteId]?.length > 0 ? (
+                      <div className="space-y-3">
+                        {manutencoesPorCliente[dadosCliente.clienteId].map((manutencao) => (
+                          <Card key={manutencao.id} className="border-l-4 border-l-blue-500">
+                            <CardContent className="p-4">
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">
+                                      {new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}
+                                    </span>
+                                    <Clock className="h-4 w-4 text-muted-foreground ml-2" />
+                                    <span className="text-sm">
+                                      {manutencao.hora_inicio}
+                                      {manutencao.data_fim && manutencao.hora_fim && (
+                                        ` - ${manutencao.hora_fim}`
+                                      )}
+                                    </span>
+                                  </div>
+                                  
+                                  {manutencao.tipos_manutencao?.nome_tipo_manutencao && (
+                                    <div className="text-sm">
+                                      <span className="font-medium">Tipo:</span> {manutencao.tipos_manutencao.nome_tipo_manutencao}
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center gap-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      manutencao.status === 'Concluída' ? 'bg-green-100 text-green-800' :
+                                      manutencao.status === 'Em andamento' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {manutencao.status || 'Em andamento'}
+                                    </span>
+                                    
+                                    {manutencao.tempo_total && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {Math.floor(manutencao.tempo_total / 60)}h {manutencao.tempo_total % 60}min
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  {manutencao.responsavel && (
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm">
+                                        <span className="font-medium">Responsável:</span> {manutencao.responsavel}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {manutencao.solicitante && (
+                                    <div className="text-sm">
+                                      <span className="font-medium">Solicitante:</span> {manutencao.solicitante}
+                                    </div>
+                                  )}
+                                  
+                                  {manutencao.equipes?.nome_equipe && (
+                                    <div className="text-sm">
+                                      <span className="font-medium">Equipe:</span> {manutencao.equipes.nome_equipe}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {manutencao.descricao && (
+                                <div className="mt-3 p-2 bg-muted/30 rounded text-sm">
+                                  <span className="font-medium">Descrição:</span>
+                                  <p className="mt-1 text-muted-foreground whitespace-pre-wrap">
+                                    {manutencao.descricao}
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="border-dashed">
+                        <CardContent className="flex flex-col items-center justify-center py-8">
+                          <Wrench className="h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-muted-foreground text-center">
+                            Nenhuma manutenção encontrada para este cliente.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
