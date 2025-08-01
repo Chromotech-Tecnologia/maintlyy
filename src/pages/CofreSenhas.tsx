@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { PasswordStrength } from "@/components/ui/password-strength"
-import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search } from "lucide-react"
+import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -40,6 +40,11 @@ interface EmpresaTerceira {
   nome_empresa: string
 }
 
+interface GrupoCofre {
+  id: string
+  nome_grupo: string
+}
+
 export default function CofreSenhas() {
   console.log('CofreSenhas component rendering')
   
@@ -49,11 +54,15 @@ export default function CofreSenhas() {
   const [senhas, setSenhas] = useState<CofreSenha[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
+  const [gruposSalvos, setGruposSalvos] = useState<GrupoCofre[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
   const [filtroGrupo, setFiltroGrupo] = useState("")
+  const [filtroCliente, setFiltroCliente] = useState("")
+  const [filtroEmpresa, setFiltroEmpresa] = useState("")
+  const [clienteExpandido, setClienteExpandido] = useState<string | null>(null)
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -73,7 +82,7 @@ export default function CofreSenhas() {
     if (!user) return
 
     try {
-      const [senhasResult, clientesResult, empresasResult] = await Promise.all([
+      const [senhasResult, clientesResult, empresasResult, gruposResult] = await Promise.all([
         supabase
           .from('cofre_senhas')
           .select(`
@@ -90,16 +99,23 @@ export default function CofreSenhas() {
         supabase
           .from('empresas_terceiras')
           .select('id, nome_empresa')
+          .eq('user_id', user.id),
+        supabase
+          .from('grupos_cofre')
+          .select('id, nome_grupo')
           .eq('user_id', user.id)
+          .order('nome_grupo')
       ])
 
       if (senhasResult.error) throw senhasResult.error
       if (clientesResult.error) throw clientesResult.error
       if (empresasResult.error) throw empresasResult.error
+      if (gruposResult.error) throw gruposResult.error
 
       setSenhas(senhasResult.data || [])
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
+      setGruposSalvos(gruposResult.data || [])
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error)
       toast.error("Erro ao carregar dados")
@@ -121,6 +137,19 @@ export default function CofreSenhas() {
 
     try {
       console.log('Processing form data...')
+      
+      // Salvar grupo se for novo
+      if (data.grupo && data.grupo.trim() && !gruposSalvos.find(g => g.nome_grupo === data.grupo.trim())) {
+        try {
+          await supabase
+            .from('grupos_cofre')
+            .insert([{ nome_grupo: data.grupo.trim(), user_id: user.id }])
+        } catch (error) {
+          // Ignora erro se grupo já existe (constraint unique)
+          console.log('Grupo já existe ou erro ao salvar:', error)
+        }
+      }
+
       const cleanData = {
         ...data,
         cliente_id: data.cliente_id === "none" ? null : data.cliente_id || null,
@@ -219,26 +248,43 @@ export default function CofreSenhas() {
     setOpen(true)
   }
 
-  // Filtrar senhas por grupo
-  const senhasFiltradas = senhas.filter(senha => 
-    !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
-  )
+  // Filtrar senhas
+  const senhasFiltradas = senhas.filter(senha => {
+    // Filtro por grupo
+    const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
+    
+    // Filtro por cliente
+    const clienteMatch = !filtroCliente || filtroCliente === "todos" || senha.cliente_id === filtroCliente
+    
+    // Filtro por empresa
+    const empresaMatch = !filtroEmpresa || filtroEmpresa === "todos" || senha.empresa_terceira_id === filtroEmpresa
+    
+    return grupoMatch && clienteMatch && empresaMatch
+  })
 
   // Agrupar senhas por cliente
   const senhasAgrupadasPorCliente = senhasFiltradas.reduce((acc, senha) => {
     let chaveCliente = "Sem Cliente"
+    let clienteId = ""
+    
     if (senha.clientes?.nome_cliente) {
       chaveCliente = senha.clientes.nome_cliente
+      clienteId = senha.cliente_id || ""
     } else if (senha.empresas_terceiras?.nome_empresa) {
       chaveCliente = senha.empresas_terceiras.nome_empresa
+      clienteId = senha.empresa_terceira_id || ""
     }
     
     if (!acc[chaveCliente]) {
-      acc[chaveCliente] = []
+      acc[chaveCliente] = {
+        senhas: [],
+        clienteId,
+        isEmpresa: !!senha.empresas_terceiras?.nome_empresa
+      }
     }
-    acc[chaveCliente].push(senha)
+    acc[chaveCliente].senhas.push(senha)
     return acc
-  }, {} as Record<string, CofreSenha[]>)
+  }, {} as Record<string, { senhas: CofreSenha[], clienteId: string, isEmpresa: boolean }>)
 
   // Obter grupos únicos para o filtro
   const gruposUnicos = [...new Set(senhas.map(senha => senha.grupo).filter(Boolean))]
@@ -356,8 +402,28 @@ export default function CofreSenhas() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Grupo</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione ou digite novo..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum grupo</SelectItem>
+                            {gruposSalvos.map((grupo) => (
+                              <SelectItem key={grupo.id} value={grupo.nome_grupo}>
+                                {grupo.nome_grupo}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormControl>
-                          <Input placeholder="Ex: Servidor, Email" {...field} />
+                          <Input
+                            placeholder="Ou digite um novo grupo..."
+                            value={field.value || ""}
+                            onChange={field.onChange}
+                            className="mt-2"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -450,169 +516,238 @@ export default function CofreSenhas() {
         </Dialog>
       </div>
 
-      {/* Filtro por grupo */}
-      <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filtrar por grupo:</span>
+      {/* Filtros */}
+      <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted/30 rounded-lg">
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            Filtrar por grupo:
+          </label>
+          <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todos os grupos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os grupos</SelectItem>
+              {gruposUnicos.map((grupo) => (
+                <SelectItem key={grupo} value={grupo}>
+                  {grupo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Todos os grupos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os grupos</SelectItem>
-            {gruposUnicos.map((grupo) => (
-              <SelectItem key={grupo} value={grupo}>
-                {grupo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {filtroGrupo && filtroGrupo !== "todos" && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setFiltroGrupo("todos")}
-          >
-            Limpar filtro
-          </Button>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Filtrar por cliente:</label>
+          <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todos os clientes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os clientes</SelectItem>
+              {clientes.map((cliente) => (
+                <SelectItem key={cliente.id} value={cliente.id}>
+                  {cliente.nome_cliente}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Filtrar por empresa:</label>
+          <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todas as empresas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas as empresas</SelectItem>
+              {empresas.map((empresa) => (
+                <SelectItem key={empresa.id} value={empresa.id}>
+                  {empresa.nome_empresa}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(filtroGrupo !== "todos" || filtroCliente !== "todos" || filtroEmpresa !== "todos") && (
+          <div className="md:col-span-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFiltroGrupo("todos")
+                setFiltroCliente("todos")
+                setFiltroEmpresa("todos")
+              }}
+            >
+              Limpar todos os filtros
+            </Button>
+          </div>
         )}
       </div>
 
-      {/* Senhas agrupadas por cliente */}
-      <div className="space-y-8">
-        {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, senhasCliente]) => (
+      {/* Senhas agrupadas por cliente - Layout resumido */}
+      <div className="space-y-6">
+        {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, dadosCliente]) => (
           <div key={nomeCliente} className="space-y-4">
-            <div className="border-b pb-2">
-              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <KeyRound className="h-5 w-5 text-primary" />
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary"
+              onClick={() => setClienteExpandido(clienteExpandido === nomeCliente ? null : nomeCliente)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <KeyRound className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">{nomeCliente}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {dadosCliente.senhas.length} senha{dadosCliente.senhas.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        Grupos: {[...new Set(dadosCliente.senhas.map(s => s.grupo).filter(Boolean))].join(", ") || "Nenhum"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Clique para expandir
+                      </p>
+                    </div>
+                    {clienteExpandido === nomeCliente ? (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
                 </div>
-                {nomeCliente}
-                <span className="text-sm text-muted-foreground font-normal">
-                  ({senhasCliente.length} senha{senhasCliente.length !== 1 ? 's' : ''})
-                </span>
-              </h2>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {senhasCliente.map((senha) => (
-                <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <KeyRound className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">{senha.nome_acesso}</CardTitle>
-                          {senha.grupo && (
-                            <p className="text-sm text-muted-foreground">{senha.grupo}</p>
-                          )}
+              </CardHeader>
+            </Card>
+
+            {clienteExpandido === nomeCliente && (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ml-6">
+                {dadosCliente.senhas.map((senha) => (
+                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <KeyRound className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{senha.nome_acesso}</CardTitle>
+                            {senha.grupo && (
+                              <p className="text-sm text-muted-foreground">{senha.grupo}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {senha.login && (
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      {senha.login && (
+                        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm font-medium">Login:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{senha.login}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(senha.login!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm font-medium">Login:</span>
+                        <span className="text-sm font-medium">Senha:</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">{senha.login}</span>
+                          <span className="text-sm font-mono">
+                            {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
+                          </span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => copyToClipboard(senha.login!)}
+                            onClick={() => togglePasswordVisibility(senha.id)}
+                          >
+                            {visiblePasswords.has(senha.id) ? (
+                              <EyeOff className="h-3 w-3" />
+                            ) : (
+                              <Eye className="h-3 w-3" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(senha.senha)}
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
-                    )}
 
-                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                      <span className="text-sm font-medium">Senha:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono">
-                          {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => togglePasswordVisibility(senha.id)}
-                        >
-                          {visiblePasswords.has(senha.id) ? (
-                            <EyeOff className="h-3 w-3" />
-                          ) : (
-                            <Eye className="h-3 w-3" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copyToClipboard(senha.senha)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {senha.url_acesso && (
-                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm font-medium">URL:</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => window.open(senha.url_acesso!, '_blank')}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => copyToClipboard(senha.url_acesso!)}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                      {senha.url_acesso && (
+                        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                          <span className="text-sm font-medium">URL:</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.open(senha.url_acesso!, '_blank')}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(senha.url_acesso!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {senha.descricao && (
-                      <div className="p-2 bg-muted/30 rounded">
-                        <span className="text-sm font-medium">Descrição:</span>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {senha.descricao}
-                        </p>
-                      </div>
-                    )}
+                      {senha.descricao && (
+                        <div className="p-2 bg-muted/30 rounded">
+                          <span className="text-sm font-medium">Descrição:</span>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                            {senha.descricao}
+                          </p>
+                        </div>
+                      )}
 
-                    <div className="flex gap-2 pt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => handleEdit(senha)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(senha.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleEdit(senha)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(senha.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -172,6 +172,30 @@ export type Database = {
         }
         Relationships: []
       }
+      grupos_cofre: {
+        Row: {
+          created_at: string
+          id: string
+          nome_grupo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_grupo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_grupo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       manutencoes: {
         Row: {
           cliente_id: string
