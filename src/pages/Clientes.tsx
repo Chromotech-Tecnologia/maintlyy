@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
@@ -36,6 +37,7 @@ interface EmpresaTerceira {
 
 export default function Clientes() {
   const { user } = useAuth()
+  const permissions = usePermissions()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
   const [loading, setLoading] = useState(true)
@@ -306,7 +308,7 @@ export default function Clientes() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {clientes.map((cliente) => (
+        {clientes.filter(cliente => permissions.isAdmin || permissions.canViewClient(cliente.id)).map((cliente) => (
           <Card key={cliente.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -355,23 +357,27 @@ export default function Clientes() {
               )}
 
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEdit(cliente)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(cliente.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {(permissions.isAdmin || permissions.canEditClient(cliente.id)) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEdit(cliente)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+                {(permissions.isAdmin || permissions.canEditClient(cliente.id)) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(cliente.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

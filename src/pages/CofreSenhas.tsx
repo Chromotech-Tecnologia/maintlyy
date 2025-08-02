@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PasswordStrength } from "@/components/ui/password-strength"
 import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
@@ -64,6 +65,7 @@ export default function CofreSenhas() {
   console.log('CofreSenhas component rendering')
   
   const { user } = useAuth()
+  const permissions = usePermissions()
   console.log('CofreSenhas - user:', user)
   
   const [senhas, setSenhas] = useState<CofreSenha[]>([])
@@ -287,8 +289,15 @@ export default function CofreSenhas() {
     setOpen(true)
   }
 
-  // Filtrar senhas
+  // Filtrar senhas com base em permissões
   const senhasFiltradas = senhas.filter(senha => {
+    // Verificar permissões se não for admin
+    if (!permissions.isAdmin && senha.cliente_id) {
+      if (!permissions.canViewClient(senha.cliente_id)) {
+        return false
+      }
+    }
+    
     // Filtro por grupo
     const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
     
@@ -365,7 +374,7 @@ export default function CofreSenhas() {
               Nova Senha
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Editar Senha" : "Nova Senha"}
@@ -402,22 +411,41 @@ export default function CofreSenhas() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="senha"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <Input type="password" placeholder="••••••••" {...field} />
-                            <PasswordStrength password={field.value} />
+                <FormField
+                  control={form.control}
+                  name="senha"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <Input 
+                              type={visiblePasswords.has('form-password') ? "text" : "password"}
+                              placeholder="••••••••" 
+                              {...field} 
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                              onClick={() => togglePasswordVisibility('form-password')}
+                            >
+                              {visiblePasswords.has('form-password') ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <PasswordStrength password={field.value} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 </div>
 
                 <FormField
@@ -435,39 +463,44 @@ export default function CofreSenhas() {
                 />
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="grupo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Grupo</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <FormControl>
+                <FormField
+                  control={form.control}
+                  name="grupo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Grupo</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          <Select onValueChange={(value) => {
+                            if (value === "none") {
+                              field.onChange("")
+                            } else {
+                              field.onChange(value)
+                            }
+                          }} value={field.value || ""}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione ou digite novo..." />
+                              <SelectValue placeholder="Selecione um grupo salvo..." />
                             </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum grupo</SelectItem>
-                            {gruposSalvos.map((grupo) => (
-                              <SelectItem key={grupo.id} value={grupo.nome_grupo}>
-                                {grupo.nome_grupo}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">Nenhum grupo</SelectItem>
+                              {gruposSalvos.map((grupo) => (
+                                <SelectItem key={grupo.id} value={grupo.nome_grupo}>
+                                  {grupo.nome_grupo}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Input
                             placeholder="Ou digite um novo grupo..."
                             value={field.value || ""}
                             onChange={field.onChange}
-                            className="mt-2"
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                   <FormField
                     control={form.control}
@@ -783,23 +816,27 @@ export default function CofreSenhas() {
                       )}
 
                       <div className="flex gap-2 pt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => handleEdit(senha)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(senha.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => handleEdit(senha)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                        )}
+                        {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(senha.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

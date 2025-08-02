@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Edit, Trash2, Users, Shield } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 interface UserProfile {
@@ -36,23 +37,50 @@ interface Cliente {
   nome_cliente: string
 }
 
+interface SystemPermission {
+  id: string
+  user_id: string
+  resource_type: string
+  can_view: boolean
+  can_edit: boolean
+  can_create: boolean
+  can_delete: boolean
+}
+
+interface AuthUser {
+  id: string
+  email?: string
+  user_metadata: any
+  app_metadata: any
+}
+
 export default function PerfilUsuarios() {
   const { user } = useAuth()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
+  const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
   const [clientPermissions, setClientPermissions] = useState<ClientPermission[]>([])
+  const [systemPermissions, setSystemPermissions] = useState<SystemPermission[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     display_name: "",
     email: "",
     is_admin: false
   })
+  const [newUserData, setNewUserData] = useState({
+    email: "",
+    password: "",
+    display_name: "",
+    is_admin: false
+  })
 
   useEffect(() => {
     fetchProfiles()
+    fetchAuthUsers()
     fetchClientes()
   }, [])
 
@@ -70,6 +98,17 @@ export default function PerfilUsuarios() {
       toast.error('Erro ao carregar perfis')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchAuthUsers = async () => {
+    try {
+      const { data: { users }, error } = await supabase.auth.admin.listUsers()
+      
+      if (error) throw error
+      setAuthUsers(users || [])
+    } catch (error) {
+      console.error('Erro ao buscar usuários auth:', error)
     }
   }
 
@@ -146,6 +185,93 @@ export default function PerfilUsuarios() {
     }
   }
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      // Criar usuário no auth
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email: newUserData.email,
+        password: newUserData.password,
+        email_confirm: true
+      })
+
+      if (authError) throw authError
+
+      // Criar perfil do usuário
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: authUser.user.id,
+          display_name: newUserData.display_name,
+          email: newUserData.email,
+          is_admin: newUserData.is_admin
+        })
+
+      if (profileError) throw profileError
+
+      toast.success('Usuário criado com sucesso!')
+      setCreateUserDialogOpen(false)
+      setNewUserData({ email: "", password: "", display_name: "", is_admin: false })
+      fetchProfiles()
+      fetchAuthUsers()
+    } catch (error: any) {
+      console.error('Erro ao criar usuário:', error)
+      toast.error('Erro ao criar usuário: ' + error.message)
+    }
+  }
+
+  const fetchSystemPermissions = async (profileUserId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_system_permissions')
+        .select('*')
+        .eq('user_id', profileUserId)
+
+      if (error) throw error
+      setSystemPermissions(data || [])
+    } catch (error) {
+      console.error('Erro ao buscar permissões de sistema:', error)
+    }
+  }
+
+  const handleSystemPermissionChange = async (
+    resource: string, 
+    permission: 'can_view' | 'can_edit' | 'can_create' | 'can_delete', 
+    value: boolean
+  ) => {
+    if (!selectedProfile) return
+
+    try {
+      const existingPermission = systemPermissions.find(p => p.resource_type === resource)
+
+      if (existingPermission) {
+        const { error } = await supabase
+          .from('user_system_permissions')
+          .update({ [permission]: value })
+          .eq('id', existingPermission.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('user_system_permissions')
+          .insert({
+            user_id: selectedProfile.user_id,
+            resource_type: resource,
+            [permission]: value
+          })
+
+        if (error) throw error
+      }
+
+      fetchSystemPermissions(selectedProfile.user_id)
+      toast.success('Permissão atualizada!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissão:', error)
+      toast.error('Erro ao atualizar permissão')
+    }
+  }
+
   const handlePermissionChange = async (clienteId: string, permission: 'can_view' | 'can_edit', value: boolean) => {
     if (!selectedProfile) return
 
@@ -188,6 +314,7 @@ export default function PerfilUsuarios() {
   const openPermissionsDialog = (profile: UserProfile) => {
     setSelectedProfile(profile)
     fetchClientPermissions(profile.user_id)
+    fetchSystemPermissions(profile.user_id)
     setPermissionsDialogOpen(true)
   }
 
@@ -211,13 +338,79 @@ export default function PerfilUsuarios() {
             Gerencie perfis e permissões de acesso
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Perfil
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Criar Usuário
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  Crie um novo usuário no sistema com login e senha
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <Label htmlFor="new_email">Email</Label>
+                  <Input
+                    id="new_email"
+                    type="email"
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="usuario@exemplo.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_password">Senha</Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Senha do usuário"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_display_name">Nome de Exibição</Label>
+                  <Input
+                    id="new_display_name"
+                    value={newUserData.display_name}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, display_name: e.target.value }))}
+                    placeholder="Ex: João Silva"
+                    required
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="new_is_admin"
+                    checked={newUserData.is_admin}
+                    onCheckedChange={(checked) => setNewUserData(prev => ({ ...prev, is_admin: !!checked }))}
+                  />
+                  <Label htmlFor="new_is_admin">Administrador</Label>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Criar Usuário</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Vincular Perfil
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Criar Novo Perfil</DialogTitle>
@@ -263,7 +456,8 @@ export default function PerfilUsuarios() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-6">
@@ -304,49 +498,122 @@ export default function PerfilUsuarios() {
 
       {/* Dialog de Permissões */}
       <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Permissões de {selectedProfile?.display_name}
             </DialogTitle>
             <DialogDescription>
-              Configure quais clientes este usuário pode visualizar e editar
+              Configure as permissões de acesso deste usuário
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {clientes.map((cliente) => {
-              const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
-              return (
-                <div key={cliente.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{cliente.nome_cliente}</p>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`view-${cliente.id}`}
-                        checked={permission?.can_view || false}
-                        onCheckedChange={(checked) => 
-                          handlePermissionChange(cliente.id, 'can_view', !!checked)
-                        }
-                      />
-                      <Label htmlFor={`view-${cliente.id}`}>Visualizar</Label>
+          
+          <Tabs defaultValue="clientes" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="clientes">Clientes</TabsTrigger>
+              <TabsTrigger value="sistema">Sistema</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="clientes" className="space-y-4">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {clientes.map((cliente) => {
+                  const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
+                  return (
+                    <div key={cliente.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{cliente.nome_cliente}</p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`view-${cliente.id}`}
+                            checked={permission?.can_view || false}
+                            onCheckedChange={(checked) => 
+                              handlePermissionChange(cliente.id, 'can_view', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`view-${cliente.id}`}>Visualizar</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-${cliente.id}`}
+                            checked={permission?.can_edit || false}
+                            onCheckedChange={(checked) => 
+                              handlePermissionChange(cliente.id, 'can_edit', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`edit-${cliente.id}`}>Editar</Label>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`edit-${cliente.id}`}
-                        checked={permission?.can_edit || false}
-                        onCheckedChange={(checked) => 
-                          handlePermissionChange(cliente.id, 'can_edit', !!checked)
-                        }
-                      />
-                      <Label htmlFor={`edit-${cliente.id}`}>Editar</Label>
+                  )
+                })}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="sistema" className="space-y-4">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao'].map((resource) => {
+                  const permission = systemPermissions.find(p => p.resource_type === resource)
+                  const resourceName = {
+                    'manutencoes': 'Manutenções',
+                    'dashboard': 'Dashboard',
+                    'empresas_terceiras': 'Empresas Terceiras',
+                    'equipes': 'Equipes',
+                    'tipos_manutencao': 'Tipos de Manutenção'
+                  }[resource]
+                  
+                  return (
+                    <div key={resource} className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-3">{resourceName}</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${resource}-view`}
+                            checked={permission?.can_view || false}
+                            onCheckedChange={(checked) => 
+                              handleSystemPermissionChange(resource, 'can_view', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`${resource}-view`}>Ver</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${resource}-edit`}
+                            checked={permission?.can_edit || false}
+                            onCheckedChange={(checked) => 
+                              handleSystemPermissionChange(resource, 'can_edit', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`${resource}-edit`}>Editar</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${resource}-create`}
+                            checked={permission?.can_create || false}
+                            onCheckedChange={(checked) => 
+                              handleSystemPermissionChange(resource, 'can_create', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`${resource}-create`}>Criar</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${resource}-delete`}
+                            checked={permission?.can_delete || false}
+                            onCheckedChange={(checked) => 
+                              handleSystemPermissionChange(resource, 'can_delete', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`${resource}-delete`}>Excluir</Label>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
