@@ -38,7 +38,7 @@ const securityItems = [
 ]
 
 const systemItems = [
-  { title: "Usuários", url: "/usuarios", icon: Settings },
+  { title: "Perfis de Usuários", url: "/perfil-usuarios", icon: Settings },
   { title: "Permissões", url: "/permissoes", icon: Shield },
 ]
 

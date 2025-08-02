@@ -448,7 +448,7 @@ export default function CofreSenhas() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Nenhum grupo</SelectItem>
+                            <SelectItem value="none">Nenhum grupo</SelectItem>
                             {gruposSalvos.map((grupo) => (
                               <SelectItem key={grupo.id} value={grupo.nome_grupo}>
                                 {grupo.nome_grupo}

@@ -15,6 +15,7 @@ import TiposManutencao from "./pages/TiposManutencao";
 import CofreSenhas from "./pages/CofreSenhas";
 import ComingSoon from "./pages/ComingSoon";
 import Login from "./pages/Login";
+import PerfilUsuarios from "./pages/PerfilUsuarios";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
                     <Route path="/equipes" element={<Equipes />} />
                     <Route path="/tipos-manutencao" element={<TiposManutencao />} />
                     <Route path="/cofre" element={<CofreSenhas />} />
+                    <Route path="/perfil-usuarios" element={<PerfilUsuarios />} />
                     <Route 
                       path="/permissoes" 
                       element={<ComingSoon title="Permissões" description="Módulo de controle de permissões" />} 
