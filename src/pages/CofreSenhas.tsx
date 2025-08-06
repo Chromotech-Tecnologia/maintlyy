@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { PasswordStrength } from "@/components/ui/password-strength"
+import { PasswordGenerator } from "@/components/ui/password-generator"
+import { Combobox } from "@/components/ui/combobox"
 import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -439,7 +441,8 @@ export default function CofreSenhas() {
                               )}
                             </Button>
                           </div>
-                          <PasswordStrength password={field.value} />
+                           <PasswordStrength password={field.value} />
+                          <PasswordGenerator onPasswordGenerated={(password) => form.setValue('senha', password)} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -470,32 +473,16 @@ export default function CofreSenhas() {
                     <FormItem>
                       <FormLabel>Grupo</FormLabel>
                       <FormControl>
-                        <div className="space-y-2">
-                          <Select onValueChange={(value) => {
-                            if (value === "none") {
-                              field.onChange("")
-                            } else {
-                              field.onChange(value)
-                            }
-                          }} value={field.value || ""}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um grupo salvo..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Nenhum grupo</SelectItem>
-                              {gruposSalvos.map((grupo) => (
-                                <SelectItem key={grupo.id} value={grupo.nome_grupo}>
-                                  {grupo.nome_grupo}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            placeholder="Ou digite um novo grupo..."
-                            value={field.value || ""}
-                            onChange={field.onChange}
-                          />
-                        </div>
+                        <Combobox
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          options={gruposSalvos.map(grupo => ({
+                            value: grupo.nome_grupo,
+                            label: grupo.nome_grupo
+                          }))}
+                          placeholder="Selecione ou digite um grupo..."
+                          allowCustom={true}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -740,80 +727,88 @@ export default function CofreSenhas() {
                       </div>
                     </CardHeader>
                     
-                    <CardContent className="space-y-4">
-                      {senha.login && (
-                        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                          <span className="text-sm font-medium">Login:</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{senha.login}</span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(senha.login!)}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                     <CardContent className="space-y-3">
+                       {senha.login && (
+                         <div className="space-y-1">
+                           <span className="text-xs font-medium text-muted-foreground">Login:</span>
+                           <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+                             <span className="text-sm flex-1 truncate">{senha.login}</span>
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => copyToClipboard(senha.login!)}
+                               className="h-6 w-6 p-0"
+                             >
+                               <Copy className="h-3 w-3" />
+                             </Button>
+                           </div>
+                         </div>
+                       )}
 
-                      <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                        <span className="text-sm font-medium">Senha:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-mono">
-                            {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => togglePasswordVisibility(senha.id)}
-                          >
-                            {visiblePasswords.has(senha.id) ? (
-                              <EyeOff className="h-3 w-3" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => copyToClipboard(senha.senha)}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
+                       <div className="space-y-1">
+                         <span className="text-xs font-medium text-muted-foreground">Senha:</span>
+                         <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+                           <span className="text-sm font-mono flex-1 truncate">
+                             {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
+                           </span>
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => togglePasswordVisibility(senha.id)}
+                             className="h-6 w-6 p-0"
+                           >
+                             {visiblePasswords.has(senha.id) ? (
+                               <EyeOff className="h-3 w-3" />
+                             ) : (
+                               <Eye className="h-3 w-3" />
+                             )}
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="ghost"
+                             onClick={() => copyToClipboard(senha.senha)}
+                             className="h-6 w-6 p-0"
+                           >
+                             <Copy className="h-3 w-3" />
+                           </Button>
+                         </div>
+                       </div>
 
-                      {senha.url_acesso && (
-                        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                          <span className="text-sm font-medium">URL:</span>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(senha.url_acesso!, '_blank')}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(senha.url_acesso!)}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                       {senha.url_acesso && (
+                         <div className="space-y-1">
+                           <span className="text-xs font-medium text-muted-foreground">URL:</span>
+                           <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+                             <span className="text-sm flex-1 truncate">{senha.url_acesso}</span>
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => window.open(senha.url_acesso!, '_blank')}
+                               className="h-6 w-6 p-0"
+                             >
+                               <ExternalLink className="h-3 w-3" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => copyToClipboard(senha.url_acesso!)}
+                               className="h-6 w-6 p-0"
+                             >
+                               <Copy className="h-3 w-3" />
+                             </Button>
+                           </div>
+                         </div>
+                       )}
 
-                      {senha.descricao && (
-                        <div className="p-2 bg-muted/30 rounded">
-                          <span className="text-sm font-medium">Descrição:</span>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {senha.descricao}
-                          </p>
-                        </div>
-                      )}
+                       {senha.descricao && (
+                         <div className="space-y-1">
+                           <span className="text-xs font-medium text-muted-foreground">Descrição:</span>
+                           <div className="p-2 bg-muted/30 rounded">
+                             <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                               {senha.descricao}
+                             </p>
+                           </div>
+                         </div>
+                       )}
 
                       <div className="flex gap-2 pt-2">
                         {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (

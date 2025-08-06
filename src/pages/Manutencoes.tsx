@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, Clock, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { ExcelImport } from "@/components/ExcelImport"
 
 interface Manutencao {
   id: string
@@ -239,13 +240,15 @@ export default function Manutencoes() {
           <p className="text-muted-foreground">Gerencie todas as manutenções</p>
         </div>
         
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Manutenção
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <ExcelImport onImportComplete={fetchData} />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Manutenção
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingId ? "Editar" : "Nova"} Manutenção</DialogTitle>
@@ -413,6 +416,7 @@ export default function Manutencoes() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -431,7 +435,8 @@ export default function Manutencoes() {
                 <TableHead>Data/Hora</TableHead>
                 <TableHead>Tempo</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Responsável</TableHead>
+                <TableHead>Equipe</TableHead>
+                <TableHead>Descrição</TableHead>
                 <TableHead className="w-24">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -461,7 +466,12 @@ export default function Manutencoes() {
                       {manutencao.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{manutencao.responsavel || "-"}</TableCell>
+                  <TableCell>{manutencao.equipes?.nome_equipe || "-"}</TableCell>
+                  <TableCell>
+                    <div className="max-w-40 truncate" title={manutencao.descricao || ""}>
+                      {manutencao.descricao || "-"}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)}>

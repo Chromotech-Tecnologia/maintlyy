@@ -64,6 +64,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     
     console.log('signUp result:', { data, error })
+    
+    // Se não houve erro e o usuário foi criado, criar o perfil
+    if (!error && data.user) {
+      try {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert([
+            {
+              user_id: data.user.id,
+              email: email,
+              display_name: email.split('@')[0]
+            }
+          ])
+        
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError)
+        }
+      } catch (profileError) {
+        console.error('Erro ao criar perfil:', profileError)
+      }
+    }
+    
     return { error }
   }
 

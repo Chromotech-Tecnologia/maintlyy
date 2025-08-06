@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react"
 import { StatCard } from "@/components/dashboard/StatCard"
+import { ChartCard } from "@/components/dashboard/ChartCard"
+import { FilterBar } from "@/components/dashboard/FilterBar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts"
 import { 
   Clock, 
   Users, 
@@ -10,7 +13,9 @@ import {
   Plus,
   Calendar,
   DollarSign,
-  KeyRound
+  KeyRound,
+  BarChart3,
+  PieChart as PieChartIcon
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -21,6 +26,13 @@ interface DashboardStats {
   totalClientes: number
   manutencoesPendentes: number
   totalSenhas: number
+}
+
+interface ChartData {
+  visaoMensal: Array<{ name: string; value: number }>
+  tipoManutencao: Array<{ name: string; value: number; color: string }>
+  totalHoras: Array<{ name: string; horas: number }>
+  valorCliente: Array<{ name: string; valor: number }>
 }
 
 interface ManutencaoRecente {
@@ -42,6 +54,19 @@ export default function Dashboard() {
     totalSenhas: 0
   })
   const [recentManutencoes, setRecentManutencoes] = useState<ManutencaoRecente[]>([])
+  const [chartData, setChartData] = useState<ChartData>({
+    visaoMensal: [],
+    tipoManutencao: [],
+    totalHoras: [],
+    valorCliente: []
+  })
+  const [filters, setFilters] = useState<any>({})
+  const [dropdownData, setDropdownData] = useState<any>({
+    clientes: [],
+    empresas: [],
+    equipes: [],
+    tipos: []
+  })
   const [loading, setLoading] = useState(true)
 
   const fetchDashboardData = async () => {
@@ -95,6 +120,54 @@ export default function Dashboard() {
       })
 
       setRecentManutencoes(recentData.data || [])
+
+      // Buscar dados para gráficos
+      const [dropdownResult, chartResult] = await Promise.all([
+        Promise.all([
+          supabase.from('clientes').select('id, nome_cliente').eq('user_id', user.id),
+          supabase.from('empresas_terceiras').select('id, nome_empresa').eq('user_id', user.id),
+          supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
+          supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id)
+        ]),
+        supabase
+          .from('manutencoes')
+          .select(`
+            *,
+            clientes(nome_cliente),
+            tipos_manutencao(nome_tipo_manutencao)
+          `)
+          .eq('user_id', user.id)
+      ])
+
+      setDropdownData({
+        clientes: dropdownResult[0].data || [],
+        empresas: dropdownResult[1].data || [],
+        equipes: dropdownResult[2].data || [],
+        tipos: dropdownResult[3].data || []
+      })
+
+      // Processar dados para gráficos
+      const manutencoes = chartResult.data || []
+      
+      const visaoMensal = Array.from({ length: 12 }, (_, i) => {
+        const month = new Date(2024, i).toLocaleDateString('pt-BR', { month: 'short' })
+        const count = manutencoes.filter(m => new Date(m.data_inicio).getMonth() === i).length
+        return { name: month, value: count }
+      })
+
+      const tipoData = dropdownData.tipos.map((tipo: any, index: number) => ({
+        name: tipo.nome_tipo_manutencao,
+        value: manutencoes.filter(m => m.tipo_manutencao_id === tipo.id).length,
+        color: `hsl(${index * 60}, 70%, 50%)`
+      }))
+
+      setChartData({
+        visaoMensal,
+        tipoManutencao: tipoData,
+        totalHoras: [],
+        valorCliente: []
+      })
+
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error)
     } finally {

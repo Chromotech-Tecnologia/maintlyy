@@ -64,9 +64,11 @@ export function AppSidebar() {
         {/* Logo/Brand */}
         <div className="p-4 border-b border-sidebar-border bg-gradient-to-r from-sidebar-accent to-sidebar-background">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-sidebar-primary to-sidebar-ring rounded-lg flex items-center justify-center shadow-lg">
-              <Wrench className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
+            <img 
+              src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
+              alt="Maintly Logo" 
+              className="w-8 h-8"
+            />
             {!isCollapsed && (
               <div>
                 <h1 className="font-bold text-lg text-sidebar-foreground tracking-wide">Maintly</h1>

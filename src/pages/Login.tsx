@@ -69,10 +69,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-gradient-to-br from-sidebar-primary to-sidebar-ring rounded-lg flex items-center justify-center mb-4">
-            <Wrench className="w-6 h-6 text-sidebar-primary-foreground" />
+          <div className="mx-auto mb-4">
+            <img 
+              src="/lovable-uploads/d0885aef-121a-4a46-81cf-7d5f3c5199cc.png" 
+              alt="Maintly Logo" 
+              className="h-16 mx-auto"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">Maintly</CardTitle>
           <CardDescription>Sistema de Gestão de Manutenções</CardDescription>
         </CardHeader>
         <CardContent>
