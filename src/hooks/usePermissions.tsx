@@ -64,31 +64,37 @@ export function usePermissions(): UserPermissions {
   }
 
   const canViewClient = (clienteId: string): boolean => {
+    // Admin sempre tem acesso total
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_view)
   }
 
   const canEditClient = (clienteId: string): boolean => {
+    // Admin sempre tem acesso total
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_edit)
   }
 
   const canViewSystem = (resource: string): boolean => {
+    // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
     return systemPermissions.some(p => p.resource_type === resource && p.can_view)
   }
 
   const canEditSystem = (resource: string): boolean => {
+    // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
     return systemPermissions.some(p => p.resource_type === resource && p.can_edit)
   }
 
   const canCreateSystem = (resource: string): boolean => {
+    // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
     return systemPermissions.some(p => p.resource_type === resource && p.can_create)
   }
 
   const canDeleteSystem = (resource: string): boolean => {
+    // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
     return systemPermissions.some(p => p.resource_type === resource && p.can_delete)
   }

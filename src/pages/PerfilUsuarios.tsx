@@ -523,9 +523,20 @@ export default function PerfilUsuarios() {
             </TabsList>
             
             <TabsContent value="clientes" className="space-y-4">
+              {selectedProfile?.is_admin && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      Este usuário é administrador e tem acesso total a todos os clientes
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {clientes.map((cliente) => {
                   const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
+                  const isAdminUser = selectedProfile?.is_admin
                   return (
                     <div key={cliente.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
@@ -535,7 +546,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`view-${cliente.id}`}
-                            checked={permission?.can_view || false}
+                            checked={isAdminUser || permission?.can_view || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handlePermissionChange(cliente.id, 'can_view', !!checked)
                             }
@@ -545,7 +557,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`edit-${cliente.id}`}
-                            checked={permission?.can_edit || false}
+                            checked={isAdminUser || permission?.can_edit || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handlePermissionChange(cliente.id, 'can_edit', !!checked)
                             }
@@ -560,15 +573,28 @@ export default function PerfilUsuarios() {
             </TabsContent>
             
             <TabsContent value="sistema" className="space-y-4">
+              {selectedProfile?.is_admin && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      Este usuário é administrador e tem acesso total a todos os recursos do sistema
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao'].map((resource) => {
+                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas'].map((resource) => {
                   const permission = systemPermissions.find(p => p.resource_type === resource)
+                  const isAdminUser = selectedProfile?.is_admin
                   const resourceName = {
                     'manutencoes': 'Manutenções',
                     'dashboard': 'Dashboard',
                     'empresas_terceiras': 'Empresas Terceiras',
                     'equipes': 'Equipes',
-                    'tipos_manutencao': 'Tipos de Manutenção'
+                    'tipos_manutencao': 'Tipos de Manutenção',
+                    'clientes': 'Clientes',
+                    'cofre_senhas': 'Cofre de Senhas'
                   }[resource]
                   
                   return (
@@ -578,7 +604,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`${resource}-view`}
-                            checked={permission?.can_view || false}
+                            checked={isAdminUser || permission?.can_view || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handleSystemPermissionChange(resource, 'can_view', !!checked)
                             }
@@ -588,7 +615,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`${resource}-edit`}
-                            checked={permission?.can_edit || false}
+                            checked={isAdminUser || permission?.can_edit || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handleSystemPermissionChange(resource, 'can_edit', !!checked)
                             }
@@ -598,7 +626,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`${resource}-create`}
-                            checked={permission?.can_create || false}
+                            checked={isAdminUser || permission?.can_create || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handleSystemPermissionChange(resource, 'can_create', !!checked)
                             }
@@ -608,7 +637,8 @@ export default function PerfilUsuarios() {
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`${resource}-delete`}
-                            checked={permission?.can_delete || false}
+                            checked={isAdminUser || permission?.can_delete || false}
+                            disabled={isAdminUser}
                             onCheckedChange={(checked) => 
                               handleSystemPermissionChange(resource, 'can_delete', !!checked)
                             }
