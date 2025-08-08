@@ -21,6 +21,11 @@ export function usePermissions(): UserPermissions {
   useEffect(() => {
     if (user) {
       fetchPermissions()
+    } else {
+      // Reset quando não há usuário
+      setUserProfile(null)
+      setClientPermissions([])
+      setSystemPermissions([])
     }
   }, [user])
 
@@ -37,11 +42,7 @@ export function usePermissions(): UserPermissions {
 
       setUserProfile(profile)
 
-      // Se for admin, não precisa verificar permissões específicas
-      if (profile?.is_admin) {
-        return
-      }
-
+      // Sempre buscar permissões específicas, mesmo para admins (para exibição)
       // Buscar permissões de clientes
       const { data: clientPerms } = await supabase
         .from('user_client_permissions')

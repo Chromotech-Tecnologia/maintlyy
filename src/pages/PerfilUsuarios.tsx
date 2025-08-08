@@ -189,26 +189,34 @@ export default function PerfilUsuarios() {
     e.preventDefault()
     
     try {
-      // Criar usuário no auth
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      // Usar signUp normal ao invés de admin.createUser
+      const { data, error: authError } = await supabase.auth.signUp({
         email: newUserData.email,
         password: newUserData.password,
-        email_confirm: true
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            display_name: newUserData.display_name,
+            is_admin: newUserData.is_admin
+          }
+        }
       })
 
       if (authError) throw authError
 
-      // Criar perfil do usuário
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: authUser.user.id,
-          display_name: newUserData.display_name,
-          email: newUserData.email,
-          is_admin: newUserData.is_admin
-        })
+      if (data.user) {
+        // Criar perfil do usuário
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: data.user.id,
+            display_name: newUserData.display_name,
+            email: newUserData.email,
+            is_admin: newUserData.is_admin
+          })
 
-      if (profileError) throw profileError
+        if (profileError) throw profileError
+      }
 
       toast.success('Usuário criado com sucesso!')
       setCreateUserDialogOpen(false)

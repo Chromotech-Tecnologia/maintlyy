@@ -60,12 +60,39 @@ export default function Clientes() {
     if (!user) return
 
     try {
-      const [clientesResult, empresasResult] = await Promise.all([
-        supabase
+      // Se for admin, buscar todos os clientes, senão buscar apenas os permitidos
+      let clientesQuery
+      if (permissions.isAdmin) {
+        clientesQuery = supabase
           .from('clientes')
           .select('*, empresas_terceiras(nome_empresa)')
+          .order('created_at', { ascending: false })
+      } else {
+        // Buscar clientes baseado nas permissões
+        const { data: allowedClients } = await supabase
+          .from('user_client_permissions')
+          .select('cliente_id')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
+          .eq('can_view', true)
+
+        if (allowedClients && allowedClients.length > 0) {
+          const clienteIds = allowedClients.map(p => p.cliente_id)
+          clientesQuery = supabase
+            .from('clientes')
+            .select('*, empresas_terceiras(nome_empresa)')
+            .in('id', clienteIds)
+            .order('created_at', { ascending: false })
+        } else {
+          // Nenhuma permissão, retornar lista vazia
+          setClientes([])
+          setEmpresas([])
+          setLoading(false)
+          return
+        }
+      }
+
+      const [clientesResult, empresasResult] = await Promise.all([
+        clientesQuery,
         supabase
           .from('empresas_terceiras')
           .select('*')
