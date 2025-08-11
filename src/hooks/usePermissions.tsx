@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client"
 interface UserPermissions {
   canViewClient: (clienteId: string) => boolean
   canEditClient: (clienteId: string) => boolean
+  canCreateClient: (clienteId: string) => boolean
+  canDeleteClient: (clienteId: string) => boolean
   canViewSystem: (resource: string) => boolean
   canEditSystem: (resource: string) => boolean
   canCreateSystem: (resource: string) => boolean
@@ -75,6 +77,18 @@ export function usePermissions(): UserPermissions {
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_edit)
   }
 
+  const canCreateClient = (clienteId: string): boolean => {
+    // Admin sempre tem acesso total
+    if (userProfile?.is_admin) return true
+    return clientPermissions.some(p => p.cliente_id === clienteId && p.can_create)
+  }
+
+  const canDeleteClient = (clienteId: string): boolean => {
+    // Admin sempre tem acesso total
+    if (userProfile?.is_admin) return true
+    return clientPermissions.some(p => p.cliente_id === clienteId && p.can_delete)
+  }
+
   const canViewSystem = (resource: string): boolean => {
     // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
@@ -102,6 +116,8 @@ export function usePermissions(): UserPermissions {
   return {
     canViewClient,
     canEditClient,
+    canCreateClient,
+    canDeleteClient,
     canViewSystem,
     canEditSystem,
     canCreateSystem,

@@ -203,13 +203,14 @@ export default function Clientes() {
             Gerencie seus clientes e contratos de manutenção
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </DialogTrigger>
+        {(permissions.isAdmin || permissions.canCreateSystem('clientes')) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Cliente
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
@@ -331,11 +332,12 @@ export default function Clientes() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {clientes.filter(cliente => permissions.isAdmin || permissions.canViewClient(cliente.id)).map((cliente) => (
+        {clientes.map((cliente) => (
           <Card key={cliente.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -395,7 +397,7 @@ export default function Clientes() {
                     Editar
                   </Button>
                 )}
-                {(permissions.isAdmin || permissions.canEditClient(cliente.id)) && (
+                {(permissions.isAdmin || permissions.canDeleteClient(cliente.id)) && (
                   <Button 
                     variant="outline" 
                     size="sm" 

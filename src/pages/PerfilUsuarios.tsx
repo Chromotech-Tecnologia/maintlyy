@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus } from "lucide-react"
+import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus, Check, X } from "lucide-react"
+import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
 
 interface UserProfile {
@@ -27,6 +28,8 @@ interface ClientPermission {
   cliente_id: string
   can_view: boolean
   can_edit: boolean
+  can_create: boolean
+  can_delete: boolean
   clientes?: {
     nome_cliente: string
   }
@@ -66,6 +69,7 @@ export default function PerfilUsuarios() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
+  const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     display_name: "",
     email: "",
@@ -114,10 +118,11 @@ export default function PerfilUsuarios() {
 
   const fetchClientes = async () => {
     try {
+      // Admin vê todos os clientes, usuários comuns veem apenas os seus
       const { data, error } = await supabase
         .from('clientes')
         .select('id, nome_cliente')
-        .eq('user_id', user?.id)
+        .order('nome_cliente')
 
       if (error) throw error
       setClientes(data || [])
@@ -280,7 +285,7 @@ export default function PerfilUsuarios() {
     }
   }
 
-  const handlePermissionChange = async (clienteId: string, permission: 'can_view' | 'can_edit', value: boolean) => {
+  const handlePermissionChange = async (clienteId: string, permission: 'can_view' | 'can_edit' | 'can_create' | 'can_delete', value: boolean) => {
     if (!selectedProfile) return
 
     try {
@@ -296,16 +301,19 @@ export default function PerfilUsuarios() {
 
         if (error) throw error
       } else {
-        // Criar nova permissão
+        // Criar nova permissão com valores padrão
+        const newPermission = {
+          user_id: selectedProfile.user_id,
+          cliente_id: clienteId,
+          can_view: permission === 'can_view' ? value : false,
+          can_edit: permission === 'can_edit' ? value : false,
+          can_create: permission === 'can_create' ? value : false,
+          can_delete: permission === 'can_delete' ? value : false
+        }
+
         const { error } = await supabase
           .from('user_client_permissions')
-          .insert({
-            user_id: selectedProfile.user_id,
-            cliente_id: clienteId,
-            [permission]: value,
-            can_view: permission === 'can_view' ? value : false,
-            can_edit: permission === 'can_edit' ? value : false
-          })
+          .insert(newPermission)
 
         if (error) throw error
       }
@@ -316,6 +324,160 @@ export default function PerfilUsuarios() {
     } catch (error: any) {
       console.error('Erro ao atualizar permissão:', error)
       toast.error('Erro ao atualizar permissão')
+    }
+  }
+
+  const toggleAllClientPermissions = async (enable: boolean) => {
+    if (!selectedProfile) return
+
+    try {
+      for (const cliente of clientes) {
+        const existingPermission = clientPermissions.find(p => p.cliente_id === cliente.id)
+
+        if (existingPermission) {
+          await supabase
+            .from('user_client_permissions')
+            .update({
+              can_view: enable,
+              can_edit: enable,
+              can_create: enable,
+              can_delete: enable
+            })
+            .eq('id', existingPermission.id)
+        } else {
+          await supabase
+            .from('user_client_permissions')
+            .insert({
+              user_id: selectedProfile.user_id,
+              cliente_id: cliente.id,
+              can_view: enable,
+              can_edit: enable,
+              can_create: enable,
+              can_delete: enable
+            })
+        }
+      }
+
+      fetchClientPermissions(selectedProfile.user_id)
+      toast.success(enable ? 'Todas as permissões habilitadas!' : 'Todas as permissões desabilitadas!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error)
+      toast.error('Erro ao atualizar permissões')
+    }
+  }
+
+  const toggleClientPermissions = async (clienteId: string, enable: boolean) => {
+    if (!selectedProfile) return
+
+    try {
+      const existingPermission = clientPermissions.find(p => p.cliente_id === clienteId)
+
+      if (existingPermission) {
+        await supabase
+          .from('user_client_permissions')
+          .update({
+            can_view: enable,
+            can_edit: enable,
+            can_create: enable,
+            can_delete: enable
+          })
+          .eq('id', existingPermission.id)
+      } else {
+        await supabase
+          .from('user_client_permissions')
+          .insert({
+            user_id: selectedProfile.user_id,
+            cliente_id: clienteId,
+            can_view: enable,
+            can_edit: enable,
+            can_create: enable,
+            can_delete: enable
+          })
+      }
+
+      fetchClientPermissions(selectedProfile.user_id)
+      toast.success('Permissões atualizadas!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error)
+      toast.error('Erro ao atualizar permissões')
+    }
+  }
+
+  const toggleAllSystemPermissions = async (enable: boolean) => {
+    if (!selectedProfile) return
+
+    try {
+      const resources = ['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas', 'perfis_usuarios', 'permissoes']
+
+      for (const resource of resources) {
+        const existingPermission = systemPermissions.find(p => p.resource_type === resource)
+
+        if (existingPermission) {
+          await supabase
+            .from('user_system_permissions')
+            .update({
+              can_view: enable,
+              can_edit: enable,
+              can_create: enable,
+              can_delete: enable
+            })
+            .eq('id', existingPermission.id)
+        } else {
+          await supabase
+            .from('user_system_permissions')
+            .insert({
+              user_id: selectedProfile.user_id,
+              resource_type: resource,
+              can_view: enable,
+              can_edit: enable,
+              can_create: enable,
+              can_delete: enable
+            })
+        }
+      }
+
+      fetchSystemPermissions(selectedProfile.user_id)
+      toast.success(enable ? 'Todas as permissões de sistema habilitadas!' : 'Todas as permissões de sistema desabilitadas!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões de sistema:', error)
+      toast.error('Erro ao atualizar permissões de sistema')
+    }
+  }
+
+  const toggleSystemResourcePermissions = async (resource: string, enable: boolean) => {
+    if (!selectedProfile) return
+
+    try {
+      const existingPermission = systemPermissions.find(p => p.resource_type === resource)
+
+      if (existingPermission) {
+        await supabase
+          .from('user_system_permissions')
+          .update({
+            can_view: enable,
+            can_edit: enable,
+            can_create: enable,
+            can_delete: enable
+          })
+          .eq('id', existingPermission.id)
+      } else {
+        await supabase
+          .from('user_system_permissions')
+          .insert({
+            user_id: selectedProfile.user_id,
+            resource_type: resource,
+            can_view: enable,
+            can_edit: enable,
+            can_create: enable,
+            can_delete: enable
+          })
+      }
+
+      fetchSystemPermissions(selectedProfile.user_id)
+      toast.success('Permissões atualizadas!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error)
+      toast.error('Erro ao atualizar permissões')
     }
   }
 
@@ -490,14 +652,27 @@ export default function PerfilUsuarios() {
                     <CardDescription>{profile.email}</CardDescription>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openPermissionsDialog(profile)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Gerenciar Permissões
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedProfile(profile)
+                      setEditProfileDialogOpen(true)
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar Perfil
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openPermissionsDialog(profile)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Permissões
+                  </Button>
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -517,9 +692,10 @@ export default function PerfilUsuarios() {
           </DialogHeader>
           
           <Tabs defaultValue="clientes" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="clientes">Clientes</TabsTrigger>
               <TabsTrigger value="sistema">Sistema</TabsTrigger>
+              <TabsTrigger value="senhas">Senhas por Cliente</TabsTrigger>
             </TabsList>
             
             <TabsContent value="clientes" className="space-y-4">
@@ -533,16 +709,56 @@ export default function PerfilUsuarios() {
                   </div>
                 </div>
               )}
+              
+              {!selectedProfile?.is_admin && (
+                <div className="flex justify-end gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleAllClientPermissions(true)}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Marcar Todos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleAllClientPermissions(false)}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Desmarcar Todos
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {clientes.map((cliente) => {
                   const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
                   const isAdminUser = selectedProfile?.is_admin
                   return (
-                    <div key={cliente.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
+                    <div key={cliente.id} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
                         <p className="font-medium">{cliente.nome_cliente}</p>
+                        {!isAdminUser && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleClientPermissions(cliente.id, true)}
+                            >
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleClientPermissions(cliente.id, false)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`view-${cliente.id}`}
@@ -552,7 +768,7 @@ export default function PerfilUsuarios() {
                               handlePermissionChange(cliente.id, 'can_view', !!checked)
                             }
                           />
-                          <Label htmlFor={`view-${cliente.id}`}>Visualizar</Label>
+                          <Label htmlFor={`view-${cliente.id}`}>Ver</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -564,6 +780,28 @@ export default function PerfilUsuarios() {
                             }
                           />
                           <Label htmlFor={`edit-${cliente.id}`}>Editar</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`create-${cliente.id}`}
+                            checked={isAdminUser || permission?.can_create || false}
+                            disabled={isAdminUser}
+                            onCheckedChange={(checked) => 
+                              handlePermissionChange(cliente.id, 'can_create', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`create-${cliente.id}`}>Criar</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`delete-${cliente.id}`}
+                            checked={isAdminUser || permission?.can_delete || false}
+                            disabled={isAdminUser}
+                            onCheckedChange={(checked) => 
+                              handlePermissionChange(cliente.id, 'can_delete', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`delete-${cliente.id}`}>Excluir</Label>
                         </div>
                       </div>
                     </div>
@@ -583,8 +821,30 @@ export default function PerfilUsuarios() {
                   </div>
                 </div>
               )}
+              
+              {!selectedProfile?.is_admin && (
+                <div className="flex justify-end gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleAllSystemPermissions(true)}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Marcar Todos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleAllSystemPermissions(false)}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Desmarcar Todos
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas'].map((resource) => {
+                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas', 'perfis_usuarios', 'permissoes'].map((resource) => {
                   const permission = systemPermissions.find(p => p.resource_type === resource)
                   const isAdminUser = selectedProfile?.is_admin
                   const resourceName = {
@@ -594,12 +854,34 @@ export default function PerfilUsuarios() {
                     'equipes': 'Equipes',
                     'tipos_manutencao': 'Tipos de Manutenção',
                     'clientes': 'Clientes',
-                    'cofre_senhas': 'Cofre de Senhas'
+                    'cofre_senhas': 'Cofre de Senhas',
+                    'perfis_usuarios': 'Perfis de Usuários',
+                    'permissoes': 'Permissões'
                   }[resource]
                   
                   return (
                     <div key={resource} className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-3">{resourceName}</h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">{resourceName}</h4>
+                        {!isAdminUser && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleSystemResourcePermissions(resource, true)}
+                            >
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleSystemResourcePermissions(resource, false)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -651,9 +933,38 @@ export default function PerfilUsuarios() {
                 })}
               </div>
             </TabsContent>
+
+            <TabsContent value="senhas" className="space-y-4">
+              {selectedProfile?.is_admin && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      Este usuário é administrador e tem acesso a todas as senhas de todos os clientes
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Funcionalidade de permissões de senhas por cliente em desenvolvimento.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Esta funcionalidade permitirá controlar quais senhas do cofre cada usuário pode visualizar para cada cliente.
+                </p>
+              </div>
+            </TabsContent>
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <EditProfileDialog
+        open={editProfileDialogOpen}
+        onOpenChange={setEditProfileDialogOpen}
+        profile={selectedProfile}
+        onProfileUpdated={fetchProfiles}
+      />
     </div>
   )
 }

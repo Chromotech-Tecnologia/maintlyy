@@ -361,6 +361,8 @@ export type Database = {
       }
       user_client_permissions: {
         Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
           can_edit: boolean | null
           can_view: boolean | null
           cliente_id: string
@@ -370,6 +372,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
           cliente_id: string
@@ -379,6 +383,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
           cliente_id?: string
@@ -445,6 +451,36 @@ export type Database = {
           id?: string
           senha_id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profile_data: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          display_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
