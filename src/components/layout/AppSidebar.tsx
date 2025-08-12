@@ -10,6 +10,7 @@ import {
   Calendar
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import {
   Sidebar,
@@ -48,6 +49,10 @@ export function AppSidebar() {
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
 
+  const { isAdmin, hasAnyClientView } = usePermissions()
+  const canSeeClientes = isAdmin || hasAnyClientView
+  const filteredMainItems = mainItems.filter((item) => item.title !== "Clientes" || canSeeClientes)
+
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/"
     return currentPath.startsWith(path)
@@ -83,7 +88,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {mainItems.map((item) => (
+              {filteredMainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end={item.url === "/"} className={getNavCls}>
