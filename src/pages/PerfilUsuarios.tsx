@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
+import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,6 +60,7 @@ interface AuthUser {
 
 export default function PerfilUsuarios() {
   const { user } = useAuth()
+  const adminOps = useAdminOperations()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -107,10 +109,9 @@ export default function PerfilUsuarios() {
 
   const fetchAuthUsers = async () => {
     try {
-      const { data: { users }, error } = await supabase.auth.admin.listUsers()
-      
-      if (error) throw error
-      setAuthUsers(users || [])
+      const result = await adminOps.listUsers()
+      if (result.error) throw result.error
+      setAuthUsers(result.data?.users || [])
     } catch (error) {
       console.error('Erro ao buscar usuários auth:', error)
     }

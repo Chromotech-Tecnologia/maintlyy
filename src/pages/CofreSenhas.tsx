@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
+import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
 
 interface CofreSenha {
   id: string
@@ -216,7 +217,12 @@ export default function CofreSenhas() {
       if (empresasResult.error) throw empresasResult.error
       if (gruposResult.error) throw gruposResult.error
 
-      setSenhas(senhasResult.data || [])
+      // Descriptografar senhas antes de salvar no estado
+      const senhasDescriptografadas = (senhasResult.data || []).map(senha => ({
+        ...senha,
+        senha: decryptPassword(senha.senha, user.id)
+      }))
+      setSenhas(senhasDescriptografadas)
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
       setGruposSalvos(gruposResult.data || [])
@@ -242,23 +248,30 @@ export default function CofreSenhas() {
     try {
       console.log('Processing form data...')
       
+      // Sanitizar dados do formulário
+      const sanitizedData = sanitizeFormData(data)
+      
       // Salvar grupo se for novo
-      if (data.grupo && data.grupo.trim() && !gruposSalvos.find(g => g.nome_grupo === data.grupo.trim())) {
+      if (sanitizedData.grupo && sanitizedData.grupo.trim() && !gruposSalvos.find(g => g.nome_grupo === sanitizedData.grupo.trim())) {
         try {
           await supabase
             .from('grupos_cofre')
-            .insert([{ nome_grupo: data.grupo.trim(), user_id: user.id }])
+            .insert([{ nome_grupo: sanitizedData.grupo.trim(), user_id: user.id }])
         } catch (error) {
           // Ignora erro se grupo já existe (constraint unique)
           console.log('Grupo já existe ou erro ao salvar:', error)
         }
       }
 
+      // Criptografar senha antes de salvar
+      const encryptedPassword = encryptPassword(sanitizedData.senha, user.id)
+
       const cleanData = {
-        ...data,
-        cliente_id: data.cliente_id === "none" ? null : data.cliente_id || null,
-        empresa_terceira_id: data.empresa_terceira_id === "none" ? null : data.empresa_terceira_id || null,
-        url_acesso: data.url_acesso || null,
+        ...sanitizedData,
+        senha: encryptedPassword,
+        cliente_id: sanitizedData.cliente_id === "none" ? null : sanitizedData.cliente_id || null,
+        empresa_terceira_id: sanitizedData.empresa_terceira_id === "none" ? null : sanitizedData.empresa_terceira_id || null,
+        url_acesso: sanitizedData.url_acesso || null,
       }
 
       if (editingId) {
@@ -293,9 +306,10 @@ export default function CofreSenhas() {
 
   const handleEdit = (senha: CofreSenha) => {
     setEditingId(senha.id)
+    // A senha já está descriptografada no estado local
     form.reset({
       nome_acesso: senha.nome_acesso,
-      senha: senha.senha,
+      senha: senha.senha, // Já descriptografada
       login: senha.login || "",
       url_acesso: senha.url_acesso || "",
       descricao: senha.descricao || "",

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 
@@ -19,6 +20,7 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdated }: EditProfileDialogProps) {
   const { user } = useAuth()
   const permissions = usePermissions()
+  const adminOps = useAdminOperations()
   const [formData, setFormData] = useState({
     display_name: "",
     email: "",
@@ -68,9 +70,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
   const fetchAuthUser = async (userId: string) => {
     try {
-      const { data: { user: authUserData }, error } = await supabase.auth.admin.getUserById(userId)
-      if (error) throw error
-      setAuthUser(authUserData)
+      const result = await adminOps.getUserById(userId)
+      if (result.error) throw result.error
+      setAuthUser(result.data?.user)
     } catch (error) {
       console.error('Erro ao buscar usuário auth:', error)
     }
@@ -124,11 +126,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       // Se for admin e estiver editando email, atualizar também no auth
       if (permissions.isAdmin && formData.email !== profile.email) {
-        const { error: authError } = await supabase.auth.admin.updateUserById(
-          profile.user_id,
-          { email: formData.email }
-        )
-        if (authError) throw authError
+        const result = await adminOps.updateUserById(profile.user_id, { email: formData.email })
+        if (result.error) throw result.error
       }
 
       toast.success('Perfil atualizado com sucesso!')
