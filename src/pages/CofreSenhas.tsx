@@ -65,11 +65,8 @@ interface Manutencao {
 }
 
 export default function CofreSenhas() {
-  console.log('CofreSenhas component rendering')
-  
   const { user } = useAuth()
   const permissions = usePermissions()
-  console.log('CofreSenhas - user:', user)
   
   const [senhas, setSenhas] = useState<CofreSenha[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -126,63 +123,19 @@ export default function CofreSenhas() {
     if (!user) return
 
     try {
-      // Se for admin, buscar todas as senhas, senão buscar apenas as permitidas
-      let senhasQuery
-      if (permissions.isAdmin) {
-        senhasQuery = supabase
-          .from('cofre_senhas')
-          .select(`
-            *,
-            clientes(nome_cliente),
-            empresas_terceiras(nome_empresa)
-          `)
-          .order('created_at', { ascending: false })
-      } else {
-        // Buscar senhas baseado nas permissões dos clientes
-        const { data: allowedClients } = await supabase
-          .from('user_client_permissions')
-          .select('cliente_id')
-          .eq('user_id', user.id)
-          .eq('can_view', true)
+      // Buscar dados sempre via RLS; admins verão tudo, usuários verão apenas o permitido
+      const senhasQuery = supabase
+        .from('cofre_senhas')
+        .select(`
+          *,
+          clientes(nome_cliente),
+          empresas_terceiras(nome_empresa)
+        `)
+        .order('created_at', { ascending: false })
 
-        // Buscar todas as senhas que o usuário pode ver
-        // Isso inclui: senhas próprias + senhas de clientes com permissão
-        senhasQuery = supabase
-          .from('cofre_senhas')
-          .select(`
-            *,
-            clientes(nome_cliente),
-            empresas_terceiras(nome_empresa)
-          `)
-          .order('created_at', { ascending: false })
-      }
-
-      // Buscar clientes baseado nas permissões
-      let clientesQuery
-      if (permissions.isAdmin) {
-        clientesQuery = supabase
-          .from('clientes')
-          .select('id, nome_cliente')
-      } else {
-        const { data: allowedClients } = await supabase
-          .from('user_client_permissions')
-          .select('cliente_id')
-          .eq('user_id', user.id)
-          .eq('can_view', true)
-
-        if (allowedClients && allowedClients.length > 0) {
-          const clienteIds = allowedClients.map(p => p.cliente_id)
-          clientesQuery = supabase
-            .from('clientes')
-            .select('id, nome_cliente')
-            .in('id', clienteIds)
-        } else {
-          clientesQuery = supabase
-            .from('clientes')
-            .select('id, nome_cliente')
-            .limit(0) // Não retorna nenhum cliente
-        }
-      }
+      const clientesQuery = supabase
+        .from('clientes')
+        .select('id, nome_cliente')
 
       const [senhasResult, clientesResult, empresasResult, gruposResult] = await Promise.all([
         senhasQuery,

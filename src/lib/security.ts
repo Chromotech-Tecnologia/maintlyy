@@ -33,14 +33,15 @@ export const decryptPassword = (encryptedPassword: string, userId: string): stri
     const bytes = CryptoJS.AES.decrypt(encryptedPassword, key)
     const decrypted = bytes.toString(CryptoJS.enc.Utf8)
     
+    // Se não conseguir descriptografar (dados antigos ou chave diferente),
+    // devolve o valor original sem gerar erros no console.
     if (!decrypted) {
-      throw new Error('Falha na descriptografia')
+      return encryptedPassword
     }
     
     return decrypted
-  } catch (error) {
-    console.error('Decryption failed:', error)
-    // Return encrypted data if decryption fails (backward compatibility)
+  } catch {
+    // Evita poluir o console com erros repetidos; mantém compatibilidade
     return encryptedPassword
   }
 }
