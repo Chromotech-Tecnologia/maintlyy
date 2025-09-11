@@ -13,6 +13,8 @@ interface UserPermissions {
   canDeleteSystem: (resource: string) => boolean
   hasAnyClientView: boolean
   isAdmin: boolean
+  clientPermissions: any[]
+  systemPermissions: any[]
 }
 
 export function usePermissions(): UserPermissions {
@@ -126,7 +128,9 @@ export function usePermissions(): UserPermissions {
     canEditSystem,
     canCreateSystem,
     canDeleteSystem,
-    hasAnyClientView: clientPermissions.some(p => p.can_view),
-    isAdmin: userProfile?.is_admin || false
+    hasAnyClientView: userProfile?.is_admin || clientPermissions.some(p => p.can_view),
+    isAdmin: userProfile?.is_admin || false,
+    clientPermissions,
+    systemPermissions
   }
 }

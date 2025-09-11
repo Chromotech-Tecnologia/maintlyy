@@ -294,10 +294,22 @@ export default function PerfilUsuarios() {
       const existingPermission = clientPermissions.find(p => p.cliente_id === clienteId)
 
       if (existingPermission) {
-        // Atualizar permissão existente
+        const updateData: any = { [permission]: value }
+        
+        // Se está desmarcando "can_view", desmarcar todas as outras também
+        if (permission === 'can_view' && !value) {
+          updateData.can_edit = false
+          updateData.can_create = false  
+          updateData.can_delete = false
+        }
+        // Se está marcando qualquer outra permissão, marcar "can_view" automaticamente
+        else if (permission !== 'can_view' && value) {
+          updateData.can_view = true
+        }
+
         const { error } = await supabase
           .from('user_client_permissions')
-          .update({ [permission]: value })
+          .update(updateData)
           .eq('id', existingPermission.id)
 
         if (error) throw error
@@ -310,6 +322,11 @@ export default function PerfilUsuarios() {
           can_edit: permission === 'can_edit' ? value : false,
           can_create: permission === 'can_create' ? value : false,
           can_delete: permission === 'can_delete' ? value : false
+        }
+        
+        // Se está marcando qualquer permissão, marcar "can_view" também
+        if (value) {
+          newPermission.can_view = true
         }
 
         const { error } = await supabase

@@ -49,9 +49,28 @@ export function AppSidebar() {
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
 
-  const { isAdmin, hasAnyClientView } = usePermissions()
+  const { isAdmin, hasAnyClientView, canViewSystem } = usePermissions()
   const canSeeClientes = isAdmin || hasAnyClientView
-  const filteredMainItems = mainItems.filter((item) => item.title !== "Clientes" || canSeeClientes)
+  
+  const filteredMainItems = mainItems.filter((item) => {
+    if (item.title === "Clientes") return canSeeClientes
+    if (item.title === "Manutenções") return isAdmin || canViewSystem("manutencoes")
+    if (item.title === "Empresas Terceiras") return isAdmin || canViewSystem("empresas_terceiras") 
+    if (item.title === "Equipes") return isAdmin || canViewSystem("equipes")
+    if (item.title === "Tipos de Manutenção") return isAdmin || canViewSystem("tipos_manutencao")
+    return true
+  })
+  
+  const filteredSecurityItems = securityItems.filter((item) => {
+    if (item.title === "Cofre de Senhas") return isAdmin || canViewSystem("cofre_senhas")
+    return true
+  })
+  
+  const filteredSystemItems = systemItems.filter((item) => {
+    if (item.title === "Perfis de Usuários") return isAdmin || canViewSystem("user_profiles")
+    if (item.title === "Permissões") return isAdmin || canViewSystem("user_permissions")
+    return true
+  })
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/"
@@ -103,42 +122,46 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Security Section */}
-        <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Segurança</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {securityItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {filteredSecurityItems.length > 0 && (
+          <SidebarGroup className="px-2">
+            <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Segurança</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {filteredSecurityItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="mr-3 h-5 w-5" />
+                        {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* System Section */}
-        <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Sistema</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {systemItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {filteredSystemItems.length > 0 && (
+          <SidebarGroup className="px-2">
+            <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Sistema</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {filteredSystemItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="mr-3 h-5 w-5" />
+                        {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   )

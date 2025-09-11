@@ -90,12 +90,11 @@ export default function Manutencoes() {
             tipos_manutencao(nome_tipo_manutencao),
             equipes(nome_equipe)
           `)
-          .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
-        supabase.from('empresas_terceiras').select('*').eq('user_id', user.id),
-        supabase.from('clientes').select('*').eq('user_id', user.id),
-        supabase.from('tipos_manutencao').select('*').eq('user_id', user.id),
-        supabase.from('equipes').select('*').eq('user_id', user.id)
+        supabase.from('empresas_terceiras').select('*'),
+        supabase.from('clientes').select('*'),
+        supabase.from('tipos_manutencao').select('*'),
+        supabase.from('equipes').select('*')
       ])
 
       if (manutResult.error) throw manutResult.error
