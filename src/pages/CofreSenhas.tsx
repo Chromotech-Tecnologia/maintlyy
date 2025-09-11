@@ -145,30 +145,16 @@ export default function CofreSenhas() {
           .eq('user_id', user.id)
           .eq('can_view', true)
 
-        if (allowedClients && allowedClients.length > 0) {
-          const clienteIds = allowedClients.map(p => p.cliente_id)
-          senhasQuery = supabase
-            .from('cofre_senhas')
-            .select(`
-              *,
-              clientes(nome_cliente),
-              empresas_terceiras(nome_empresa)
-            `)
-            .in('cliente_id', clienteIds)
-            .order('created_at', { ascending: false })
-        } else {
-          // Se não tem permissão para nenhum cliente, buscar apenas senhas próprias
-          senhasQuery = supabase
-            .from('cofre_senhas')
-            .select(`
-              *,
-              clientes(nome_cliente),
-              empresas_terceiras(nome_empresa)
-            `)
-            .eq('user_id', user.id)
-            .is('cliente_id', null)
-            .order('created_at', { ascending: false })
-        }
+        // Buscar todas as senhas que o usuário pode ver
+        // Isso inclui: senhas próprias + senhas de clientes com permissão
+        senhasQuery = supabase
+          .from('cofre_senhas')
+          .select(`
+            *,
+            clientes(nome_cliente),
+            empresas_terceiras(nome_empresa)
+          `)
+          .order('created_at', { ascending: false })
       }
 
       // Buscar clientes baseado nas permissões
@@ -218,10 +204,18 @@ export default function CofreSenhas() {
       if (gruposResult.error) throw gruposResult.error
 
       // Descriptografar senhas antes de salvar no estado
-      const senhasDescriptografadas = (senhasResult.data || []).map(senha => ({
-        ...senha,
-        senha: decryptPassword(senha.senha, user.id)
-      }))
+      const senhasDescriptografadas = (senhasResult.data || []).map(senha => {
+        try {
+          return {
+            ...senha,
+            senha: decryptPassword(senha.senha, user.id)
+          }
+        } catch (error) {
+          console.error(`Erro ao descriptografar senha ${senha.id}:`, error)
+          // Retorna a senha original se não conseguir descriptografar
+          return senha
+        }
+      })
       setSenhas(senhasDescriptografadas)
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])

@@ -45,12 +45,15 @@ export function usePermissions(): UserPermissions {
 
       setUserProfile(profile)
 
-      // Sempre buscar permissões específicas, mesmo para admins (para exibição)
-      // Buscar permissões de clientes
-      const { data: clientPerms } = await supabase
-        .from('user_client_permissions')
-        .select('*')
-        .eq('user_id', user.id)
+      // Buscar permissões de clientes apenas se não for admin
+      let clientPerms = []
+      if (!profile?.is_admin) {
+        const { data } = await supabase
+          .from('user_client_permissions')
+          .select('*')
+          .eq('user_id', user.id)
+        clientPerms = data || []
+      }
 
       setClientPermissions(clientPerms || [])
 
