@@ -108,7 +108,6 @@ export default function CofreSenhas() {
           tipos_manutencao(nome_tipo_manutencao),
           equipes(nome_equipe)
         `)
-        .eq('user_id', user.id)
         .eq('cliente_id', clienteId)
         .order('data_inicio', { ascending: false })
 

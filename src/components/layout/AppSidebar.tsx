@@ -50,7 +50,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed"
 
   const { isAdmin, hasAnyClientView, canViewSystem } = usePermissions()
-  const canSeeClientes = isAdmin || hasAnyClientView
+  const canSeeClientes = isAdmin || hasAnyClientView || canViewSystem("clientes")
   
   const filteredMainItems = mainItems.filter((item) => {
     if (item.title === "Clientes") return canSeeClientes
@@ -67,8 +67,8 @@ export function AppSidebar() {
   })
   
   const filteredSystemItems = systemItems.filter((item) => {
-    if (item.title === "Perfis de Usuários") return isAdmin || canViewSystem("user_profiles")
-    if (item.title === "Permissões") return isAdmin || canViewSystem("user_permissions")
+    if (item.title === "Perfis de Usuários") return isAdmin || canViewSystem("perfis_usuarios")
+    if (item.title === "Permissões") return isAdmin || canViewSystem("permissoes")
     return true
   })
 

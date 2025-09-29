@@ -259,21 +259,37 @@ export default function PerfilUsuarios() {
     try {
       const existingPermission = systemPermissions.find(p => p.resource_type === resource)
 
+      // Regras de dependência: desmarcar Ver desmarca todas; marcar outra marca Ver
+      const updateData: any = { [permission]: value }
+      if (permission === 'can_view' && !value) {
+        updateData.can_edit = false
+        updateData.can_create = false
+        updateData.can_delete = false
+      } else if (permission !== 'can_view' && value) {
+        updateData.can_view = true
+      }
+
       if (existingPermission) {
         const { error } = await supabase
           .from('user_system_permissions')
-          .update({ [permission]: value })
+          .update(updateData)
           .eq('id', existingPermission.id)
 
         if (error) throw error
       } else {
+        const insertData: any = {
+          user_id: selectedProfile.user_id,
+          resource_type: resource,
+          can_view: updateData.can_view ?? (permission === 'can_view' ? value : false),
+          can_edit: updateData.can_edit ?? (permission === 'can_edit' ? value : false),
+          can_create: updateData.can_create ?? (permission === 'can_create' ? value : false),
+          can_delete: updateData.can_delete ?? (permission === 'can_delete' ? value : false)
+        }
+        if (permission !== 'can_view' && value) insertData.can_view = true
+
         const { error } = await supabase
           .from('user_system_permissions')
-          .insert({
-            user_id: selectedProfile.user_id,
-            resource_type: resource,
-            [permission]: value
-          })
+          .insert(insertData)
 
         if (error) throw error
       }
