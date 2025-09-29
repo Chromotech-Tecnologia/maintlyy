@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { PasswordStrength } from "@/components/ui/password-strength"
-import { PasswordGenerator } from "@/components/ui/password-generator"
+import { PasswordGeneratorSimple } from "@/components/ui/password-generator-simple"
 import { Combobox } from "@/components/ui/combobox"
 import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
@@ -37,6 +37,7 @@ interface CofreSenha {
 interface Cliente {
   id: string
   nome_cliente: string
+  empresa_terceira_id?: string
 }
 
 interface EmpresaTerceira {
@@ -123,23 +124,18 @@ export default function CofreSenhas() {
     if (!user) return
 
     try {
-      // Buscar dados sempre via RLS; admins verão tudo, usuários verão apenas o permitido
-      const senhasQuery = supabase
-        .from('cofre_senhas')
-        .select(`
-          *,
-          clientes(nome_cliente),
-          empresas_terceiras(nome_empresa)
-        `)
-        .order('created_at', { ascending: false })
-
-      const clientesQuery = supabase
-        .from('clientes')
-        .select('id, nome_cliente')
-
       const [senhasResult, clientesResult, empresasResult, gruposResult] = await Promise.all([
-        senhasQuery,
-        clientesQuery,
+        supabase
+          .from('cofre_senhas')
+          .select(`
+            *,
+            clientes(nome_cliente),
+            empresas_terceiras(nome_empresa)
+          `)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('clientes')
+          .select('id, nome_cliente, empresa_terceira_id'),
         supabase
           .from('empresas_terceiras')
           .select('id, nome_empresa')
@@ -463,8 +459,8 @@ export default function CofreSenhas() {
                               )}
                             </Button>
                           </div>
-                           <PasswordStrength password={field.value} />
-                          <PasswordGenerator onPasswordGenerated={(password) => form.setValue('senha', password)} />
+                          <PasswordStrength password={field.value} />
+                          <PasswordGeneratorSimple onPasswordGenerated={(password) => form.setValue('senha', password)} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -517,7 +513,16 @@ export default function CofreSenhas() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Cliente (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <Select onValueChange={(value) => {
+                          field.onChange(value);
+                          // Auto-preencher empresa terceira quando cliente é selecionado
+                          if (value && value !== "none") {
+                            const cliente = clientes.find(c => c.id === value);
+                            if (cliente?.empresa_terceira_id) {
+                              form.setValue('empresa_terceira_id', cliente.empresa_terceira_id);
+                            }
+                          }
+                        }} value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione..." />
@@ -541,27 +546,33 @@ export default function CofreSenhas() {
                 <FormField
                   control={form.control}
                   name="empresa_terceira_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empresa Terceira (Opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhuma empresa</SelectItem>
-                          {empresas.map((empresa) => (
-                            <SelectItem key={empresa.id} value={empresa.id}>
-                              {empresa.nome_empresa}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const clienteSelecionado = form.watch('cliente_id');
+                    const cliente = clientes.find(c => c.id === clienteSelecionado);
+                    const isDisabled = clienteSelecionado && clienteSelecionado !== "none" && cliente?.empresa_terceira_id;
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Empresa Terceira (Opcional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={!!isDisabled}>
+                          <FormControl>
+                            <SelectTrigger className={isDisabled ? "opacity-60" : ""}>
+                              <SelectValue placeholder={isDisabled ? "Definido pelo cliente" : "Selecione..."} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhuma empresa</SelectItem>
+                            {empresas.map((empresa) => (
+                              <SelectItem key={empresa.id} value={empresa.id}>
+                                {empresa.nome_empresa}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
                 />
 
                 <FormField
