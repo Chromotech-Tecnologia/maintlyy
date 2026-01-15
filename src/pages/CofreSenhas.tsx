@@ -123,26 +123,29 @@ export default function CofreSenhas() {
     if (!user) return
 
     try {
+      setLoading(true)
+      
+      // Buscar dados em paralelo
       const [senhasResult, clientesResult, empresasResult, gruposResult] = await Promise.all([
         supabase
           .from('cofre_senhas')
           .select(`
-            *,
+            id, nome_acesso, senha, login, url_acesso, descricao, grupo,
+            cliente_id, empresa_terceira_id, created_at,
             clientes(nome_cliente),
             empresas_terceiras(nome_empresa)
           `)
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .limit(500),
         supabase
           .from('clientes')
           .select('id, nome_cliente, empresa_terceira_id'),
         supabase
           .from('empresas_terceiras')
-          .select('id, nome_empresa')
-          .eq('user_id', user.id),
+          .select('id, nome_empresa'),
         supabase
           .from('grupos_cofre')
           .select('id, nome_grupo')
-          .eq('user_id', user.id)
           .order('nome_grupo')
       ])
 
@@ -151,8 +154,14 @@ export default function CofreSenhas() {
       if (empresasResult.error) throw empresasResult.error
       if (gruposResult.error) throw gruposResult.error
 
-      // Descriptografar senhas antes de salvar no estado
-      const senhasDescriptografadas = (senhasResult.data || []).map(senha => {
+      // Atualizar estados de clientes, empresas e grupos primeiro
+      setClientes(clientesResult.data || [])
+      setEmpresas(empresasResult.data || [])
+      setGruposSalvos(gruposResult.data || [])
+      
+      // Descriptografar senhas de forma otimizada
+      const senhasData = senhasResult.data || []
+      const senhasDescriptografadas = senhasData.map(senha => {
         try {
           return {
             ...senha,
@@ -160,14 +169,10 @@ export default function CofreSenhas() {
           }
         } catch (error) {
           console.error(`Erro ao descriptografar senha ${senha.id}:`, error)
-          // Retorna a senha original se não conseguir descriptografar
           return senha
         }
       })
       setSenhas(senhasDescriptografadas)
-      setClientes(clientesResult.data || [])
-      setEmpresas(empresasResult.data || [])
-      setGruposSalvos(gruposResult.data || [])
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error)
       toast.error("Erro ao carregar dados")
@@ -236,10 +241,11 @@ export default function CofreSenhas() {
         toast.success("Senha adicionada com sucesso!")
       }
 
-      setOpen(false)
-      setEditingId(null)
-      form.reset()
-      fetchData()
+      // Fechar dialog e resetar form
+      handleDialogChange(false)
+      
+      // Atualizar lista sem recarregar toda a página
+      await fetchData()
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
       toast.error("Erro ao salvar senha")
@@ -304,8 +310,35 @@ export default function CofreSenhas() {
   const openNewDialog = () => {
     console.log('Opening new dialog')
     setEditingId(null)
-    form.reset()
+    form.reset({
+      nome_acesso: "",
+      senha: "",
+      login: "",
+      url_acesso: "",
+      descricao: "",
+      grupo: "",
+      cliente_id: "",
+      empresa_terceira_id: "",
+    })
     setOpen(true)
+  }
+
+  // Reset form when dialog closes
+  const handleDialogChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (!isOpen) {
+      setEditingId(null)
+      form.reset({
+        nome_acesso: "",
+        senha: "",
+        login: "",
+        url_acesso: "",
+        descricao: "",
+        grupo: "",
+        cliente_id: "",
+        empresa_terceira_id: "",
+      })
+    }
   }
 
   // Filtrar senhas com base em permissões
@@ -386,7 +419,7 @@ export default function CofreSenhas() {
             Gerencie suas senhas de forma segura
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
             <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
               <Plus className="mr-2 h-4 w-4" />
