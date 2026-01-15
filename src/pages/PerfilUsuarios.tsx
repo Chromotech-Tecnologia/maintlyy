@@ -980,14 +980,46 @@ export default function PerfilUsuarios() {
                 </div>
               )}
               
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  Funcionalidade de permissões de senhas por cliente em desenvolvimento.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Esta funcionalidade permitirá controlar quais senhas do cofre cada usuário pode visualizar para cada cliente.
-                </p>
-              </div>
+              {!selectedProfile?.is_admin && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure quais senhas específicas este usuário pode visualizar para cada cliente que tem acesso.
+                  </p>
+                  
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {clientes.filter(cliente => {
+                      // Mostrar apenas clientes que o usuário tem permissão de visualização
+                      const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
+                      return permission?.can_view
+                    }).map((cliente) => {
+                      return (
+                        <div key={cliente.id} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium">{cliente.nome_cliente}</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            As senhas deste cliente que o usuário pode ver são determinadas pela permissão de visualização do cliente na aba "Clientes".
+                          </p>
+                        </div>
+                      )
+                    })}
+                    
+                    {clientes.filter(cliente => {
+                      const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
+                      return permission?.can_view
+                    }).length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          Este usuário não tem permissão para visualizar nenhum cliente.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Configure as permissões na aba "Clientes" primeiro.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </DialogContent>
