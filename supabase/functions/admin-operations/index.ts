@@ -30,11 +30,14 @@ serve(async (req) => {
       )
     }
 
-    // Create Supabase client
+    // Create Supabase client with the user's token
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
+        global: {
+          headers: { Authorization: authHeader }
+        },
         auth: { 
           persistSession: false,
           autoRefreshToken: false
@@ -42,11 +45,8 @@ serve(async (req) => {
       }
     )
 
-    // Set the authorization header for the request
-    supabase.auth.setAuth(authHeader.replace('Bearer ', ''))
-
     // Get current user from JWT
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     if (authError || !user) {
       console.error('Auth error:', authError)
       return new Response(
