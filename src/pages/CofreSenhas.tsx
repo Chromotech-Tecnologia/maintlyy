@@ -426,9 +426,16 @@ export default function CofreSenhas() {
           if (senha.descricao) content += `     Descrição: ${senha.descricao}\n`
         })
       })
+
+      // Adicionar publicidade no final
+      content += `\n\n${'='.repeat(50)}\n`
+      content += `Gerenciado por Maintly - Sistema de Gestão de Manutenções\n`
+      content += `🌐 https://maintly.chromotech.com.br/\n`
+      content += `${'='.repeat(50)}\n`
     } else {
-      // CSV format
-      content = "Cliente,Nome do Acesso,Login,Senha,URL,Grupo,Descrição\n"
+      // CSV format com publicidade no cabeçalho
+      content = "=== Gerenciado por Maintly - https://maintly.chromotech.com.br/ ===\n"
+      content += "Cliente,Nome do Acesso,Login,Senha,URL,Grupo,Descrição\n"
       selectedSenhas.forEach(senha => {
         const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
         const escapeCsv = (str: string | null) => {
@@ -437,6 +444,8 @@ export default function CofreSenhas() {
         }
         content += `${escapeCsv(clienteName)},${escapeCsv(senha.nome_acesso)},${escapeCsv(senha.login)},${escapeCsv(senha.senha)},${escapeCsv(senha.url_acesso)},${escapeCsv(senha.grupo)},${escapeCsv(senha.descricao)}\n`
       })
+      // Adicionar publicidade no final do CSV
+      content += `\n"Gerenciado por Maintly - Sistema de Gestão de Manutenções","https://maintly.chromotech.com.br/","","","","",""\n`
     }
 
     // Download do arquivo

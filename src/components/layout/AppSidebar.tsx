@@ -50,22 +50,22 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed"
 
   const { isAdmin, hasAnyClientView, canViewSystem } = usePermissions()
-  const canSeeClientes = isAdmin || hasAnyClientView || canViewSystem("clientes")
   
+  // Para os itens principais, usuários autenticados sempre podem ver
+  // As RLS policies garantem que só verão seus próprios dados
   const filteredMainItems = mainItems.filter((item) => {
-    if (item.title === "Clientes") return canSeeClientes
-    if (item.title === "Manutenções") return isAdmin || canViewSystem("manutencoes")
-    if (item.title === "Empresas Terceiras") return isAdmin || canViewSystem("empresas_terceiras") 
-    if (item.title === "Equipes") return isAdmin || canViewSystem("equipes")
-    if (item.title === "Tipos de Manutenção") return isAdmin || canViewSystem("tipos_manutencao")
+    // Dashboard sempre visível
+    if (item.title === "Dashboard") return true
+    // Demais itens: admin vê tudo, ou usuário com permissão de sistema, ou qualquer usuário autenticado (verá seus próprios dados)
     return true
   })
   
+  // Segurança: todos podem acessar cofre de senhas (verão apenas suas senhas ou as que têm permissão)
   const filteredSecurityItems = securityItems.filter((item) => {
-    if (item.title === "Cofre de Senhas") return isAdmin || canViewSystem("cofre_senhas")
     return true
   })
   
+  // Sistema: apenas admin ou com permissão específica
   const filteredSystemItems = systemItems.filter((item) => {
     if (item.title === "Perfis de Usuários") return isAdmin || canViewSystem("perfis_usuarios")
     if (item.title === "Permissões") return isAdmin || canViewSystem("permissoes")
