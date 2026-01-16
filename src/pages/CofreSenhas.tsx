@@ -9,7 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PasswordStrength } from "@/components/ui/password-strength"
 import { PasswordGeneratorSimple } from "@/components/ui/password-generator-simple"
 import { Combobox } from "@/components/ui/combobox"
-import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, ChevronDown, ChevronRight, Wrench, Calendar, Clock, User, Download, FileText } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
@@ -82,6 +83,11 @@ export default function CofreSenhas() {
   const [filtroEmpresa, setFiltroEmpresa] = useState("")
   const [clienteExpandido, setClienteExpandido] = useState<string | null>(null)
   const [manutencoesPorCliente, setManutencoesPorCliente] = useState<Record<string, Manutencao[]>>({})
+  
+  // Estados para exportação
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [selectedPasswordsForExport, setSelectedPasswordsForExport] = useState<Set<string>>(new Set())
+  const [selectedClientsForExport, setSelectedClientsForExport] = useState<Set<string>>(new Set())
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -341,7 +347,113 @@ export default function CofreSenhas() {
     }
   }
 
-  // Filtrar senhas com base em permissões
+  // Funções de exportação
+  const togglePasswordExportSelection = (senhaId: string) => {
+    const newSelected = new Set(selectedPasswordsForExport)
+    if (newSelected.has(senhaId)) {
+      newSelected.delete(senhaId)
+    } else {
+      newSelected.add(senhaId)
+    }
+    setSelectedPasswordsForExport(newSelected)
+  }
+
+  const toggleClientExportSelection = (clienteId: string) => {
+    const newSelected = new Set(selectedClientsForExport)
+    if (newSelected.has(clienteId)) {
+      newSelected.delete(clienteId)
+      // Remover todas as senhas desse cliente da seleção
+      const senhasDoCliente = senhas.filter(s => s.cliente_id === clienteId || s.clientes?.nome_cliente === clienteId)
+      senhasDoCliente.forEach(s => selectedPasswordsForExport.delete(s.id))
+      setSelectedPasswordsForExport(new Set(selectedPasswordsForExport))
+    } else {
+      newSelected.add(clienteId)
+      // Adicionar todas as senhas desse cliente à seleção
+      const senhasDoCliente = senhas.filter(s => s.cliente_id === clienteId)
+      senhasDoCliente.forEach(s => selectedPasswordsForExport.add(s.id))
+      setSelectedPasswordsForExport(new Set(selectedPasswordsForExport))
+    }
+    setSelectedClientsForExport(newSelected)
+  }
+
+  const selectAllPasswords = () => {
+    const allIds = senhasFiltradas.map(s => s.id)
+    setSelectedPasswordsForExport(new Set(allIds))
+    const allClientIds = [...new Set(senhasFiltradas.map(s => s.cliente_id).filter(Boolean))] as string[]
+    setSelectedClientsForExport(new Set(allClientIds))
+  }
+
+  const deselectAllPasswords = () => {
+    setSelectedPasswordsForExport(new Set())
+    setSelectedClientsForExport(new Set())
+  }
+
+  const exportSelectedPasswords = (format: 'txt' | 'csv') => {
+    const selectedSenhas = senhas.filter(s => selectedPasswordsForExport.has(s.id))
+    
+    if (selectedSenhas.length === 0) {
+      toast.error("Selecione pelo menos uma senha para exportar")
+      return
+    }
+
+    let content = ""
+    const timestamp = new Date().toLocaleDateString('pt-BR')
+
+    if (format === 'txt') {
+      content = `=== COFRE DE SENHAS - EXPORTAÇÃO ===\n`
+      content += `Data de Exportação: ${timestamp}\n`
+      content += `Total de Senhas: ${selectedSenhas.length}\n`
+      content += `${'='.repeat(50)}\n\n`
+
+      // Agrupar por cliente
+      const grouped = selectedSenhas.reduce((acc, senha) => {
+        const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
+        if (!acc[clienteName]) acc[clienteName] = []
+        acc[clienteName].push(senha)
+        return acc
+      }, {} as Record<string, CofreSenha[]>)
+
+      Object.entries(grouped).forEach(([clienteName, senhasCliente]) => {
+        content += `\n📁 ${clienteName}\n`
+        content += `${'-'.repeat(40)}\n`
+        
+        senhasCliente.forEach(senha => {
+          content += `\n  🔐 ${senha.nome_acesso}\n`
+          if (senha.login) content += `     Login: ${senha.login}\n`
+          content += `     Senha: ${senha.senha}\n`
+          if (senha.url_acesso) content += `     URL: ${senha.url_acesso}\n`
+          if (senha.grupo) content += `     Grupo: ${senha.grupo}\n`
+          if (senha.descricao) content += `     Descrição: ${senha.descricao}\n`
+        })
+      })
+    } else {
+      // CSV format
+      content = "Cliente,Nome do Acesso,Login,Senha,URL,Grupo,Descrição\n"
+      selectedSenhas.forEach(senha => {
+        const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
+        const escapeCsv = (str: string | null) => {
+          if (!str) return ''
+          return `"${str.replace(/"/g, '""')}"`
+        }
+        content += `${escapeCsv(clienteName)},${escapeCsv(senha.nome_acesso)},${escapeCsv(senha.login)},${escapeCsv(senha.senha)},${escapeCsv(senha.url_acesso)},${escapeCsv(senha.grupo)},${escapeCsv(senha.descricao)}\n`
+      })
+    }
+
+    // Download do arquivo
+    const blob = new Blob([content], { type: format === 'txt' ? 'text/plain' : 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `senhas_export_${new Date().toISOString().split('T')[0]}.${format}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast.success(`${selectedSenhas.length} senha(s) exportada(s) com sucesso!`)
+    setExportDialogOpen(false)
+    deselectAllPasswords()
+  }
   const senhasFiltradas = senhas.filter(senha => {
     // Verificar permissões se não for admin
     if (!permissions.isAdmin && senha.cliente_id) {
@@ -419,13 +531,122 @@ export default function CofreSenhas() {
             Gerencie suas senhas de forma segura
           </p>
         </div>
-        <Dialog open={open} onOpenChange={handleDialogChange}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Senha
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* Botão de Exportação */}
+          <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Senhas
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Exportar Senhas
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Controles de seleção */}
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-sm font-medium">
+                    {selectedPasswordsForExport.size} senha(s) selecionada(s)
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={selectAllPasswords}>
+                      Selecionar Todas
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={deselectAllPasswords}>
+                      Limpar Seleção
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de clientes e senhas para seleção */}
+                <div className="max-h-[400px] overflow-y-auto space-y-4 border rounded-lg p-3">
+                  {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, dadosCliente]) => (
+                    <div key={nomeCliente} className="space-y-2">
+                      <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                        <Checkbox
+                          checked={dadosCliente.senhas.every(s => selectedPasswordsForExport.has(s.id))}
+                          onCheckedChange={() => {
+                            const allSelected = dadosCliente.senhas.every(s => selectedPasswordsForExport.has(s.id))
+                            const newSelected = new Set(selectedPasswordsForExport)
+                            if (allSelected) {
+                              dadosCliente.senhas.forEach(s => newSelected.delete(s.id))
+                            } else {
+                              dadosCliente.senhas.forEach(s => newSelected.add(s.id))
+                            }
+                            setSelectedPasswordsForExport(newSelected)
+                          }}
+                        />
+                        <KeyRound className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{nomeCliente}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({dadosCliente.senhas.length} senha{dadosCliente.senhas.length !== 1 ? 's' : ''})
+                        </span>
+                      </div>
+                      
+                      <div className="ml-6 space-y-1">
+                        {dadosCliente.senhas.map(senha => (
+                          <div 
+                            key={senha.id} 
+                            className="flex items-center gap-2 p-2 hover:bg-muted/30 rounded cursor-pointer"
+                            onClick={() => togglePasswordExportSelection(senha.id)}
+                          >
+                            <Checkbox
+                              checked={selectedPasswordsForExport.has(senha.id)}
+                              onCheckedChange={() => togglePasswordExportSelection(senha.id)}
+                            />
+                            <span className="text-sm">{senha.nome_acesso}</span>
+                            {senha.login && (
+                              <span className="text-xs text-muted-foreground">({senha.login})</span>
+                            )}
+                            {senha.grupo && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                {senha.grupo}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Botões de exportação */}
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => exportSelectedPasswords('txt')}
+                    disabled={selectedPasswordsForExport.size === 0}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Exportar TXT
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => exportSelectedPasswords('csv')}
+                    disabled={selectedPasswordsForExport.size === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar CSV
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={open} onOpenChange={handleDialogChange}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Senha
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -638,6 +859,7 @@ export default function CofreSenhas() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filtros */}
