@@ -395,6 +395,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_empresa_permissions: {
+        Row: {
+          can_create_manutencao: boolean | null
+          can_view: boolean | null
+          created_at: string | null
+          empresa_terceira_id: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_create_manutencao?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          empresa_terceira_id: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_create_manutencao?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          empresa_terceira_id?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_empresa_permissions_empresa_terceira_id_fkey"
+            columns: ["empresa_terceira_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_terceiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_group_permissions: {
         Row: {
           can_edit: boolean | null
