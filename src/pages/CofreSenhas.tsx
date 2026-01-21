@@ -70,7 +70,11 @@ export default function CofreSenhas() {
   const { user } = useAuth()
   const permissions = usePermissions()
   
-  const [senhas, setSenhas] = useState<CofreSenha[]>([])
+  // Senhas armazenadas ENCRIPTADAS - descriptografia sob demanda
+  const [senhasEncriptadas, setSenhasEncriptadas] = useState<CofreSenha[]>([])
+  // Cache de senhas descriptografadas
+  const [senhasDescriptografadas, setSenhasDescriptografadas] = useState<Map<string, string>>(new Map())
+  
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
   const [gruposSalvos, setGruposSalvos] = useState<GrupoCofre[]>([])
@@ -88,6 +92,7 @@ export default function CofreSenhas() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [selectedPasswordsForExport, setSelectedPasswordsForExport] = useState<Set<string>>(new Set())
   const [selectedClientsForExport, setSelectedClientsForExport] = useState<Set<string>>(new Set())
+  const [exportLoading, setExportLoading] = useState(false)
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -160,31 +165,43 @@ export default function CofreSenhas() {
       if (empresasResult.error) throw empresasResult.error
       if (gruposResult.error) throw gruposResult.error
 
-      // Atualizar estados de clientes, empresas e grupos primeiro
+      // Atualizar estados imediatamente - SEM descriptografar
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
       setGruposSalvos(gruposResult.data || [])
       
-      // Descriptografar senhas de forma otimizada
-      const senhasData = senhasResult.data || []
-      const senhasDescriptografadas = senhasData.map(senha => {
-        try {
-          return {
-            ...senha,
-            senha: decryptPassword(senha.senha, user.id)
-          }
-        } catch (error) {
-          console.error(`Erro ao descriptografar senha ${senha.id}:`, error)
-          return senha
-        }
-      })
-      setSenhas(senhasDescriptografadas)
+      // Armazena senhas ENCRIPTADAS - descriptografia sob demanda
+      setSenhasEncriptadas(senhasResult.data || [])
+      // Limpar cache de senhas descriptografadas
+      setSenhasDescriptografadas(new Map())
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error)
       toast.error("Erro ao carregar dados")
     } finally {
       setLoading(false)
     }
+  }
+  
+  // Função para descriptografar uma senha sob demanda
+  const getDecryptedPassword = (senhaId: string): string => {
+    // Verificar cache primeiro
+    if (senhasDescriptografadas.has(senhaId)) {
+      return senhasDescriptografadas.get(senhaId)!
+    }
+    
+    // Descriptografar sob demanda
+    const senha = senhasEncriptadas.find(s => s.id === senhaId)
+    if (senha && user) {
+      try {
+        const decrypted = decryptPassword(senha.senha, user.id)
+        // Armazenar no cache
+        setSenhasDescriptografadas(prev => new Map(prev).set(senhaId, decrypted))
+        return decrypted
+      } catch {
+        return senha.senha // Retorna encriptada se falhar
+      }
+    }
+    return ''
   }
 
   useEffect(() => {
@@ -260,10 +277,11 @@ export default function CofreSenhas() {
 
   const handleEdit = (senha: CofreSenha) => {
     setEditingId(senha.id)
-    // A senha já está descriptografada no estado local
+    // Descriptografar sob demanda para edição
+    const senhaDecrypted = getDecryptedPassword(senha.id)
     form.reset({
       nome_acesso: senha.nome_acesso,
-      senha: senha.senha, // Já descriptografada
+      senha: senhaDecrypted,
       login: senha.login || "",
       url_acesso: senha.url_acesso || "",
       descricao: senha.descricao || "",
@@ -299,6 +317,8 @@ export default function CofreSenhas() {
     if (newVisible.has(id)) {
       newVisible.delete(id)
     } else {
+      // Ao tornar visível, descriptografar sob demanda
+      getDecryptedPassword(id)
       newVisible.add(id)
     }
     setVisiblePasswords(newVisible)
@@ -363,13 +383,13 @@ export default function CofreSenhas() {
     if (newSelected.has(clienteId)) {
       newSelected.delete(clienteId)
       // Remover todas as senhas desse cliente da seleção
-      const senhasDoCliente = senhas.filter(s => s.cliente_id === clienteId || s.clientes?.nome_cliente === clienteId)
+      const senhasDoCliente = senhasEncriptadas.filter(s => s.cliente_id === clienteId || s.clientes?.nome_cliente === clienteId)
       senhasDoCliente.forEach(s => selectedPasswordsForExport.delete(s.id))
       setSelectedPasswordsForExport(new Set(selectedPasswordsForExport))
     } else {
       newSelected.add(clienteId)
       // Adicionar todas as senhas desse cliente à seleção
-      const senhasDoCliente = senhas.filter(s => s.cliente_id === clienteId)
+      const senhasDoCliente = senhasEncriptadas.filter(s => s.cliente_id === clienteId)
       senhasDoCliente.forEach(s => selectedPasswordsForExport.add(s.id))
       setSelectedPasswordsForExport(new Set(selectedPasswordsForExport))
     }
@@ -388,82 +408,118 @@ export default function CofreSenhas() {
     setSelectedClientsForExport(new Set())
   }
 
-  const exportSelectedPasswords = (format: 'txt' | 'csv') => {
-    const selectedSenhas = senhas.filter(s => selectedPasswordsForExport.has(s.id))
+  // Helper para dividir array em chunks
+  const chunkArray = <T,>(array: T[], size: number): T[][] => {
+    const chunks: T[][] = []
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size))
+    }
+    return chunks
+  }
+
+  const exportSelectedPasswords = async (format: 'txt' | 'csv') => {
+    const selectedSenhas = senhasEncriptadas.filter(s => selectedPasswordsForExport.has(s.id))
     
     if (selectedSenhas.length === 0) {
       toast.error("Selecione pelo menos uma senha para exportar")
       return
     }
 
-    let content = ""
-    const timestamp = new Date().toLocaleDateString('pt-BR')
+    if (!user) return
 
-    if (format === 'txt') {
-      content = `=== COFRE DE SENHAS - EXPORTAÇÃO ===\n`
-      content += `Data de Exportação: ${timestamp}\n`
-      content += `Total de Senhas: ${selectedSenhas.length}\n`
-      content += `${'='.repeat(50)}\n\n`
-
-      // Agrupar por cliente
-      const grouped = selectedSenhas.reduce((acc, senha) => {
-        const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
-        if (!acc[clienteName]) acc[clienteName] = []
-        acc[clienteName].push(senha)
-        return acc
-      }, {} as Record<string, CofreSenha[]>)
-
-      Object.entries(grouped).forEach(([clienteName, senhasCliente]) => {
-        content += `\n📁 ${clienteName}\n`
-        content += `${'-'.repeat(40)}\n`
-        
-        senhasCliente.forEach(senha => {
-          content += `\n  🔐 ${senha.nome_acesso}\n`
-          if (senha.login) content += `     Login: ${senha.login}\n`
-          content += `     Senha: ${senha.senha}\n`
-          if (senha.url_acesso) content += `     URL: ${senha.url_acesso}\n`
-          if (senha.grupo) content += `     Grupo: ${senha.grupo}\n`
-          if (senha.descricao) content += `     Descrição: ${senha.descricao}\n`
-        })
-      })
-
-      // Adicionar publicidade no final
-      content += `\n\n${'='.repeat(50)}\n`
-      content += `Gerenciado por Maintly - Sistema de Gestão de Manutenções\n`
-      content += `🌐 https://maintly.chromotech.com.br/\n`
-      content += `${'='.repeat(50)}\n`
-    } else {
-      // CSV format com publicidade no cabeçalho
-      content = "=== Gerenciado por Maintly - https://maintly.chromotech.com.br/ ===\n"
-      content += "Cliente,Nome do Acesso,Login,Senha,URL,Grupo,Descrição\n"
-      selectedSenhas.forEach(senha => {
-        const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
-        const escapeCsv = (str: string | null) => {
-          if (!str) return ''
-          return `"${str.replace(/"/g, '""')}"`
+    setExportLoading(true)
+    
+    try {
+      // Descriptografar em chunks para não bloquear a UI
+      const chunks = chunkArray(selectedSenhas, 10)
+      const decryptedSenhas: CofreSenha[] = []
+      
+      for (const chunk of chunks) {
+        for (const senha of chunk) {
+          const decryptedPassword = senhasDescriptografadas.get(senha.id) || decryptPassword(senha.senha, user.id)
+          decryptedSenhas.push({
+            ...senha,
+            senha: decryptedPassword
+          })
         }
-        content += `${escapeCsv(clienteName)},${escapeCsv(senha.nome_acesso)},${escapeCsv(senha.login)},${escapeCsv(senha.senha)},${escapeCsv(senha.url_acesso)},${escapeCsv(senha.grupo)},${escapeCsv(senha.descricao)}\n`
-      })
-      // Adicionar publicidade no final do CSV
-      content += `\n"Gerenciado por Maintly - Sistema de Gestão de Manutenções","https://maintly.chromotech.com.br/","","","","",""\n`
+        // Permitir que a UI respire entre chunks
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+
+      let content = ""
+      const timestamp = new Date().toLocaleDateString('pt-BR')
+
+      if (format === 'txt') {
+        content = `=== COFRE DE SENHAS - EXPORTAÇÃO ===\n`
+        content += `Data de Exportação: ${timestamp}\n`
+        content += `Total de Senhas: ${decryptedSenhas.length}\n`
+        content += `${'='.repeat(50)}\n\n`
+
+        // Agrupar por cliente
+        const grouped = decryptedSenhas.reduce((acc, senha) => {
+          const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
+          if (!acc[clienteName]) acc[clienteName] = []
+          acc[clienteName].push(senha)
+          return acc
+        }, {} as Record<string, CofreSenha[]>)
+
+        Object.entries(grouped).forEach(([clienteName, senhasCliente]) => {
+          content += `\n📁 ${clienteName}\n`
+          content += `${'-'.repeat(40)}\n`
+          
+          senhasCliente.forEach(senha => {
+            content += `\n  🔐 ${senha.nome_acesso}\n`
+            if (senha.login) content += `     Login: ${senha.login}\n`
+            content += `     Senha: ${senha.senha}\n`
+            if (senha.url_acesso) content += `     URL: ${senha.url_acesso}\n`
+            if (senha.grupo) content += `     Grupo: ${senha.grupo}\n`
+            if (senha.descricao) content += `     Descrição: ${senha.descricao}\n`
+          })
+        })
+
+        // Adicionar publicidade no final
+        content += `\n\n${'='.repeat(50)}\n`
+        content += `Gerenciado por Maintly - Sistema de Gestão de Manutenções\n`
+        content += `🌐 https://maintly.chromotech.com.br/\n`
+        content += `${'='.repeat(50)}\n`
+      } else {
+        // CSV format com publicidade no cabeçalho
+        content = "=== Gerenciado por Maintly - https://maintly.chromotech.com.br/ ===\n"
+        content += "Cliente,Nome do Acesso,Login,Senha,URL,Grupo,Descrição\n"
+        decryptedSenhas.forEach(senha => {
+          const clienteName = senha.clientes?.nome_cliente || senha.empresas_terceiras?.nome_empresa || 'Sem Cliente'
+          const escapeCsv = (str: string | null) => {
+            if (!str) return ''
+            return `"${str.replace(/"/g, '""')}"`
+          }
+          content += `${escapeCsv(clienteName)},${escapeCsv(senha.nome_acesso)},${escapeCsv(senha.login)},${escapeCsv(senha.senha)},${escapeCsv(senha.url_acesso)},${escapeCsv(senha.grupo)},${escapeCsv(senha.descricao)}\n`
+        })
+        // Adicionar publicidade no final do CSV
+        content += `\n"Gerenciado por Maintly - Sistema de Gestão de Manutenções","https://maintly.chromotech.com.br/","","","","",""\n`
+      }
+
+      // Download do arquivo
+      const blob = new Blob([content], { type: format === 'txt' ? 'text/plain' : 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `senhas_export_${new Date().toISOString().split('T')[0]}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success(`${decryptedSenhas.length} senha(s) exportada(s) com sucesso!`)
+      setExportDialogOpen(false)
+      deselectAllPasswords()
+    } catch (error) {
+      console.error('Erro ao exportar:', error)
+      toast.error("Erro ao exportar senhas")
+    } finally {
+      setExportLoading(false)
     }
-
-    // Download do arquivo
-    const blob = new Blob([content], { type: format === 'txt' ? 'text/plain' : 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `senhas_export_${new Date().toISOString().split('T')[0]}.${format}`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    toast.success(`${selectedSenhas.length} senha(s) exportada(s) com sucesso!`)
-    setExportDialogOpen(false)
-    deselectAllPasswords()
   }
-  const senhasFiltradas = senhas.filter(senha => {
+  const senhasFiltradas = senhasEncriptadas.filter(senha => {
     // Verificar permissões se não for admin
     if (!permissions.isAdmin && senha.cliente_id) {
       if (!permissions.canViewClient(senha.cliente_id)) {
@@ -483,8 +539,11 @@ export default function CofreSenhas() {
     return grupoMatch && clienteMatch && empresaMatch
   })
 
+  // Interface para agrupamento de senhas
+  type SenhasAgrupadas = { senhas: CofreSenha[], clienteId: string, isEmpresa: boolean }
+  
   // Agrupar senhas por cliente
-  const senhasAgrupadasPorCliente = senhasFiltradas.reduce((acc, senha) => {
+  const senhasAgrupadasPorCliente: Record<string, SenhasAgrupadas> = senhasFiltradas.reduce((acc, senha) => {
     let chaveCliente = "Sem Cliente"
     let clienteId = ""
     
@@ -505,10 +564,10 @@ export default function CofreSenhas() {
     }
     acc[chaveCliente].senhas.push(senha)
     return acc
-  }, {} as Record<string, { senhas: CofreSenha[], clienteId: string, isEmpresa: boolean }>)
+  }, {} as Record<string, SenhasAgrupadas>)
 
   // Obter grupos únicos para o filtro
-  const gruposUnicos = [...new Set(senhas.map(senha => senha.grupo).filter(Boolean))]
+  const gruposUnicos = [...new Set(senhasEncriptadas.map(senha => senha.grupo).filter(Boolean))]
 
   if (loading) {
     return (
@@ -885,7 +944,7 @@ export default function CofreSenhas() {
             <SelectContent>
               <SelectItem value="todos">Todos os grupos</SelectItem>
               {gruposUnicos.map((grupo) => (
-                <SelectItem key={grupo} value={grupo}>
+                <SelectItem key={grupo as string} value={grupo as string}>
                   {grupo}
                 </SelectItem>
               ))}
@@ -1241,7 +1300,7 @@ export default function CofreSenhas() {
         ))}
       </div>
 
-      {senhas.length === 0 && (
+      {senhasEncriptadas.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <KeyRound className="h-12 w-12 text-muted-foreground mb-4" />
