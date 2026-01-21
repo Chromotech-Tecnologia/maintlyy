@@ -1,13 +1,30 @@
 import CryptoJS from 'crypto-js'
 import DOMPurify from 'dompurify'
 
+// Cache para chaves derivadas - evita recalcular PBKDF2 para cada senha
+const keyCache = new Map<string, string>()
+
 // Encryption key derivation from user ID (in production, use more robust key management)
 const deriveKey = (userId: string): string => {
+  // Verificar se já existe no cache
+  if (keyCache.has(userId)) {
+    return keyCache.get(userId)!
+  }
+  
   const salt = 'maintly-security-salt-2024'
-  return CryptoJS.PBKDF2(userId, salt, {
+  const key = CryptoJS.PBKDF2(userId, salt, {
     keySize: 256/32,
     iterations: 10000
   }).toString()
+  
+  // Armazenar no cache para uso futuro
+  keyCache.set(userId, key)
+  return key
+}
+
+// Limpar cache de chaves (usar ao fazer logout)
+export const clearKeyCache = (): void => {
+  keyCache.clear()
 }
 
 // Encrypt sensitive data
