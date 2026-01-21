@@ -723,6 +723,79 @@ export default function CofreSenhas() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {/* Cliente e Empresa Terceira no topo com busca */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="cliente_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cliente (Opcional)</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            value={field.value || ""}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              // Auto-preencher empresa terceira quando cliente é selecionado
+                              if (value && value !== "none" && value !== "") {
+                                const cliente = clientes.find(c => c.id === value);
+                                if (cliente?.empresa_terceira_id) {
+                                  form.setValue('empresa_terceira_id', cliente.empresa_terceira_id);
+                                }
+                              }
+                            }}
+                            options={[
+                              { value: "none", label: "Nenhum cliente" },
+                              ...clientes.map((cliente) => ({
+                                value: cliente.id,
+                                label: cliente.nome_cliente || ''
+                              }))
+                            ]}
+                            placeholder="Selecione..."
+                            searchPlaceholder="Buscar cliente..."
+                            emptyText="Nenhum cliente encontrado"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="empresa_terceira_id"
+                    render={({ field }) => {
+                      const clienteSelecionado = form.watch('cliente_id');
+                      const cliente = clientes.find(c => c.id === clienteSelecionado);
+                      const isDisabled = clienteSelecionado && clienteSelecionado !== "none" && cliente?.empresa_terceira_id;
+                      
+                      return (
+                        <FormItem>
+                          <FormLabel>Empresa Terceira (Opcional)</FormLabel>
+                          <FormControl>
+                            <Combobox
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                              options={[
+                                { value: "none", label: "Nenhuma empresa" },
+                                ...empresas.map((empresa) => ({
+                                  value: empresa.id,
+                                  label: empresa.nome_empresa
+                                }))
+                              ]}
+                              placeholder={isDisabled ? "Definido pelo cliente" : "Selecione..."}
+                              searchPlaceholder="Buscar empresa..."
+                              emptyText="Nenhuma empresa encontrada"
+                              className={isDisabled ? "opacity-60 pointer-events-none" : ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )
+                    }}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="nome_acesso"
@@ -752,42 +825,42 @@ export default function CofreSenhas() {
                     )}
                   />
 
-                <FormField
-                  control={form.control}
-                  name="senha"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <div className="relative">
-                            <Input 
-                              type={visiblePasswords.has('form-password') ? "text" : "password"}
-                              placeholder="••••••••" 
-                              {...field} 
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                              onClick={() => togglePasswordVisibility('form-password')}
-                            >
-                              {visiblePasswords.has('form-password') ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
+                  <FormField
+                    control={form.control}
+                    name="senha"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <Input 
+                                type={visiblePasswords.has('form-password') ? "text" : "password"}
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => togglePasswordVisibility('form-password')}
+                              >
+                                {visiblePasswords.has('form-password') ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                            <PasswordStrength password={field.value} />
+                            <PasswordGeneratorSimple onPasswordGenerated={(password) => form.setValue('senha', password)} />
                           </div>
-                          <PasswordStrength password={field.value} />
-                          <PasswordGeneratorSimple onPasswordGenerated={(password) => form.setValue('senha', password)} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <FormField
@@ -804,7 +877,6 @@ export default function CofreSenhas() {
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="grupo"
@@ -826,74 +898,6 @@ export default function CofreSenhas() {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-
-                  <FormField
-                    control={form.control}
-                    name="cliente_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cliente (Opcional)</FormLabel>
-                        <Select onValueChange={(value) => {
-                          field.onChange(value);
-                          // Auto-preencher empresa terceira quando cliente é selecionado
-                          if (value && value !== "none") {
-                            const cliente = clientes.find(c => c.id === value);
-                            if (cliente?.empresa_terceira_id) {
-                              form.setValue('empresa_terceira_id', cliente.empresa_terceira_id);
-                            }
-                          }
-                        }} value={field.value || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum cliente</SelectItem>
-                            {clientes.map((cliente) => (
-                              <SelectItem key={cliente.id} value={cliente.id}>
-                                {cliente.nome_cliente}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="empresa_terceira_id"
-                  render={({ field }) => {
-                    const clienteSelecionado = form.watch('cliente_id');
-                    const cliente = clientes.find(c => c.id === clienteSelecionado);
-                    const isDisabled = clienteSelecionado && clienteSelecionado !== "none" && cliente?.empresa_terceira_id;
-                    
-                    return (
-                      <FormItem>
-                        <FormLabel>Empresa Terceira (Opcional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={!!isDisabled}>
-                          <FormControl>
-                            <SelectTrigger className={isDisabled ? "opacity-60" : ""}>
-                              <SelectValue placeholder={isDisabled ? "Definido pelo cliente" : "Selecione..."} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhuma empresa</SelectItem>
-                            {empresas.map((empresa) => (
-                              <SelectItem key={empresa.id} value={empresa.id}>
-                                {empresa.nome_empresa}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )
-                  }}
                 />
 
                 <FormField
