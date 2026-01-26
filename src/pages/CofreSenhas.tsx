@@ -941,53 +941,62 @@ export default function CofreSenhas() {
             <Search className="h-4 w-4 text-muted-foreground" />
             Filtrar por grupo:
           </label>
-          <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todos os grupos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os grupos</SelectItem>
-              {gruposUnicos.map((grupo) => (
-                <SelectItem key={grupo as string} value={grupo as string}>
-                  {grupo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={filtroGrupo}
+            onValueChange={setFiltroGrupo}
+            options={[
+              { value: "todos", label: "Todos os grupos" },
+              ...gruposUnicos.map((grupo) => ({
+                value: grupo as string,
+                label: grupo as string
+              }))
+            ]}
+            placeholder="Todos os grupos"
+            searchPlaceholder="Buscar grupo..."
+            emptyText="Nenhum grupo encontrado"
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Filtrar por cliente:</label>
-          <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todos os clientes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os clientes</SelectItem>
-              {clientes.map((cliente) => (
-                <SelectItem key={cliente.id} value={cliente.id}>
-                  {cliente.nome_cliente}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <label className="text-sm font-medium flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            Filtrar por cliente:
+          </label>
+          <Combobox
+            value={filtroCliente}
+            onValueChange={setFiltroCliente}
+            options={[
+              { value: "todos", label: "Todos os clientes" },
+              ...clientes.map((cliente) => ({
+                value: cliente.id,
+                label: cliente.nome_cliente || ''
+              }))
+            ]}
+            placeholder="Todos os clientes"
+            searchPlaceholder="Buscar cliente..."
+            emptyText="Nenhum cliente encontrado"
+          />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Filtrar por empresa:</label>
-          <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todas as empresas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todas as empresas</SelectItem>
-              {empresas.map((empresa) => (
-                <SelectItem key={empresa.id} value={empresa.id}>
-                  {empresa.nome_empresa}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <label className="text-sm font-medium flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            Filtrar por empresa:
+          </label>
+          <Combobox
+            value={filtroEmpresa}
+            onValueChange={setFiltroEmpresa}
+            options={[
+              { value: "todos", label: "Todas as empresas" },
+              ...empresas.map((empresa) => ({
+                value: empresa.id,
+                label: empresa.nome_empresa
+              }))
+            ]}
+            placeholder="Todas as empresas"
+            searchPlaceholder="Buscar empresa..."
+            emptyText="Nenhuma empresa encontrada"
+          />
         </div>
 
         {(filtroGrupo !== "todos" || filtroCliente !== "todos" || filtroEmpresa !== "todos") && (

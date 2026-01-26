@@ -61,8 +61,10 @@ export function Combobox({
 
   const filteredOptions = React.useMemo(() => {
     if (!searchValue) return options
+    const searchLower = searchValue.toLowerCase().trim()
     return options.filter((option) =>
-      option.label.toLowerCase().includes(searchValue.toLowerCase())
+      option.label?.toLowerCase().includes(searchLower) ||
+      option.value?.toLowerCase().includes(searchLower)
     )
   }, [options, searchValue])
 
@@ -80,7 +82,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder={searchPlaceholder}
             value={searchValue}
