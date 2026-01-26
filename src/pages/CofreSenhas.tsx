@@ -769,25 +769,37 @@ export default function CofreSenhas() {
                       const cliente = clientes.find(c => c.id === clienteSelecionado);
                       const isDisabled = clienteSelecionado && clienteSelecionado !== "none" && cliente?.empresa_terceira_id;
                       
+                      // Encontrar o nome da empresa selecionada para mostrar quando desabilitado
+                      const empresaSelecionada = empresas.find(e => e.id === field.value);
+                      const empresaNome = empresaSelecionada?.nome_empresa || "";
+                      
                       return (
                         <FormItem>
                           <FormLabel>Empresa Terceira (Opcional)</FormLabel>
                           <FormControl>
-                            <Combobox
-                              value={field.value || ""}
-                              onValueChange={field.onChange}
-                              options={[
-                                { value: "none", label: "Nenhuma empresa" },
-                                ...empresas.map((empresa) => ({
-                                  value: empresa.id,
-                                  label: empresa.nome_empresa
-                                }))
-                              ]}
-                              placeholder={isDisabled ? "Definido pelo cliente" : "Selecione..."}
-                              searchPlaceholder="Buscar empresa..."
-                              emptyText="Nenhuma empresa encontrada"
-                              className={isDisabled ? "opacity-60 pointer-events-none" : ""}
-                            />
+                            {isDisabled ? (
+                              <Input
+                                value={empresaNome}
+                                disabled
+                                className="opacity-60"
+                                placeholder="Definido pelo cliente"
+                              />
+                            ) : (
+                              <Combobox
+                                value={field.value || ""}
+                                onValueChange={field.onChange}
+                                options={[
+                                  { value: "none", label: "Nenhuma empresa" },
+                                  ...empresas.map((empresa) => ({
+                                    value: empresa.id,
+                                    label: empresa.nome_empresa
+                                  }))
+                                ]}
+                                placeholder="Selecione..."
+                                searchPlaceholder="Buscar empresa..."
+                                emptyText="Nenhuma empresa encontrada"
+                              />
+                            )}
                           </FormControl>
                           <FormMessage />
                         </FormItem>
