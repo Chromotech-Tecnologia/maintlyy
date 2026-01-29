@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2 } from "lucide-react"
+import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
@@ -38,10 +38,13 @@ interface EmpresaTerceira {
 export default function Clientes() {
   const { user } = useAuth()
   const permissions = usePermissions()
+  const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = permissions
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewingCliente, setViewingCliente] = useState<Cliente | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const form = useForm<ClienteFormData>({
@@ -150,6 +153,11 @@ export default function Clientes() {
     setOpen(true)
   }
 
+  const handleView = (cliente: Cliente) => {
+    setViewingCliente(cliente)
+    setViewDialogOpen(true)
+  }
+
   const handleDelete = async (id: string) => {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return
@@ -188,7 +196,7 @@ export default function Clientes() {
             Gerencie seus clientes e contratos de manutenção
           </p>
         </div>
-        {(permissions.isAdmin || permissions.canCreateSystem('clientes')) && (
+        {(isAdmin || canCreateSystem('clientes')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
@@ -321,6 +329,57 @@ export default function Clientes() {
         )}
       </div>
 
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes do Cliente</DialogTitle>
+          </DialogHeader>
+          {viewingCliente && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Nome do Cliente</Label>
+                <p className="text-lg font-medium">{viewingCliente.nome_cliente}</p>
+              </div>
+              {viewingCliente.cnpj && (
+                <div>
+                  <Label className="text-muted-foreground">CNPJ</Label>
+                  <p>{viewingCliente.cnpj}</p>
+                </div>
+              )}
+              {viewingCliente.email && (
+                <div>
+                  <Label className="text-muted-foreground">Email</Label>
+                  <p>{viewingCliente.email}</p>
+                </div>
+              )}
+              {viewingCliente.telefone && (
+                <div>
+                  <Label className="text-muted-foreground">Telefone</Label>
+                  <p>{viewingCliente.telefone}</p>
+                </div>
+              )}
+              {viewingCliente.endereco && (
+                <div>
+                  <Label className="text-muted-foreground">Endereço</Label>
+                  <p>{viewingCliente.endereco}</p>
+                </div>
+              )}
+              {viewingCliente.empresas_terceiras && (
+                <div>
+                  <Label className="text-muted-foreground">Empresa Terceira</Label>
+                  <p>{viewingCliente.empresas_terceiras.nome_empresa}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Data de Criação</Label>
+                <p>{new Date(viewingCliente.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {clientes.map((cliente) => (
           <Card key={cliente.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
@@ -371,7 +430,17 @@ export default function Clientes() {
               )}
 
               <div className="flex gap-2 pt-2">
-                {(permissions.isAdmin || permissions.canEditClient(cliente.id)) && (
+                {(isAdmin || canViewDetailsSystem('clientes')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleView(cliente)}
+                    title="Ver detalhes"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+                {(isAdmin || permissions.canEditClient(cliente.id) || canEditSystem('clientes')) && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -382,7 +451,7 @@ export default function Clientes() {
                     Editar
                   </Button>
                 )}
-                {(permissions.isAdmin || permissions.canDeleteClient(cliente.id)) && (
+                {(isAdmin || permissions.canDeleteClient(cliente.id) || canDeleteSystem('clientes')) && (
                   <Button 
                     variant="outline" 
                     size="sm" 

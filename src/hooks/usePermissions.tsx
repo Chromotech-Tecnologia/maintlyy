@@ -17,7 +17,7 @@ interface UserPermissions {
   systemPermissions: any[]
 }
 
-export function usePermissions(): UserPermissions {
+export function usePermissions(): UserPermissions & { canViewDetailsSystem: (resource: string) => boolean } {
   const { user } = useAuth()
   const [clientPermissions, setClientPermissions] = useState<any[]>([])
   const [systemPermissions, setSystemPermissions] = useState<any[]>([])
@@ -101,6 +101,12 @@ export function usePermissions(): UserPermissions {
     return systemPermissions.some(p => p.resource_type === resource && p.can_view)
   }
 
+  const canViewDetailsSystem = (resource: string): boolean => {
+    // Admin sempre tem acesso total a todos os recursos
+    if (userProfile?.is_admin) return true
+    return systemPermissions.some(p => p.resource_type === resource && p.can_view_details)
+  }
+
   const canEditSystem = (resource: string): boolean => {
     // Admin sempre tem acesso total a todos os recursos
     if (userProfile?.is_admin) return true
@@ -125,6 +131,7 @@ export function usePermissions(): UserPermissions {
     canCreateClient,
     canDeleteClient,
     canViewSystem,
+    canViewDetailsSystem,
     canEditSystem,
     canCreateSystem,
     canDeleteSystem,

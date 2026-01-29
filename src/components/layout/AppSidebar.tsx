@@ -49,27 +49,44 @@ export function AppSidebar() {
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
 
-  const { isAdmin, hasAnyClientView, canViewSystem } = usePermissions()
+  const { isAdmin, canViewSystem } = usePermissions()
   
-  // Para os itens principais, usuários autenticados sempre podem ver
-  // As RLS policies garantem que só verão seus próprios dados
+  // Mapeamento de título para resource_type
+  const menuResourceMap: Record<string, string> = {
+    "Dashboard": "dashboard",
+    "Manutenções": "manutencoes",
+    "Clientes": "clientes",
+    "Empresas Terceiras": "empresas_terceiras",
+    "Equipes": "equipes",
+    "Tipos de Manutenção": "tipos_manutencao",
+    "Cofre de Senhas": "cofre_senhas",
+    "Perfis de Usuários": "perfis_usuarios",
+    "Permissões": "permissoes",
+  }
+  
+  // Para os itens principais, verifica permissão canViewSystem (Ver Menu)
   const filteredMainItems = mainItems.filter((item) => {
-    // Dashboard sempre visível
+    // Dashboard sempre visível para todos autenticados
     if (item.title === "Dashboard") return true
-    // Demais itens: admin vê tudo, ou usuário com permissão de sistema, ou qualquer usuário autenticado (verá seus próprios dados)
-    return true
+    // Admin vê tudo
+    if (isAdmin) return true
+    // Verifica permissão de "Ver Menu" (can_view)
+    const resource = menuResourceMap[item.title]
+    return resource ? canViewSystem(resource) : true
   })
   
-  // Segurança: todos podem acessar cofre de senhas (verão apenas suas senhas ou as que têm permissão)
+  // Segurança: verifica permissão de ver menu
   const filteredSecurityItems = securityItems.filter((item) => {
-    return true
+    if (isAdmin) return true
+    const resource = menuResourceMap[item.title]
+    return resource ? canViewSystem(resource) : true
   })
   
   // Sistema: apenas admin ou com permissão específica
   const filteredSystemItems = systemItems.filter((item) => {
-    if (item.title === "Perfis de Usuários") return isAdmin || canViewSystem("perfis_usuarios")
-    if (item.title === "Permissões") return isAdmin || canViewSystem("permissoes")
-    return true
+    if (isAdmin) return true
+    const resource = menuResourceMap[item.title]
+    return resource ? canViewSystem(resource) : false
   })
 
   const isActive = (path: string) => {

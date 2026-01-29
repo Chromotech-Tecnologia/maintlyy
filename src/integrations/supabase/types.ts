@@ -559,6 +559,7 @@ export type Database = {
           can_delete: boolean | null
           can_edit: boolean | null
           can_view: boolean | null
+          can_view_details: boolean | null
           created_at: string
           id: string
           resource_type: string
@@ -570,6 +571,7 @@ export type Database = {
           can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
+          can_view_details?: boolean | null
           created_at?: string
           id?: string
           resource_type: string
@@ -581,6 +583,7 @@ export type Database = {
           can_delete?: boolean | null
           can_edit?: boolean | null
           can_view?: boolean | null
+          can_view_details?: boolean | null
           created_at?: string
           id?: string
           resource_type?: string
