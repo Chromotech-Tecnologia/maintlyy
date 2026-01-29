@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, Calendar, Edit, Trash2, FileText } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Plus, Calendar, Edit, Trash2, FileText, Eye } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
@@ -23,9 +25,12 @@ interface TipoManutencao {
 
 export default function TiposManutencao() {
   const { user } = useAuth()
+  const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [tipos, setTipos] = useState<TipoManutencao[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewingTipo, setViewingTipo] = useState<TipoManutencao | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const form = useForm<TipoManutencaoFormData>({
@@ -105,6 +110,11 @@ export default function TiposManutencao() {
     setOpen(true)
   }
 
+  const handleView = (tipo: TipoManutencao) => {
+    setViewingTipo(tipo)
+    setViewDialogOpen(true)
+  }
+
   const handleDelete = async (id: string) => {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este tipo de manutenção?")) return
@@ -143,70 +153,99 @@ export default function TiposManutencao() {
             Gerencie os tipos de manutenção disponíveis
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Tipo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Tipo de Manutenção" : "Novo Tipo de Manutenção"}
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome_tipo_manutencao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Tipo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Manutenção Preventiva" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {(isAdmin || canCreateSystem('tipos_manutencao')) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Tipo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingId ? "Editar Tipo de Manutenção" : "Novo Tipo de Manutenção"}
+                </DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="nome_tipo_manutencao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Tipo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Manutenção Preventiva" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="descricao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Descrição detalhada do tipo de manutenção"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="descricao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descrição detalhada do tipo de manutenção"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-1">
-                    {editingId ? "Atualizar" : "Criar"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="flex-1">
+                      {editingId ? "Atualizar" : "Criar"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes do Tipo de Manutenção</DialogTitle>
+          </DialogHeader>
+          {viewingTipo && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Nome do Tipo</Label>
+                <p className="text-lg font-medium">{viewingTipo.nome_tipo_manutencao}</p>
+              </div>
+              {viewingTipo.descricao && (
+                <div>
+                  <Label className="text-muted-foreground">Descrição</Label>
+                  <p className="whitespace-pre-wrap">{viewingTipo.descricao}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Data de Criação</Label>
+                <p>{new Date(viewingTipo.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tipos.map((tipo) => (
@@ -241,23 +280,37 @@ export default function TiposManutencao() {
               )}
 
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEdit(tipo)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(tipo.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {(isAdmin || canViewDetailsSystem('tipos_manutencao')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleView(tipo)}
+                    title="Ver detalhes"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+                {(isAdmin || canEditSystem('tipos_manutencao')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEdit(tipo)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+                {(isAdmin || canDeleteSystem('tipos_manutencao')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(tipo.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

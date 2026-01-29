@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, UserCog, Edit, Trash2, Users } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Plus, UserCog, Edit, Trash2, Users, Eye } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
@@ -23,9 +25,12 @@ interface Equipe {
 
 export default function Equipes() {
   const { user } = useAuth()
+  const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [equipes, setEquipes] = useState<Equipe[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewingEquipe, setViewingEquipe] = useState<Equipe | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const form = useForm<EquipeFormData>({
@@ -105,6 +110,11 @@ export default function Equipes() {
     setOpen(true)
   }
 
+  const handleView = (equipe: Equipe) => {
+    setViewingEquipe(equipe)
+    setViewDialogOpen(true)
+  }
+
   const handleDelete = async (id: string) => {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir esta equipe?")) return
@@ -143,70 +153,99 @@ export default function Equipes() {
             Gerencie suas equipes de manutenção
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Equipe
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Equipe" : "Nova Equipe"}
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome_equipe"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome da Equipe</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome da equipe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {(isAdmin || canCreateSystem('equipes')) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Equipe
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingId ? "Editar Equipe" : "Nova Equipe"}
+                </DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="nome_equipe"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Equipe</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome da equipe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="membros"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Membros</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Lista de membros da equipe"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="membros"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Membros</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Lista de membros da equipe"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-1">
-                    {editingId ? "Atualizar" : "Criar"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" className="flex-1">
+                      {editingId ? "Atualizar" : "Criar"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes da Equipe</DialogTitle>
+          </DialogHeader>
+          {viewingEquipe && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Nome da Equipe</Label>
+                <p className="text-lg font-medium">{viewingEquipe.nome_equipe}</p>
+              </div>
+              {viewingEquipe.membros && (
+                <div>
+                  <Label className="text-muted-foreground">Membros</Label>
+                  <p className="whitespace-pre-wrap">{viewingEquipe.membros}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Data de Criação</Label>
+                <p>{new Date(viewingEquipe.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {equipes.map((equipe) => (
@@ -241,23 +280,37 @@ export default function Equipes() {
               )}
 
               <div className="flex gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEdit(equipe)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(equipe.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {(isAdmin || canViewDetailsSystem('equipes')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleView(equipe)}
+                    title="Ver detalhes"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                )}
+                {(isAdmin || canEditSystem('equipes')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEdit(equipe)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+                {(isAdmin || canDeleteSystem('equipes')) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(equipe.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

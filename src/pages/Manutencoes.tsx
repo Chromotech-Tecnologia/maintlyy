@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Clock, Calendar } from "lucide-react"
+import { Plus, Edit, Trash2, Clock, Calendar, Eye } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { ExcelImport } from "@/components/ExcelImport"
 
 interface Manutencao {
@@ -53,6 +54,7 @@ interface FormData {
 
 export default function Manutencoes() {
   const { user } = useAuth()
+  const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([])
   const [empresas, setEmpresas] = useState<any[]>([])
   const [clientes, setClientes] = useState<any[]>([])
@@ -60,6 +62,8 @@ export default function Manutencoes() {
   const [equipes, setEquipes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewingManutencao, setViewingManutencao] = useState<Manutencao | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     empresa_terceira_id: "",
@@ -205,6 +209,11 @@ export default function Manutencoes() {
     setOpen(true)
   }
 
+  const handleView = (manutencao: Manutencao) => {
+    setViewingManutencao(manutencao)
+    setViewDialogOpen(true)
+  }
+
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase
@@ -241,13 +250,14 @@ export default function Manutencoes() {
         
         <div className="flex gap-2">
           <ExcelImport onImportComplete={fetchData} />
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Manutenção
-              </Button>
-            </DialogTrigger>
+          {(isAdmin || canCreateSystem('manutencoes')) && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Manutenção
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingId ? "Editar" : "Nova"} Manutenção</DialogTitle>
@@ -415,8 +425,80 @@ export default function Manutencoes() {
             </form>
           </DialogContent>
         </Dialog>
+          )}
         </div>
       </div>
+
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Manutenção</DialogTitle>
+          </DialogHeader>
+          {viewingManutencao && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Cliente</Label>
+                  <p className="font-medium">{viewingManutencao.clientes?.nome_cliente || "Sem nome"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Empresa</Label>
+                  <p>{viewingManutencao.empresas_terceiras?.nome_empresa}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Tipo</Label>
+                  <p>{viewingManutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Equipe</Label>
+                  <p>{viewingManutencao.equipes?.nome_equipe || "-"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Data/Hora Início</Label>
+                  <p>{new Date(viewingManutencao.data_inicio).toLocaleDateString()} {viewingManutencao.hora_inicio}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Data/Hora Fim</Label>
+                  <p>{viewingManutencao.data_fim ? `${new Date(viewingManutencao.data_fim).toLocaleDateString()} ${viewingManutencao.hora_fim || ''}` : '-'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Tempo Total</Label>
+                  <p>{formatTempo(viewingManutencao.tempo_total)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <Badge variant={viewingManutencao.status === "Finalizado" ? "default" : "secondary"}>
+                    {viewingManutencao.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Solicitante</Label>
+                  <p>{viewingManutencao.solicitante || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Responsável</Label>
+                  <p>{viewingManutencao.responsavel || "-"}</p>
+                </div>
+              </div>
+              {viewingManutencao.descricao && (
+                <div>
+                  <Label className="text-muted-foreground">Descrição</Label>
+                  <p className="whitespace-pre-wrap">{viewingManutencao.descricao}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -473,12 +555,21 @@ export default function Manutencoes() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {(isAdmin || canViewDetailsSystem('manutencoes')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleView(manutencao)} title="Ver detalhes">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {(isAdmin || canEditSystem('manutencoes')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)} title="Editar">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {(isAdmin || canDeleteSystem('manutencoes')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)} title="Excluir">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

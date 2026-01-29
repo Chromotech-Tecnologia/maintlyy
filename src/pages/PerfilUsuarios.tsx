@@ -46,6 +46,7 @@ interface SystemPermission {
   user_id: string
   resource_type: string
   can_view: boolean
+  can_view_details: boolean
   can_edit: boolean
   can_create: boolean
   can_delete: boolean
@@ -251,7 +252,7 @@ export default function PerfilUsuarios() {
 
   const handleSystemPermissionChange = async (
     resource: string, 
-    permission: 'can_view' | 'can_edit' | 'can_create' | 'can_delete', 
+    permission: 'can_view' | 'can_view_details' | 'can_edit' | 'can_create' | 'can_delete', 
     value: boolean
   ) => {
     if (!selectedProfile) return
@@ -259,9 +260,10 @@ export default function PerfilUsuarios() {
     try {
       const existingPermission = systemPermissions.find(p => p.resource_type === resource)
 
-      // Regras de dependência: desmarcar Ver desmarca todas; marcar outra marca Ver
+      // Regras de dependência: desmarcar Ver Menu desmarca todas; marcar outra marca Ver Menu
       const updateData: any = { [permission]: value }
       if (permission === 'can_view' && !value) {
+        updateData.can_view_details = false
         updateData.can_edit = false
         updateData.can_create = false
         updateData.can_delete = false
@@ -281,6 +283,7 @@ export default function PerfilUsuarios() {
           user_id: selectedProfile.user_id,
           resource_type: resource,
           can_view: updateData.can_view ?? (permission === 'can_view' ? value : false),
+          can_view_details: updateData.can_view_details ?? (permission === 'can_view_details' ? value : false),
           can_edit: updateData.can_edit ?? (permission === 'can_edit' ? value : false),
           can_create: updateData.can_create ?? (permission === 'can_create' ? value : false),
           can_delete: updateData.can_delete ?? (permission === 'can_delete' ? value : false)
@@ -451,6 +454,7 @@ export default function PerfilUsuarios() {
             .from('user_system_permissions')
             .update({
               can_view: enable,
+              can_view_details: enable,
               can_edit: enable,
               can_create: enable,
               can_delete: enable
@@ -463,6 +467,7 @@ export default function PerfilUsuarios() {
               user_id: selectedProfile.user_id,
               resource_type: resource,
               can_view: enable,
+              can_view_details: enable,
               can_edit: enable,
               can_create: enable,
               can_delete: enable
@@ -489,6 +494,7 @@ export default function PerfilUsuarios() {
           .from('user_system_permissions')
           .update({
             can_view: enable,
+            can_view_details: enable,
             can_edit: enable,
             can_create: enable,
             can_delete: enable
@@ -501,6 +507,7 @@ export default function PerfilUsuarios() {
             user_id: selectedProfile.user_id,
             resource_type: resource,
             can_view: enable,
+            can_view_details: enable,
             can_edit: enable,
             can_create: enable,
             can_delete: enable
@@ -916,7 +923,7 @@ export default function PerfilUsuarios() {
                           </div>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id={`${resource}-view`}
@@ -926,7 +933,18 @@ export default function PerfilUsuarios() {
                               handleSystemPermissionChange(resource, 'can_view', !!checked)
                             }
                           />
-                          <Label htmlFor={`${resource}-view`}>Ver</Label>
+                          <Label htmlFor={`${resource}-view`} className="text-xs">Ver Menu</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${resource}-view-details`}
+                            checked={isAdminUser || permission?.can_view_details || false}
+                            disabled={isAdminUser}
+                            onCheckedChange={(checked) => 
+                              handleSystemPermissionChange(resource, 'can_view_details', !!checked)
+                            }
+                          />
+                          <Label htmlFor={`${resource}-view-details`} className="text-xs">Ver Detalhes</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -937,7 +955,7 @@ export default function PerfilUsuarios() {
                               handleSystemPermissionChange(resource, 'can_edit', !!checked)
                             }
                           />
-                          <Label htmlFor={`${resource}-edit`}>Editar</Label>
+                          <Label htmlFor={`${resource}-edit`} className="text-xs">Editar</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -948,7 +966,7 @@ export default function PerfilUsuarios() {
                               handleSystemPermissionChange(resource, 'can_create', !!checked)
                             }
                           />
-                          <Label htmlFor={`${resource}-create`}>Criar</Label>
+                          <Label htmlFor={`${resource}-create`} className="text-xs">Criar</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Checkbox
@@ -959,7 +977,7 @@ export default function PerfilUsuarios() {
                               handleSystemPermissionChange(resource, 'can_delete', !!checked)
                             }
                           />
-                          <Label htmlFor={`${resource}-delete`}>Excluir</Label>
+                          <Label htmlFor={`${resource}-delete`} className="text-xs">Excluir</Label>
                         </div>
                       </div>
                     </div>

@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Building2 } from "lucide-react"
+import { Plus, Edit, Trash2, Building2, Eye } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 
 interface EmpresaTerceira {
   id: string
@@ -18,9 +19,12 @@ interface EmpresaTerceira {
 
 export default function Empresas() {
   const { user } = useAuth()
+  const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewingEmpresa, setViewingEmpresa] = useState<EmpresaTerceira | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nomeEmpresa, setNomeEmpresa] = useState("")
 
@@ -87,6 +91,11 @@ export default function Empresas() {
     setOpen(true)
   }
 
+  const handleView = (empresa: EmpresaTerceira) => {
+    setViewingEmpresa(empresa)
+    setViewDialogOpen(true)
+  }
+
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase
@@ -114,45 +123,68 @@ export default function Empresas() {
           <p className="text-muted-foreground">Gerencie as empresas para as quais você presta serviços</p>
         </div>
         
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Empresa
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Editar" : "Nova"} Empresa Terceira</DialogTitle>
-              <DialogDescription>
-                Adicione uma empresa para a qual você presta serviços como terceirizado
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome_empresa">Nome da Empresa *</Label>
-                <Input
-                  id="nome_empresa"
-                  value={nomeEmpresa}
-                  onChange={(e) => setNomeEmpresa(e.target.value)}
-                  placeholder="Digite o nome da empresa"
-                  required
-                />
-              </div>
+        {(isAdmin || canCreateSystem('empresas_terceiras')) && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Empresa
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Editar" : "Nova"} Empresa Terceira</DialogTitle>
+                <DialogDescription>
+                  Adicione uma empresa para a qual você presta serviços como terceirizado
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingId ? "Atualizar" : "Criar"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome_empresa">Nome da Empresa *</Label>
+                  <Input
+                    id="nome_empresa"
+                    value={nomeEmpresa}
+                    onChange={(e) => setNomeEmpresa(e.target.value)}
+                    placeholder="Digite o nome da empresa"
+                    required
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    {editingId ? "Atualizar" : "Criar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes da Empresa</DialogTitle>
+          </DialogHeader>
+          {viewingEmpresa && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Nome da Empresa</Label>
+                <p className="text-lg font-medium">{viewingEmpresa.nome_empresa}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Data de Criação</Label>
+                <p>{new Date(viewingEmpresa.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -182,12 +214,21 @@ export default function Empresas() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => handleEdit(empresa)}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(empresa.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {(isAdmin || canViewDetailsSystem('empresas_terceiras')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleView(empresa)} title="Ver detalhes">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {(isAdmin || canEditSystem('empresas_terceiras')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(empresa)} title="Editar">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {(isAdmin || canDeleteSystem('empresas_terceiras')) && (
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(empresa.id)} title="Excluir">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

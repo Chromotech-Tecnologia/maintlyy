@@ -1129,7 +1129,7 @@ export default function CofreSenhas() {
                          <span className="text-xs font-medium text-muted-foreground">Senha:</span>
                          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
                            <span className="text-sm font-mono flex-1 truncate">
-                             {visiblePasswords.has(senha.id) ? senha.senha : "••••••••"}
+                             {visiblePasswords.has(senha.id) ? getDecryptedPassword(senha.id) : "••••••••"}
                            </span>
                            <Button
                              size="sm"
@@ -1146,7 +1146,7 @@ export default function CofreSenhas() {
                            <Button
                              size="sm"
                              variant="ghost"
-                             onClick={() => copyToClipboard(senha.senha)}
+                             onClick={() => copyToClipboard(getDecryptedPassword(senha.id))}
                              className="h-6 w-6 p-0"
                            >
                              <Copy className="h-3 w-3" />
