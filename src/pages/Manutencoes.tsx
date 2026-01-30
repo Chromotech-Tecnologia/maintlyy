@@ -269,26 +269,21 @@ export default function Manutencoes() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Empresa Terceira *</Label>
-                  <Select value={formData.empresa_terceira_id} onValueChange={(value) => setFormData({...formData, empresa_terceira_id: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {empresas.map((empresa) => (
-                        <SelectItem key={empresa.id} value={empresa.id}>
-                          {empresa.nome_empresa}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
                   <Label>Cliente *</Label>
-                  <Select value={formData.cliente_id} onValueChange={(value) => setFormData({...formData, cliente_id: value})}>
+                  <Select 
+                    value={formData.cliente_id} 
+                    onValueChange={(value) => {
+                      // Ao selecionar cliente, buscar empresa_terceira_id automaticamente
+                      const clienteSelecionado = clientes.find(c => c.id === value)
+                      setFormData({
+                        ...formData, 
+                        cliente_id: value,
+                        empresa_terceira_id: clienteSelecionado?.empresa_terceira_id || ""
+                      })
+                    }}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
+                      <SelectValue placeholder="Selecione o cliente..." />
                     </SelectTrigger>
                     <SelectContent>
                       {clientes.map((cliente) => (
@@ -298,6 +293,29 @@ export default function Manutencoes() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Empresa Terceira *</Label>
+                  <Select 
+                    value={formData.empresa_terceira_id} 
+                    onValueChange={(value) => setFormData({...formData, empresa_terceira_id: value})}
+                    disabled={!!formData.cliente_id}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.cliente_id ? empresas.find(e => e.id === formData.empresa_terceira_id)?.nome_empresa || "Selecionada automaticamente" : "Selecione..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {empresas.map((empresa) => (
+                        <SelectItem key={empresa.id} value={empresa.id}>
+                          {empresa.nome_empresa}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.cliente_id && (
+                    <p className="text-xs text-muted-foreground">Empresa selecionada automaticamente pelo cliente</p>
+                  )}
                 </div>
               </div>
               

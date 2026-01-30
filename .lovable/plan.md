@@ -23,20 +23,45 @@ Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
 - `can_create` = **Criar**
 - `can_delete` = **Excluir**
 
+#### 5. ✅ Criação e edição de usuários
+- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
+  - `Admins can insert any profile` (INSERT)
+  - `Admins can update any profile` (UPDATE)
+
+#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
+- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
+- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
+- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+
+#### 7. ✅ Permissões de Empresas Terceiras
+- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
+- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
+- Adicionada nova aba "Empresas" no dialog de permissões
+- Usuários com permissão de criar clientes podem ver lista de empresas
+
+#### 8. ✅ Permissões Granulares de Senhas por Cliente
+- Criado componente `PasswordPermissionsTab` com interface expandida
+- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
+- Usa tabela `user_password_permissions` para controle granular
+- Interface colapsível por cliente com carregamento sob demanda
+
 ---
 
 ## Arquivos Modificados
 
 1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-3. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-4. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 5 checkboxes (Ver Menu, Ver Detalhes, Editar, Criar, Excluir)
-5. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-6. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-7. **src/pages/Manutencoes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-9. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
+3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
+4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
+5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
+6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
+7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
+8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
+9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
+10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
+11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
+13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
 
 ---
 
@@ -64,3 +89,20 @@ Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
 | Cofre de Senhas       | cofre_senhas        |
 | Perfis de Usuários    | perfis_usuarios     |
 | Permissões            | permissoes          |
+
+## Estrutura de Permissões Atualizada
+
+```
+Módulo Sistema (user_system_permissions):
+  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
+
+Clientes (user_client_permissions):
+  - Por cliente: Ver, Editar, Criar, Excluir
+
+Empresas Terceiras (user_empresa_permissions):
+  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
+
+Senhas (user_password_permissions):
+  - Por senha individual: Ver, Editar
+  - Agrupadas por cliente na interface
+```
