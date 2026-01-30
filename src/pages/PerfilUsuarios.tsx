@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus, Check, X } from "lucide-react"
+import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus, Check, X, Building, Key } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
+import { PasswordPermissionsTab } from "@/components/permissions/PasswordPermissionsTab"
+import { EmpresaPermissionsTab } from "@/components/permissions/EmpresaPermissionsTab"
 import { toast } from "sonner"
 
 interface UserProfile {
@@ -733,10 +735,11 @@ export default function PerfilUsuarios() {
           </DialogHeader>
           
           <Tabs defaultValue="clientes" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="clientes">Clientes</TabsTrigger>
+              <TabsTrigger value="empresas">Empresas</TabsTrigger>
               <TabsTrigger value="sistema">Sistema</TabsTrigger>
-              <TabsTrigger value="senhas">Senhas por Cliente</TabsTrigger>
+              <TabsTrigger value="senhas">Senhas</TabsTrigger>
             </TabsList>
             
             <TabsContent value="clientes" className="space-y-4">
@@ -849,6 +852,10 @@ export default function PerfilUsuarios() {
                   )
                 })}
               </div>
+            </TabsContent>
+
+            <TabsContent value="empresas" className="space-y-4">
+              <EmpresaPermissionsTab selectedProfile={selectedProfile} />
             </TabsContent>
             
             <TabsContent value="sistema" className="space-y-4">
@@ -987,57 +994,11 @@ export default function PerfilUsuarios() {
             </TabsContent>
 
             <TabsContent value="senhas" className="space-y-4">
-              {selectedProfile?.is_admin && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">
-                      Este usuário é administrador e tem acesso a todas as senhas de todos os clientes
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {!selectedProfile?.is_admin && (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Configure quais senhas específicas este usuário pode visualizar para cada cliente que tem acesso.
-                  </p>
-                  
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {clientes.filter(cliente => {
-                      // Mostrar apenas clientes que o usuário tem permissão de visualização
-                      const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
-                      return permission?.can_view
-                    }).map((cliente) => {
-                      return (
-                        <div key={cliente.id} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-medium">{cliente.nome_cliente}</h4>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            As senhas deste cliente que o usuário pode ver são determinadas pela permissão de visualização do cliente na aba "Clientes".
-                          </p>
-                        </div>
-                      )
-                    })}
-                    
-                    {clientes.filter(cliente => {
-                      const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
-                      return permission?.can_view
-                    }).length === 0 && (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground">
-                          Este usuário não tem permissão para visualizar nenhum cliente.
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Configure as permissões na aba "Clientes" primeiro.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <PasswordPermissionsTab 
+                selectedProfile={selectedProfile}
+                clientPermissions={clientPermissions}
+                clientes={clientes}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>

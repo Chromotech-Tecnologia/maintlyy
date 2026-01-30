@@ -398,6 +398,8 @@ export type Database = {
       user_empresa_permissions: {
         Row: {
           can_create_manutencao: boolean | null
+          can_delete: boolean | null
+          can_edit: boolean | null
           can_view: boolean | null
           created_at: string | null
           empresa_terceira_id: string
@@ -407,6 +409,8 @@ export type Database = {
         }
         Insert: {
           can_create_manutencao?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
           can_view?: boolean | null
           created_at?: string | null
           empresa_terceira_id: string
@@ -416,6 +420,8 @@ export type Database = {
         }
         Update: {
           can_create_manutencao?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
           can_view?: boolean | null
           created_at?: string | null
           empresa_terceira_id?: string
