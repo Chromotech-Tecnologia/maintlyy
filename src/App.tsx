@@ -16,6 +16,7 @@ import CofreSenhas from "./pages/CofreSenhas";
 import ComingSoon from "./pages/ComingSoon";
 import Login from "./pages/Login";
 import PerfilUsuarios from "./pages/PerfilUsuarios";
+import PermissionProfiles from "./pages/PermissionProfiles";
 
 const queryClient = new QueryClient();
 
