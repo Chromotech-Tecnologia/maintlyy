@@ -228,11 +228,75 @@ export function PasswordPermissionsTab({
     )
   }
 
+  const toggleAllPasswordsGlobal = async (enable: boolean) => {
+    if (!selectedProfile) return
+
+    try {
+      // Load all senhas for all clients with permission
+      for (const cliente of clientesComPermissao) {
+        if (!senhasPorCliente[cliente.id]) {
+          const { data } = await supabase
+            .from('cofre_senhas')
+            .select('id, nome_acesso, login, cliente_id')
+            .eq('cliente_id', cliente.id)
+            .order('nome_acesso')
+          if (data) {
+            setSenhasPorCliente(prev => ({ ...prev, [cliente.id]: data }))
+            for (const senha of data) {
+              const existing = passwordPermissions.find(p => p.senha_id === senha.id)
+              if (existing) {
+                await supabase
+                  .from('user_password_permissions')
+                  .update({ can_view: enable, can_edit: enable })
+                  .eq('id', existing.id)
+              } else if (enable) {
+                await supabase
+                  .from('user_password_permissions')
+                  .insert({ user_id: selectedProfile.user_id, senha_id: senha.id, can_view: enable, can_edit: enable })
+              }
+            }
+          }
+        } else {
+          const senhas = senhasPorCliente[cliente.id]
+          for (const senha of senhas) {
+            const existing = passwordPermissions.find(p => p.senha_id === senha.id)
+            if (existing) {
+              await supabase
+                .from('user_password_permissions')
+                .update({ can_view: enable, can_edit: enable })
+                .eq('id', existing.id)
+            } else if (enable) {
+              await supabase
+                .from('user_password_permissions')
+                .insert({ user_id: selectedProfile.user_id, senha_id: senha.id, can_view: enable, can_edit: enable })
+            }
+          }
+        }
+      }
+
+      fetchPasswordPermissions(selectedProfile.user_id)
+      toast.success(enable ? 'Todas as senhas habilitadas!' : 'Todas as senhas desabilitadas!')
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error)
+      toast.error('Erro ao atualizar permissões')
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Expanda cada cliente para definir quais senhas específicas este usuário pode visualizar ou editar.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Expanda cada cliente para definir quais senhas específicas este usuário pode visualizar ou editar.
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => toggleAllPasswordsGlobal(true)}>
+            <Check className="w-4 h-4 mr-1" /> Marcar Todas
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toggleAllPasswordsGlobal(false)}>
+            <X className="w-4 h-4 mr-1" /> Desmarcar Todas
+          </Button>
+        </div>
+      </div>
       
       <div className="space-y-2 max-h-96 overflow-y-auto">
         {clientesComPermissao.map((cliente) => {

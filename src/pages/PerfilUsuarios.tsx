@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ interface AuthUser {
 
 export default function PerfilUsuarios() {
   const { user } = useAuth()
+  const permissions = usePermissions()
   const adminOps = useAdminOperations()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
@@ -707,14 +709,16 @@ export default function PerfilUsuarios() {
                     <Edit className="w-4 h-4 mr-2" />
                     Editar Perfil
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openPermissionsDialog(profile)}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Permissões
-                  </Button>
+                  {permissions.isAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openPermissionsDialog(profile)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Permissões
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
