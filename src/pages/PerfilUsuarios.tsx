@@ -64,6 +64,7 @@ interface AuthUser {
 
 export default function PerfilUsuarios() {
   const { user } = useAuth()
+  const permissions = usePermissions()
   const adminOps = useAdminOperations()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
