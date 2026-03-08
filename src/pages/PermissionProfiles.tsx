@@ -89,7 +89,7 @@ export default function PermissionProfiles() {
         .order('nome_perfil')
 
       if (error) throw error
-      setProfiles(data || [])
+      setProfiles((data as any[]) || [])
 
       // Count users per profile
       const { data: userProfiles } = await supabase
