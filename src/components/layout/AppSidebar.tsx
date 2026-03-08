@@ -88,7 +88,7 @@ export function AppSidebar() {
   })
   
   // Sistema: apenas admin ou com permissão específica
-  const filteredSystemItems = systemItems.filter((item) => {
+  const filteredSystemItems = getSystemItems(isAdmin).filter((item) => {
     if (isAdmin) return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : false
