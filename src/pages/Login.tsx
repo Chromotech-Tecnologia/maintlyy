@@ -17,6 +17,9 @@ export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignupPassword, setShowSignupPassword] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
