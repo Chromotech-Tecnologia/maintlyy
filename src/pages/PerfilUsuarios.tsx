@@ -707,14 +707,16 @@ export default function PerfilUsuarios() {
                     <Edit className="w-4 h-4 mr-2" />
                     Editar Perfil
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openPermissionsDialog(profile)}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Permissões
-                  </Button>
+                  {permissions.isAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openPermissionsDialog(profile)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Permissões
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
