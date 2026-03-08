@@ -38,10 +38,15 @@ const securityItems = [
   { title: "Cofre de Senhas", url: "/cofre", icon: KeyRound },
 ]
 
-const systemItems = [
-  { title: "Usuários", url: "/perfil-usuarios", icon: Settings },
-  { title: "Perfil", url: "/permissoes", icon: Shield },
-]
+const getSystemItems = (isAdmin: boolean) => {
+  const items = [
+    { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings },
+  ]
+  if (isAdmin) {
+    items.push({ title: "Perfil", url: "/permissoes", icon: Shield })
+  }
+  return items
+}
 
 export function AppSidebar() {
   const { state } = useSidebar()
