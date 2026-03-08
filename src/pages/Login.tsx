@@ -140,6 +140,15 @@ export default function Login() {
                   >
                     {loginForm.formState.isSubmitting ? "Entrando..." : "Entrar"}
                   </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      className="text-sm text-muted-foreground hover:text-primary underline"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
