@@ -10,8 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Users, Shield, Settings, UserPlus, Check, X, Building, Key } from "lucide-react"
+import { Plus, Edit, Users, Shield, UserPlus, Check, X, Key } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { PasswordPermissionsTab } from "@/components/permissions/PasswordPermissionsTab"
 import { EmpresaPermissionsTab } from "@/components/permissions/EmpresaPermissionsTab"
@@ -24,6 +25,13 @@ interface UserProfile {
   email: string | null
   is_admin: boolean
   created_at: string
+  permission_profile_id: string | null
+}
+
+interface PermissionProfile {
+  id: string
+  nome_perfil: string
+  is_admin_profile: boolean
 }
 
 interface ClientPermission {
@@ -44,44 +52,19 @@ interface Cliente {
   nome_cliente: string
 }
 
-interface SystemPermission {
-  id: string
-  user_id: string
-  resource_type: string
-  can_view: boolean
-  can_view_details: boolean
-  can_edit: boolean
-  can_create: boolean
-  can_delete: boolean
-}
-
-interface AuthUser {
-  id: string
-  email?: string
-  user_metadata: any
-  app_metadata: any
-}
-
 export default function PerfilUsuarios() {
   const { user } = useAuth()
   const permissions = usePermissions()
   const adminOps = useAdminOperations()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
-  const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
+  const [permissionProfiles, setPermissionProfiles] = useState<PermissionProfile[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
   const [clientPermissions, setClientPermissions] = useState<ClientPermission[]>([])
-  const [systemPermissions, setSystemPermissions] = useState<SystemPermission[]>([])
   const [loading, setLoading] = useState(true)
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false)
-  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    display_name: "",
-    email: "",
-    is_admin: false
-  })
+  const [recordPermissionsDialogOpen, setRecordPermissionsDialogOpen] = useState(false)
   const [newUserData, setNewUserData] = useState({
     email: "",
     password: "",
@@ -91,7 +74,7 @@ export default function PerfilUsuarios() {
 
   useEffect(() => {
     fetchProfiles()
-    fetchAuthUsers()
+    fetchPermissionProfiles()
     fetchClientes()
   }, [])
 
@@ -103,7 +86,7 @@ export default function PerfilUsuarios() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setProfiles(data || [])
+      setProfiles((data as any[]) || [])
     } catch (error) {
       console.error('Erro ao buscar perfis:', error)
       toast.error('Erro ao carregar perfis')
@@ -112,24 +95,25 @@ export default function PerfilUsuarios() {
     }
   }
 
-  const fetchAuthUsers = async () => {
+  const fetchPermissionProfiles = async () => {
     try {
-      const result = await adminOps.listUsers()
-      if (result.error) throw result.error
-      setAuthUsers(result.data?.users || [])
+      const { data, error } = await supabase
+        .from('permission_profiles')
+        .select('id, nome_perfil, is_admin_profile')
+        .order('nome_perfil')
+      if (error) throw error
+      setPermissionProfiles(data || [])
     } catch (error) {
-      console.error('Erro ao buscar usuários auth:', error)
+      console.error('Erro ao buscar perfis de permissão:', error)
     }
   }
 
   const fetchClientes = async () => {
     try {
-      // Admin vê todos os clientes, usuários comuns veem apenas os seus
       const { data, error } = await supabase
         .from('clientes')
         .select('id, nome_cliente')
         .order('nome_cliente')
-
       if (error) throw error
       setClientes(data || [])
     } catch (error) {
@@ -146,7 +130,6 @@ export default function PerfilUsuarios() {
 
       if (error) throw error
       
-      // Buscar detalhes dos clientes separadamente
       if (data && data.length > 0) {
         const clienteIds = data.map(p => p.cliente_id)
         const { data: clientesData } = await supabase
@@ -154,7 +137,6 @@ export default function PerfilUsuarios() {
           .select('id, nome_cliente')
           .in('id', clienteIds)
         
-        // Combinar dados
         const permissionsWithClients = data.map(permission => ({
           ...permission,
           clientes: clientesData?.find(c => c.id === permission.cliente_id)
@@ -169,30 +151,24 @@ export default function PerfilUsuarios() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  const handleAssignProfile = async (userProfileId: string, userId: string, permissionProfileId: string | null) => {
     try {
-      const profileData = {
-        user_id: user?.id,
-        display_name: formData.display_name,
-        email: formData.email,
-        is_admin: formData.is_admin
-      }
-
+      const profileData = permissionProfiles.find(p => p.id === permissionProfileId)
+      
       const { error } = await supabase
         .from('user_profiles')
-        .insert(profileData)
+        .update({ 
+          permission_profile_id: permissionProfileId,
+          is_admin: profileData?.is_admin_profile || false
+        })
+        .eq('user_id', userId)
 
       if (error) throw error
-
-      toast.success('Perfil criado com sucesso!')
-      setDialogOpen(false)
-      setFormData({ display_name: "", email: "", is_admin: false })
+      toast.success('Perfil atribuído com sucesso!')
       fetchProfiles()
     } catch (error: any) {
-      console.error('Erro ao criar perfil:', error)
-      toast.error('Erro ao criar perfil: ' + error.message)
+      console.error('Erro ao atribuir perfil:', error)
+      toast.error('Erro ao atribuir perfil: ' + error.message)
     }
   }
 
@@ -200,7 +176,6 @@ export default function PerfilUsuarios() {
     e.preventDefault()
     
     try {
-      // Usar signUp normal ao invés de admin.createUser
       const { data, error: authError } = await supabase.auth.signUp({
         email: newUserData.email,
         password: newUserData.password,
@@ -216,7 +191,6 @@ export default function PerfilUsuarios() {
       if (authError) throw authError
 
       if (data.user) {
-        // Criar perfil do usuário
         const { error: profileError } = await supabase
           .from('user_profiles')
           .insert({
@@ -233,79 +207,9 @@ export default function PerfilUsuarios() {
       setCreateUserDialogOpen(false)
       setNewUserData({ email: "", password: "", display_name: "", is_admin: false })
       fetchProfiles()
-      fetchAuthUsers()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
       toast.error('Erro ao criar usuário: ' + error.message)
-    }
-  }
-
-  const fetchSystemPermissions = async (profileUserId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_system_permissions')
-        .select('*')
-        .eq('user_id', profileUserId)
-
-      if (error) throw error
-      setSystemPermissions(data || [])
-    } catch (error) {
-      console.error('Erro ao buscar permissões de sistema:', error)
-    }
-  }
-
-  const handleSystemPermissionChange = async (
-    resource: string, 
-    permission: 'can_view' | 'can_view_details' | 'can_edit' | 'can_create' | 'can_delete', 
-    value: boolean
-  ) => {
-    if (!selectedProfile) return
-
-    try {
-      const existingPermission = systemPermissions.find(p => p.resource_type === resource)
-
-      // Regras de dependência: desmarcar Ver Menu desmarca todas; marcar outra marca Ver Menu
-      const updateData: any = { [permission]: value }
-      if (permission === 'can_view' && !value) {
-        updateData.can_view_details = false
-        updateData.can_edit = false
-        updateData.can_create = false
-        updateData.can_delete = false
-      } else if (permission !== 'can_view' && value) {
-        updateData.can_view = true
-      }
-
-      if (existingPermission) {
-        const { error } = await supabase
-          .from('user_system_permissions')
-          .update(updateData)
-          .eq('id', existingPermission.id)
-
-        if (error) throw error
-      } else {
-        const insertData: any = {
-          user_id: selectedProfile.user_id,
-          resource_type: resource,
-          can_view: updateData.can_view ?? (permission === 'can_view' ? value : false),
-          can_view_details: updateData.can_view_details ?? (permission === 'can_view_details' ? value : false),
-          can_edit: updateData.can_edit ?? (permission === 'can_edit' ? value : false),
-          can_create: updateData.can_create ?? (permission === 'can_create' ? value : false),
-          can_delete: updateData.can_delete ?? (permission === 'can_delete' ? value : false)
-        }
-        if (permission !== 'can_view' && value) insertData.can_view = true
-
-        const { error } = await supabase
-          .from('user_system_permissions')
-          .insert(insertData)
-
-        if (error) throw error
-      }
-
-      fetchSystemPermissions(selectedProfile.user_id)
-      toast.success('Permissão atualizada!')
-    } catch (error: any) {
-      console.error('Erro ao atualizar permissão:', error)
-      toast.error('Erro ao atualizar permissão')
     }
   }
 
@@ -313,20 +217,15 @@ export default function PerfilUsuarios() {
     if (!selectedProfile) return
 
     try {
-      // Verificar se já existe uma permissão para este cliente
       const existingPermission = clientPermissions.find(p => p.cliente_id === clienteId)
 
       if (existingPermission) {
         const updateData: any = { [permission]: value }
-        
-        // Se está desmarcando "can_view", desmarcar todas as outras também
         if (permission === 'can_view' && !value) {
           updateData.can_edit = false
           updateData.can_create = false  
           updateData.can_delete = false
-        }
-        // Se está marcando qualquer outra permissão, marcar "can_view" automaticamente
-        else if (permission !== 'can_view' && value) {
+        } else if (permission !== 'can_view' && value) {
           updateData.can_view = true
         }
 
@@ -334,32 +233,24 @@ export default function PerfilUsuarios() {
           .from('user_client_permissions')
           .update(updateData)
           .eq('id', existingPermission.id)
-
         if (error) throw error
       } else {
-        // Criar nova permissão com valores padrão
         const newPermission = {
           user_id: selectedProfile.user_id,
           cliente_id: clienteId,
-          can_view: permission === 'can_view' ? value : false,
+          can_view: permission === 'can_view' ? value : value,
           can_edit: permission === 'can_edit' ? value : false,
           can_create: permission === 'can_create' ? value : false,
           can_delete: permission === 'can_delete' ? value : false
         }
-        
-        // Se está marcando qualquer permissão, marcar "can_view" também
-        if (value) {
-          newPermission.can_view = true
-        }
+        if (value) newPermission.can_view = true
 
         const { error } = await supabase
           .from('user_client_permissions')
           .insert(newPermission)
-
         if (error) throw error
       }
 
-      // Recarregar permissões
       fetchClientPermissions(selectedProfile.user_id)
       toast.success('Permissão atualizada!')
     } catch (error: any) {
@@ -370,167 +261,36 @@ export default function PerfilUsuarios() {
 
   const toggleAllClientPermissions = async (enable: boolean) => {
     if (!selectedProfile) return
-
     try {
       for (const cliente of clientes) {
-        const existingPermission = clientPermissions.find(p => p.cliente_id === cliente.id)
-
-        if (existingPermission) {
+        const existing = clientPermissions.find(p => p.cliente_id === cliente.id)
+        if (existing) {
           await supabase
             .from('user_client_permissions')
-            .update({
-              can_view: enable,
-              can_edit: enable,
-              can_create: enable,
-              can_delete: enable
-            })
-            .eq('id', existingPermission.id)
-        } else {
+            .update({ can_view: enable, can_edit: enable, can_create: enable, can_delete: enable })
+            .eq('id', existing.id)
+        } else if (enable) {
           await supabase
             .from('user_client_permissions')
-            .insert({
-              user_id: selectedProfile.user_id,
-              cliente_id: cliente.id,
-              can_view: enable,
-              can_edit: enable,
-              can_create: enable,
-              can_delete: enable
-            })
+            .insert({ user_id: selectedProfile.user_id, cliente_id: cliente.id, can_view: enable, can_edit: enable, can_create: enable, can_delete: enable })
         }
       }
-
       fetchClientPermissions(selectedProfile.user_id)
-      toast.success(enable ? 'Todas as permissões habilitadas!' : 'Todas as permissões desabilitadas!')
+      toast.success(enable ? 'Todas habilitadas!' : 'Todas desabilitadas!')
     } catch (error: any) {
-      console.error('Erro ao atualizar permissões:', error)
       toast.error('Erro ao atualizar permissões')
     }
   }
 
-  const toggleClientPermissions = async (clienteId: string, enable: boolean) => {
-    if (!selectedProfile) return
-
-    try {
-      const existingPermission = clientPermissions.find(p => p.cliente_id === clienteId)
-
-      if (existingPermission) {
-        await supabase
-          .from('user_client_permissions')
-          .update({
-            can_view: enable,
-            can_edit: enable,
-            can_create: enable,
-            can_delete: enable
-          })
-          .eq('id', existingPermission.id)
-      } else {
-        await supabase
-          .from('user_client_permissions')
-          .insert({
-            user_id: selectedProfile.user_id,
-            cliente_id: clienteId,
-            can_view: enable,
-            can_edit: enable,
-            can_create: enable,
-            can_delete: enable
-          })
-      }
-
-      fetchClientPermissions(selectedProfile.user_id)
-      toast.success('Permissões atualizadas!')
-    } catch (error: any) {
-      console.error('Erro ao atualizar permissões:', error)
-      toast.error('Erro ao atualizar permissões')
-    }
-  }
-
-  const toggleAllSystemPermissions = async (enable: boolean) => {
-    if (!selectedProfile) return
-
-    try {
-      const resources = ['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas', 'perfis_usuarios', 'permissoes']
-
-      for (const resource of resources) {
-        const existingPermission = systemPermissions.find(p => p.resource_type === resource)
-
-        if (existingPermission) {
-          await supabase
-            .from('user_system_permissions')
-            .update({
-              can_view: enable,
-              can_view_details: enable,
-              can_edit: enable,
-              can_create: enable,
-              can_delete: enable
-            })
-            .eq('id', existingPermission.id)
-        } else {
-          await supabase
-            .from('user_system_permissions')
-            .insert({
-              user_id: selectedProfile.user_id,
-              resource_type: resource,
-              can_view: enable,
-              can_view_details: enable,
-              can_edit: enable,
-              can_create: enable,
-              can_delete: enable
-            })
-        }
-      }
-
-      fetchSystemPermissions(selectedProfile.user_id)
-      toast.success(enable ? 'Todas as permissões de sistema habilitadas!' : 'Todas as permissões de sistema desabilitadas!')
-    } catch (error: any) {
-      console.error('Erro ao atualizar permissões de sistema:', error)
-      toast.error('Erro ao atualizar permissões de sistema')
-    }
-  }
-
-  const toggleSystemResourcePermissions = async (resource: string, enable: boolean) => {
-    if (!selectedProfile) return
-
-    try {
-      const existingPermission = systemPermissions.find(p => p.resource_type === resource)
-
-      if (existingPermission) {
-        await supabase
-          .from('user_system_permissions')
-          .update({
-            can_view: enable,
-            can_view_details: enable,
-            can_edit: enable,
-            can_create: enable,
-            can_delete: enable
-          })
-          .eq('id', existingPermission.id)
-      } else {
-        await supabase
-          .from('user_system_permissions')
-          .insert({
-            user_id: selectedProfile.user_id,
-            resource_type: resource,
-            can_view: enable,
-            can_view_details: enable,
-            can_edit: enable,
-            can_create: enable,
-            can_delete: enable
-          })
-      }
-
-      fetchSystemPermissions(selectedProfile.user_id)
-      toast.success('Permissões atualizadas!')
-    } catch (error: any) {
-      console.error('Erro ao atualizar permissões:', error)
-      toast.error('Erro ao atualizar permissões')
-    }
-  }
-
-  const openPermissionsDialog = (profile: UserProfile) => {
+  const openRecordPermissions = (profile: UserProfile) => {
     setSelectedProfile(profile)
     fetchClientPermissions(profile.user_id)
-    fetchSystemPermissions(profile.user_id)
-    setPermissionsDialogOpen(true)
+    setRecordPermissionsDialogOpen(true)
+  }
+
+  const getProfileName = (profileId: string | null) => {
+    if (!profileId) return null
+    return permissionProfiles.find(p => p.id === profileId)
   }
 
   if (loading) {
@@ -538,7 +298,7 @@ export default function PerfilUsuarios() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando perfis...</p>
+          <p className="text-muted-foreground">Carregando usuários...</p>
         </div>
       </div>
     )
@@ -548,201 +308,173 @@ export default function PerfilUsuarios() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Perfis de Usuários</h1>
+          <h1 className="text-3xl font-bold text-foreground">Usuários</h1>
           <p className="text-muted-foreground">
-            Gerencie perfis e permissões de acesso
+            Gerencie usuários e atribua perfis de permissão
           </p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Criar Usuário
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Novo Usuário</DialogTitle>
-                <DialogDescription>
-                  Crie um novo usuário no sistema com login e senha
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <Label htmlFor="new_email">Email</Label>
-                  <Input
-                    id="new_email"
-                    type="email"
-                    value={newUserData.email}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="usuario@exemplo.com"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new_password">Senha</Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    value={newUserData.password}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Senha do usuário"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new_display_name">Nome de Exibição</Label>
-                  <Input
-                    id="new_display_name"
-                    value={newUserData.display_name}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, display_name: e.target.value }))}
-                    placeholder="Ex: João Silva"
-                    required
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="new_is_admin"
-                    checked={newUserData.is_admin}
-                    onCheckedChange={(checked) => setNewUserData(prev => ({ ...prev, is_admin: !!checked }))}
-                  />
-                  <Label htmlFor="new_is_admin">Administrador</Label>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit">Criar Usuário</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Vincular Perfil
-              </Button>
-            </DialogTrigger>
+        <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Criar Usuário
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Criar Novo Perfil</DialogTitle>
+              <DialogTitle>Criar Novo Usuário</DialogTitle>
               <DialogDescription>
-                Crie um novo perfil de usuário com permissões específicas
+                Crie um novo usuário no sistema com login e senha
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <Label htmlFor="display_name">Nome de Exibição</Label>
+                <Label htmlFor="new_email">Email</Label>
                 <Input
-                  id="display_name"
-                  value={formData.display_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
-                  placeholder="Ex: João Silva"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
+                  id="new_email"
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="usuario@exemplo.com"
                   required
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_admin"
-                  checked={formData.is_admin}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_admin: !!checked }))}
+              <div>
+                <Label htmlFor="new_password">Senha</Label>
+                <Input
+                  id="new_password"
+                  type="password"
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Senha do usuário"
+                  required
                 />
-                <Label htmlFor="is_admin">Administrador</Label>
+              </div>
+              <div>
+                <Label htmlFor="new_display_name">Nome de Exibição</Label>
+                <Input
+                  id="new_display_name"
+                  value={newUserData.display_name}
+                  onChange={(e) => setNewUserData(prev => ({ ...prev, display_name: e.target.value }))}
+                  placeholder="Ex: João Silva"
+                  required
+                />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit">Criar Perfil</Button>
+                <Button type="submit">Criar Usuário</Button>
               </div>
             </form>
           </DialogContent>
-          </Dialog>
-        </div>
+        </Dialog>
       </div>
 
-      <div className="grid gap-6">
-        {profiles.map((profile) => (
-          <Card key={profile.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Users className="w-5 h-5 text-primary" />
+      <div className="grid gap-4">
+        {profiles.map((profile) => {
+          const assignedProfile = getProfileName(profile.permission_profile_id)
+          
+          return (
+            <Card key={profile.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        {profile.display_name}
+                        {profile.is_admin && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Shield className="w-3 h-3" />
+                            Admin
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        {profile.email}
+                        {assignedProfile && (
+                          <Badge variant="outline" className="ml-2">
+                            {assignedProfile.nome_perfil}
+                          </Badge>
+                        )}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {profile.display_name}
-                      {profile.is_admin && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Shield className="w-3 h-3" />
-                          Admin
-                        </Badge>
+                  <div className="flex items-center gap-3">
+                    {permissions.isAdmin && (
+                      <div className="w-48">
+                        <Select
+                          value={profile.permission_profile_id || "none"}
+                          onValueChange={(value) => handleAssignProfile(
+                            profile.id,
+                            profile.user_id,
+                            value === "none" ? null : value
+                          )}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecionar perfil" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sem perfil</SelectItem>
+                            {permissionProfiles.map((pp) => (
+                              <SelectItem key={pp.id} value={pp.id}>
+                                {pp.nome_perfil}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProfile(profile)
+                          setEditProfileDialogOpen(true)
+                        }}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                      {permissions.isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openRecordPermissions(profile)}
+                        >
+                          <Key className="w-4 h-4 mr-2" />
+                          Acessos
+                        </Button>
                       )}
-                    </CardTitle>
-                    <CardDescription>{profile.email}</CardDescription>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedProfile(profile)
-                      setEditProfileDialogOpen(true)
-                    }}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar Perfil
-                  </Button>
-                  {permissions.isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openPermissionsDialog(profile)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Permissões
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+              </CardHeader>
+            </Card>
+          )
+        })}
       </div>
 
-      {/* Dialog de Permissões */}
-      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+      {/* Record-level Permissions Dialog */}
+      <Dialog open={recordPermissionsDialogOpen} onOpenChange={setRecordPermissionsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Permissões de {selectedProfile?.display_name}
+              Acessos de {selectedProfile?.display_name}
             </DialogTitle>
             <DialogDescription>
-              Configure as permissões de acesso deste usuário
+              Configure quais clientes, empresas e senhas este usuário pode acessar
             </DialogDescription>
           </DialogHeader>
           
           <Tabs defaultValue="clientes" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="clientes">Clientes</TabsTrigger>
               <TabsTrigger value="empresas">Empresas</TabsTrigger>
-              <TabsTrigger value="sistema">Sistema</TabsTrigger>
               <TabsTrigger value="senhas">Senhas</TabsTrigger>
             </TabsList>
             
@@ -760,21 +492,11 @@ export default function PerfilUsuarios() {
               
               {!selectedProfile?.is_admin && (
                 <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleAllClientPermissions(true)}
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Marcar Todos
+                  <Button variant="outline" size="sm" onClick={() => toggleAllClientPermissions(true)}>
+                    <Check className="w-4 h-4 mr-2" /> Marcar Todos
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleAllClientPermissions(false)}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Desmarcar Todos
+                  <Button variant="outline" size="sm" onClick={() => toggleAllClientPermissions(false)}>
+                    <X className="w-4 h-4 mr-2" /> Desmarcar Todos
                   </Button>
                 </div>
               )}
@@ -787,70 +509,22 @@ export default function PerfilUsuarios() {
                     <div key={cliente.id} className="p-3 border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <p className="font-medium">{cliente.nome_cliente}</p>
-                        {!isAdminUser && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleClientPermissions(cliente.id, true)}
-                            >
-                              <Check className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleClientPermissions(cliente.id, false)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`view-${cliente.id}`}
-                            checked={isAdminUser || permission?.can_view || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handlePermissionChange(cliente.id, 'can_view', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`view-${cliente.id}`}>Ver</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`edit-${cliente.id}`}
-                            checked={isAdminUser || permission?.can_edit || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handlePermissionChange(cliente.id, 'can_edit', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`edit-${cliente.id}`}>Editar</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`create-${cliente.id}`}
-                            checked={isAdminUser || permission?.can_create || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handlePermissionChange(cliente.id, 'can_create', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`create-${cliente.id}`}>Criar</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`delete-${cliente.id}`}
-                            checked={isAdminUser || permission?.can_delete || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handlePermissionChange(cliente.id, 'can_delete', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`delete-${cliente.id}`}>Excluir</Label>
-                        </div>
+                        {(['can_view', 'can_edit', 'can_create', 'can_delete'] as const).map((perm) => {
+                          const labels = { can_view: 'Ver', can_edit: 'Editar', can_create: 'Criar', can_delete: 'Excluir' }
+                          return (
+                            <div key={perm} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${perm}-${cliente.id}`}
+                                checked={isAdminUser || permission?.[perm] || false}
+                                disabled={isAdminUser}
+                                onCheckedChange={(checked) => handlePermissionChange(cliente.id, perm, !!checked)}
+                              />
+                              <Label htmlFor={`${perm}-${cliente.id}`}>{labels[perm]}</Label>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )
@@ -860,141 +534,6 @@ export default function PerfilUsuarios() {
 
             <TabsContent value="empresas" className="space-y-4">
               <EmpresaPermissionsTab selectedProfile={selectedProfile} />
-            </TabsContent>
-            
-            <TabsContent value="sistema" className="space-y-4">
-              {selectedProfile?.is_admin && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">
-                      Este usuário é administrador e tem acesso total a todos os recursos do sistema
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {!selectedProfile?.is_admin && (
-                <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleAllSystemPermissions(true)}
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Marcar Todos
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleAllSystemPermissions(false)}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Desmarcar Todos
-                  </Button>
-                </div>
-              )}
-
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {['manutencoes', 'dashboard', 'empresas_terceiras', 'equipes', 'tipos_manutencao', 'clientes', 'cofre_senhas', 'perfis_usuarios', 'permissoes'].map((resource) => {
-                  const permission = systemPermissions.find(p => p.resource_type === resource)
-                  const isAdminUser = selectedProfile?.is_admin
-                  const resourceName = {
-                    'manutencoes': 'Manutenções',
-                    'dashboard': 'Dashboard',
-                    'empresas_terceiras': 'Empresas Terceiras',
-                    'equipes': 'Equipes',
-                    'tipos_manutencao': 'Tipos de Manutenção',
-                    'clientes': 'Clientes',
-                    'cofre_senhas': 'Cofre de Senhas',
-                    'perfis_usuarios': 'Perfis de Usuários',
-                    'permissoes': 'Permissões'
-                  }[resource]
-                  
-                  return (
-                    <div key={resource} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{resourceName}</h4>
-                        {!isAdminUser && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleSystemResourcePermissions(resource, true)}
-                            >
-                              <Check className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleSystemResourcePermissions(resource, false)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${resource}-view`}
-                            checked={isAdminUser || permission?.can_view || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handleSystemPermissionChange(resource, 'can_view', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`${resource}-view`} className="text-xs">Ver Menu</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${resource}-view-details`}
-                            checked={isAdminUser || permission?.can_view_details || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handleSystemPermissionChange(resource, 'can_view_details', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`${resource}-view-details`} className="text-xs">Ver Detalhes</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${resource}-edit`}
-                            checked={isAdminUser || permission?.can_edit || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handleSystemPermissionChange(resource, 'can_edit', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`${resource}-edit`} className="text-xs">Editar</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${resource}-create`}
-                            checked={isAdminUser || permission?.can_create || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handleSystemPermissionChange(resource, 'can_create', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`${resource}-create`} className="text-xs">Criar</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`${resource}-delete`}
-                            checked={isAdminUser || permission?.can_delete || false}
-                            disabled={isAdminUser}
-                            onCheckedChange={(checked) => 
-                              handleSystemPermissionChange(resource, 'can_delete', !!checked)
-                            }
-                          />
-                          <Label htmlFor={`${resource}-delete`} className="text-xs">Excluir</Label>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
             </TabsContent>
 
             <TabsContent value="senhas" className="space-y-4">
