@@ -14,6 +14,8 @@ import { Wrench, Eye, EyeOff } from "lucide-react"
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showSignupPassword, setShowSignupPassword] = useState(false)
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
