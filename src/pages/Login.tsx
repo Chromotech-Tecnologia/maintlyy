@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
-import { Wrench } from "lucide-react"
+import { Wrench, Eye, EyeOff } from "lucide-react"
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
