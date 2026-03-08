@@ -6,6 +6,7 @@ interface AdminOperationRequest {
   userId?: string
   updateData?: {
     email?: string
+    password?: string
   }
 }
 
@@ -40,7 +41,7 @@ export function useAdminOperations() {
     return callAdminOperation({ operation: 'getUserById', userId })
   }
 
-  const updateUserById = async (userId: string, updateData: { email?: string }) => {
+  const updateUserById = async (userId: string, updateData: { email?: string; password?: string }) => {
     return callAdminOperation({ operation: 'updateUserById', userId, updateData })
   }
 

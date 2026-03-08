@@ -11,6 +11,7 @@ interface AdminOperationRequest {
   userId?: string
   updateData?: {
     email?: string
+    password?: string
   }
 }
 
