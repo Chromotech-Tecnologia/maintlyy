@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { Navigate } from "react-router-dom"
+import { supabase } from "@/integrations/supabase/client"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +17,9 @@ export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignupPassword, setShowSignupPassword] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -65,6 +69,63 @@ export default function Login() {
     } else {
       toast.success("Cadastro realizado com sucesso!")
     }
+  }
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      toast.error("Digite seu email")
+      return
+    }
+    setForgotLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+    setForgotLoading(false)
+    if (error) {
+      toast.error("Erro ao enviar email: " + error.message)
+    } else {
+      toast.success("Email de recuperação enviado! Verifique sua caixa de entrada.")
+      setShowForgotPassword(false)
+      setForgotEmail("")
+    }
+  }
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <img src="/lovable-uploads/d0885aef-121a-4a46-81cf-7d5f3c5199cc.png" alt="Maintly Logo" className="h-16 mx-auto" />
+            </div>
+            <CardTitle className="text-xl">Recuperar Senha</CardTitle>
+            <CardDescription>Digite seu email para receber o link de recuperação</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Input
+                type="email"
+                placeholder="seu@email.com"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleForgotPassword} disabled={forgotLoading}>
+              {forgotLoading ? "Enviando..." : "Enviar link de recuperação"}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-primary underline"
+                onClick={() => setShowForgotPassword(false)}
+              >
+                Voltar ao login
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -140,6 +201,15 @@ export default function Login() {
                   >
                     {loginForm.formState.isSubmitting ? "Entrando..." : "Entrar"}
                   </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      className="text-sm text-muted-foreground hover:text-primary underline"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>

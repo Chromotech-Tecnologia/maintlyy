@@ -15,6 +15,7 @@ import TiposManutencao from "./pages/TiposManutencao";
 import CofreSenhas from "./pages/CofreSenhas";
 import ComingSoon from "./pages/ComingSoon";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import PerfilUsuarios from "./pages/PerfilUsuarios";
 import PermissionProfiles from "./pages/PermissionProfiles";
 
@@ -29,6 +30,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/*" element={
               <ProtectedRoute>
                 <AppLayout>
