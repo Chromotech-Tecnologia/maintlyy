@@ -90,6 +90,7 @@ export function AppSidebar() {
   // Sistema: apenas admin ou com permissão específica
   const filteredSystemItems = getSystemItems(isAdmin).filter((item) => {
     if (isAdmin) return true
+    if (item.url === "/perfil-usuarios") return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : false
   })
