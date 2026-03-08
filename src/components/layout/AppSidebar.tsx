@@ -38,10 +38,15 @@ const securityItems = [
   { title: "Cofre de Senhas", url: "/cofre", icon: KeyRound },
 ]
 
-const systemItems = [
-  { title: "Usuários", url: "/perfil-usuarios", icon: Settings },
-  { title: "Perfil", url: "/permissoes", icon: Shield },
-]
+const getSystemItems = (isAdmin: boolean) => {
+  const items = [
+    { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings },
+  ]
+  if (isAdmin) {
+    items.push({ title: "Perfil", url: "/permissoes", icon: Shield })
+  }
+  return items
+}
 
 export function AppSidebar() {
   const { state } = useSidebar()
@@ -83,8 +88,9 @@ export function AppSidebar() {
   })
   
   // Sistema: apenas admin ou com permissão específica
-  const filteredSystemItems = systemItems.filter((item) => {
+  const filteredSystemItems = getSystemItems(isAdmin).filter((item) => {
     if (isAdmin) return true
+    if (item.url === "/perfil-usuarios") return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : false
   })

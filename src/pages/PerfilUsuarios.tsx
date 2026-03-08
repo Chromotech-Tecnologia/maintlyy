@@ -160,13 +160,15 @@ export default function PerfilUsuarios() {
     )
   }
 
+  const isSingleUser = profiles.length === 1
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Usuários</h1>
+          <h1 className="text-3xl font-bold text-foreground">{isSingleUser ? "Minha Conta" : "Usuários"}</h1>
           <p className="text-muted-foreground">
-            Gerencie usuários e atribua perfis de permissão
+            {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie usuários e atribua perfis de permissão"}
           </p>
         </div>
         <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
