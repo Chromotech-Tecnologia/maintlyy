@@ -332,6 +332,42 @@ export type Database = {
           },
         ]
       }
+      permission_profiles: {
+        Row: {
+          client_permissions_mode: string
+          created_at: string
+          empresa_permissions_mode: string
+          id: string
+          is_admin_profile: boolean
+          nome_perfil: string
+          system_permissions: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_permissions_mode?: string
+          created_at?: string
+          empresa_permissions_mode?: string
+          id?: string
+          is_admin_profile?: boolean
+          nome_perfil: string
+          system_permissions?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_permissions_mode?: string
+          created_at?: string
+          empresa_permissions_mode?: string
+          id?: string
+          is_admin_profile?: boolean
+          nome_perfil?: string
+          system_permissions?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tipos_manutencao: {
         Row: {
           created_at: string
@@ -536,6 +572,7 @@ export type Database = {
           email: string | null
           id: string
           is_admin: boolean | null
+          permission_profile_id: string | null
           updated_at: string
           user_id: string
         }
@@ -545,6 +582,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_admin?: boolean | null
+          permission_profile_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -554,10 +592,19 @@ export type Database = {
           email?: string | null
           id?: string
           is_admin?: boolean | null
+          permission_profile_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_permission_profile_id_fkey"
+            columns: ["permission_profile_id"]
+            isOneToOne: false
+            referencedRelation: "permission_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_system_permissions: {
         Row: {
