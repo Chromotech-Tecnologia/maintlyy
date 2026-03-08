@@ -39,8 +39,8 @@ const securityItems = [
 ]
 
 const systemItems = [
-  { title: "Perfis de Usuários", url: "/perfil-usuarios", icon: Settings },
-  { title: "Permissões", url: "/permissoes", icon: Shield },
+  { title: "Usuários", url: "/perfil-usuarios", icon: Settings },
+  { title: "Perfil", url: "/permissoes", icon: Shield },
 ]
 
 export function AppSidebar() {
@@ -60,8 +60,8 @@ export function AppSidebar() {
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",
-    "Perfis de Usuários": "perfis_usuarios",
-    "Permissões": "permissoes",
+    "Usuários": "perfis_usuarios",
+    "Perfil": "permissoes",
   }
   
   // Para os itens principais, verifica permissão canViewSystem (Ver Menu)
