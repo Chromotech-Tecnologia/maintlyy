@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Shield, Check, X, Building, Key, Users } from "lucide-react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2, Shield, Check, X, Users, Key } from "lucide-react"
+import { PasswordPermissionsTab } from "@/components/permissions/PasswordPermissionsTab"
+import { EmpresaPermissionsTab } from "@/components/permissions/EmpresaPermissionsTab"
 import { toast } from "sonner"
 
 interface PermissionProfile {
@@ -22,6 +23,31 @@ interface PermissionProfile {
   empresa_permissions_mode: string
   is_admin_profile: boolean
   created_at: string
+}
+
+interface UserProfile {
+  id: string
+  user_id: string
+  display_name: string | null
+  email: string | null
+  is_admin: boolean
+  permission_profile_id: string | null
+}
+
+interface ClientPermission {
+  id: string
+  user_id: string
+  cliente_id: string
+  can_view: boolean
+  can_edit: boolean
+  can_create: boolean
+  can_delete: boolean
+  clientes?: { nome_cliente: string }
+}
+
+interface Cliente {
+  id: string
+  nome_cliente: string
 }
 
 const SYSTEM_RESOURCES = [
@@ -77,6 +103,14 @@ export default function PermissionProfiles() {
   const [formPermissions, setFormPermissions] = useState<Record<string, any>>(emptyPermissions())
   const [usersCount, setUsersCount] = useState<Record<string, number>>({})
 
+  // Acessos state
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false)
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfile | null>(null)
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [clientPermissions, setClientPermissions] = useState<ClientPermission[]>([])
+
   useEffect(() => {
     fetchProfiles()
   }, [])
@@ -91,7 +125,6 @@ export default function PermissionProfiles() {
       if (error) throw error
       setProfiles((data as any[]) || [])
 
-      // Count users per profile
       const { data: userProfiles } = await supabase
         .from('user_profiles')
         .select('permission_profile_id')
@@ -123,7 +156,6 @@ export default function PermissionProfiles() {
     setEditingProfile(profile)
     setFormName(profile.nome_perfil)
     setFormIsAdmin(profile.is_admin_profile)
-    // Merge saved permissions with defaults
     const perms = emptyPermissions()
     Object.keys(profile.system_permissions || {}).forEach(resource => {
       if (perms[resource]) {
@@ -197,12 +229,10 @@ export default function PermissionProfiles() {
       updated[resource] = { ...updated[resource] }
       
       if (permission === 'can_view' && !value) {
-        // Uncheck all when unchecking view
         PERMISSION_TYPES.forEach(p => {
           updated[resource][p.key] = false
         })
       } else if (permission !== 'can_view' && value) {
-        // Auto-check view when checking others
         updated[resource].can_view = true
         updated[resource][permission] = true
       } else {
@@ -228,6 +258,103 @@ export default function PermissionProfiles() {
     })
   }
 
+  // === Acessos (record-level permissions) ===
+  const openAccessDialog = async () => {
+    setAccessDialogOpen(true)
+    setSelectedUserId(null)
+    setSelectedUserProfile(null)
+    setClientPermissions([])
+    
+    // Fetch users and clients
+    const [usersRes, clientesRes] = await Promise.all([
+      supabase.from('user_profiles').select('*').order('display_name'),
+      supabase.from('clientes').select('id, nome_cliente').order('nome_cliente')
+    ])
+    setAllUsers((usersRes.data as any[]) || [])
+    setClientes(clientesRes.data || [])
+  }
+
+  const handleSelectUser = async (userId: string) => {
+    setSelectedUserId(userId)
+    const userP = allUsers.find(u => u.user_id === userId) || null
+    setSelectedUserProfile(userP)
+    
+    // Fetch client permissions for this user
+    const { data } = await supabase
+      .from('user_client_permissions')
+      .select('*')
+      .eq('user_id', userId)
+
+    if (data && data.length > 0) {
+      const clienteIds = data.map(p => p.cliente_id)
+      const { data: clientesData } = await supabase
+        .from('clientes')
+        .select('id, nome_cliente')
+        .in('id', clienteIds)
+      
+      setClientPermissions(data.map(permission => ({
+        ...permission,
+        clientes: clientesData?.find(c => c.id === permission.cliente_id)
+      })))
+    } else {
+      setClientPermissions([])
+    }
+  }
+
+  const handleClientPermissionChange = async (clienteId: string, permission: 'can_view' | 'can_edit' | 'can_create' | 'can_delete', value: boolean) => {
+    if (!selectedUserId) return
+    try {
+      const existing = clientPermissions.find(p => p.cliente_id === clienteId)
+      if (existing) {
+        const updateData: any = { [permission]: value }
+        if (permission === 'can_view' && !value) {
+          updateData.can_edit = false
+          updateData.can_create = false
+          updateData.can_delete = false
+        } else if (permission !== 'can_view' && value) {
+          updateData.can_view = true
+        }
+        await supabase.from('user_client_permissions').update(updateData).eq('id', existing.id)
+      } else {
+        const newPerm = {
+          user_id: selectedUserId,
+          cliente_id: clienteId,
+          can_view: permission === 'can_view' ? value : value,
+          can_edit: permission === 'can_edit' ? value : false,
+          can_create: permission === 'can_create' ? value : false,
+          can_delete: permission === 'can_delete' ? value : false
+        }
+        if (value) newPerm.can_view = true
+        await supabase.from('user_client_permissions').insert(newPerm)
+      }
+      handleSelectUser(selectedUserId)
+      toast.success('Permissão atualizada!')
+    } catch (error: any) {
+      toast.error('Erro ao atualizar permissão')
+    }
+  }
+
+  const toggleAllClientPermissions = async (enable: boolean) => {
+    if (!selectedUserId) return
+    try {
+      for (const cliente of clientes) {
+        const existing = clientPermissions.find(p => p.cliente_id === cliente.id)
+        if (existing) {
+          await supabase.from('user_client_permissions')
+            .update({ can_view: enable, can_edit: enable, can_create: enable, can_delete: enable })
+            .eq('id', existing.id)
+        } else if (enable) {
+          await supabase.from('user_client_permissions')
+            .insert({ user_id: selectedUserId, cliente_id: cliente.id, can_view: enable, can_edit: enable, can_create: enable, can_delete: enable })
+        }
+      }
+      handleSelectUser(selectedUserId)
+      toast.success(enable ? 'Todas habilitadas!' : 'Todas desabilitadas!')
+    } catch {
+      toast.error('Erro ao atualizar permissões')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -248,10 +375,16 @@ export default function PermissionProfiles() {
             Crie e gerencie perfis de permissão para atribuir aos usuários
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Criar Perfil
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openAccessDialog}>
+            <Key className="mr-2 h-4 w-4" />
+            Acessos
+          </Button>
+          <Button className="bg-primary hover:bg-primary/90" onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Criar Perfil
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -303,7 +436,7 @@ export default function PermissionProfiles() {
         ))}
       </div>
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit Profile Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -406,6 +539,112 @@ export default function PermissionProfiles() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Acessos Dialog */}
+      <Dialog open={accessDialogOpen} onOpenChange={setAccessDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Acessos por Usuário</DialogTitle>
+            <DialogDescription>
+              Configure quais clientes, empresas e senhas cada usuário pode acessar
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Selecione o Usuário</Label>
+              <Select value={selectedUserId || ""} onValueChange={handleSelectUser}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um usuário..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUsers.map(u => (
+                    <SelectItem key={u.user_id} value={u.user_id}>
+                      {u.display_name || u.email} {u.is_admin ? '(Admin)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedUserId && (
+              <Tabs defaultValue="clientes" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="clientes">Clientes</TabsTrigger>
+                  <TabsTrigger value="empresas">Empresas</TabsTrigger>
+                  <TabsTrigger value="senhas">Senhas</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="clientes" className="space-y-4">
+                  {selectedUserProfile?.is_admin && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">
+                          Este usuário é administrador e tem acesso total a todos os clientes
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedUserProfile?.is_admin && (
+                    <div className="flex justify-end gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={() => toggleAllClientPermissions(true)}>
+                        <Check className="w-4 h-4 mr-2" /> Marcar Todos
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => toggleAllClientPermissions(false)}>
+                        <X className="w-4 h-4 mr-2" /> Desmarcar Todos
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {clientes.map((cliente) => {
+                      const permission = clientPermissions.find(p => p.cliente_id === cliente.id)
+                      const isAdmin = selectedUserProfile?.is_admin
+                      return (
+                        <div key={cliente.id} className="p-3 border rounded-lg">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-medium">{cliente.nome_cliente}</p>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {(['can_view', 'can_edit', 'can_create', 'can_delete'] as const).map((perm) => {
+                              const labels = { can_view: 'Ver', can_edit: 'Editar', can_create: 'Criar', can_delete: 'Excluir' }
+                              return (
+                                <div key={perm} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`access-${perm}-${cliente.id}`}
+                                    checked={isAdmin || permission?.[perm] || false}
+                                    disabled={!!isAdmin}
+                                    onCheckedChange={(checked) => handleClientPermissionChange(cliente.id, perm, !!checked)}
+                                  />
+                                  <Label htmlFor={`access-${perm}-${cliente.id}`}>{labels[perm]}</Label>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="empresas" className="space-y-4">
+                  <EmpresaPermissionsTab selectedProfile={selectedUserProfile} />
+                </TabsContent>
+
+                <TabsContent value="senhas" className="space-y-4">
+                  <PasswordPermissionsTab
+                    selectedProfile={selectedUserProfile}
+                    clientPermissions={clientPermissions}
+                    clientes={clientes}
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

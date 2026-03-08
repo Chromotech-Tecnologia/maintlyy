@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
+import { Eye, EyeOff, ChevronDown, ChevronRight, Lock } from "lucide-react"
 
 interface EditProfileDialogProps {
   open: boolean
@@ -30,6 +32,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
   })
   const [profileData, setProfileData] = useState<any>(null)
   const [authUser, setAuthUser] = useState<any>(null)
+  const [showPasswordSection, setShowPasswordSection] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (profile && open) {
@@ -40,8 +47,10 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
         department: "",
         is_admin: profile.is_admin || false
       })
+      setShowPasswordSection(false)
+      setNewPassword("")
+      setConfirmPassword("")
       
-      // Buscar dados adicionais do perfil
       fetchProfileData(profile.user_id)
       fetchAuthUser(profile.user_id)
     }
@@ -82,14 +91,25 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     e.preventDefault()
     
     try {
-      // Verificar se pode editar este perfil
       const canEdit = permissions.isAdmin || profile.user_id === user?.id
       if (!canEdit) {
         toast.error('Você não tem permissão para editar este perfil')
         return
       }
 
-      // Atualizar user_profiles
+      // Validate password if changing
+      if (showPasswordSection && newPassword) {
+        if (newPassword.length < 6) {
+          toast.error('A senha deve ter pelo menos 6 caracteres')
+          return
+        }
+        if (newPassword !== confirmPassword) {
+          toast.error('As senhas não coincidem')
+          return
+        }
+      }
+
+      // Update user_profiles
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
@@ -101,7 +121,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       if (profileError) throw profileError
 
-      // Atualizar ou inserir user_profile_data
+      // Update or insert user_profile_data
       const profileDataUpdate = {
         user_id: profile.user_id,
         display_name: formData.display_name,
@@ -114,20 +134,29 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
           .from('user_profile_data')
           .update(profileDataUpdate)
           .eq('user_id', profile.user_id)
-
         if (dataError) throw dataError
       } else {
         const { error: dataError } = await supabase
           .from('user_profile_data')
           .insert(profileDataUpdate)
-
         if (dataError) throw dataError
       }
 
-      // Se for admin e estiver editando email, atualizar também no auth
+      // Update email in auth if admin changed it
       if (permissions.isAdmin && formData.email !== profile.email) {
         const result = await adminOps.updateUserById(profile.user_id, { email: formData.email })
         if (result.error) throw result.error
+      }
+
+      // Update password if provided
+      if (showPasswordSection && newPassword) {
+        if (profile.user_id === user?.id) {
+          const { error: pwError } = await supabase.auth.updateUser({ password: newPassword })
+          if (pwError) throw pwError
+        } else if (permissions.isAdmin) {
+          const result = await adminOps.updateUserById(profile.user_id, { password: newPassword } as any)
+          if (result.error) throw result.error
+        }
       }
 
       toast.success('Perfil atualizado com sucesso!')
@@ -141,10 +170,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
   const canEditAdmin = permissions.isAdmin && profile?.user_id !== user?.id
   const canEditProfile = permissions.isAdmin || profile?.user_id === user?.id
+  const canChangePassword = permissions.isAdmin || profile?.user_id === user?.id
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
           <DialogDescription>
@@ -212,6 +242,63 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 />
                 <Label htmlFor="is_admin">Administrador</Label>
               </div>
+            )}
+
+            {/* Password Change Section */}
+            {canChangePassword && (
+              <Collapsible open={showPasswordSection} onOpenChange={setShowPasswordSection}>
+                <CollapsibleTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Alterar Senha
+                    </span>
+                    {showPasswordSection ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-3">
+                  <div>
+                    <Label htmlFor="new_password">Nova Senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="new_password"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="confirm_password">Confirmar Senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirm_password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Repita a nova senha"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             <div className="flex justify-end space-x-2">
