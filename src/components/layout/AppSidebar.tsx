@@ -60,8 +60,8 @@ export function AppSidebar() {
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",
-    "Perfis de Usuários": "perfis_usuarios",
-    "Permissões": "permissoes",
+    "Usuários": "perfis_usuarios",
+    "Perfil": "permissoes",
   }
   
   // Para os itens principais, verifica permissão canViewSystem (Ver Menu)

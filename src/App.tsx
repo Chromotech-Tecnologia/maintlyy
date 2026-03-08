@@ -41,10 +41,7 @@ const App = () => (
                     <Route path="/tipos-manutencao" element={<TiposManutencao />} />
                     <Route path="/cofre" element={<CofreSenhas />} />
                     <Route path="/perfil-usuarios" element={<PerfilUsuarios />} />
-                    <Route 
-                      path="/permissoes" 
-                      element={<ComingSoon title="Permissões" description="Módulo de controle de permissões" />} 
-                    />
+                    <Route path="/permissoes" element={<PermissionProfiles />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>
