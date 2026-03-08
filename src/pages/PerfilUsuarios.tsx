@@ -95,6 +95,62 @@ export default function PerfilUsuarios() {
         .eq('user_id', userId)
 
       if (error) throw error
+
+      // Sync access permissions from the profile to the user
+      if (permissionProfileId) {
+        const { data: permProfile } = await supabase
+          .from('permission_profiles')
+          .select('client_access, empresa_access, password_access')
+          .eq('id', permissionProfileId)
+          .single()
+
+        if (permProfile) {
+          const clientAccess = Array.isArray(permProfile.client_access) ? permProfile.client_access : []
+          const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
+          const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
+
+          // Sync client permissions
+          await supabase.from('user_client_permissions').delete().eq('user_id', userId)
+          if (clientAccess.length > 0) {
+            await supabase.from('user_client_permissions').insert(
+              clientAccess.map((ca: any) => ({
+                user_id: userId, cliente_id: ca.cliente_id,
+                can_view: ca.can_view || false, can_edit: ca.can_edit || false,
+                can_create: ca.can_create || false, can_delete: ca.can_delete || false
+              }))
+            )
+          }
+
+          // Sync empresa permissions
+          await supabase.from('user_empresa_permissions').delete().eq('user_id', userId)
+          if (empresaAccess.length > 0) {
+            await supabase.from('user_empresa_permissions').insert(
+              empresaAccess.map((ea: any) => ({
+                user_id: userId, empresa_terceira_id: ea.empresa_terceira_id,
+                can_view: ea.can_view || false, can_edit: ea.can_edit || false,
+                can_delete: ea.can_delete || false, can_create_manutencao: ea.can_create_manutencao || false
+              }))
+            )
+          }
+
+          // Sync password permissions
+          await supabase.from('user_password_permissions').delete().eq('user_id', userId)
+          if (passwordAccess.length > 0) {
+            await supabase.from('user_password_permissions').insert(
+              passwordAccess.map((pa: any) => ({
+                user_id: userId, senha_id: pa.senha_id,
+                can_view: pa.can_view || false, can_edit: pa.can_edit || false
+              }))
+            )
+          }
+        }
+      } else {
+        // If removing profile, clear access permissions
+        await supabase.from('user_client_permissions').delete().eq('user_id', userId)
+        await supabase.from('user_empresa_permissions').delete().eq('user_id', userId)
+        await supabase.from('user_password_permissions').delete().eq('user_id', userId)
+      }
+
       toast.success('Perfil atribuído com sucesso!')
       fetchProfiles()
     } catch (error: any) {

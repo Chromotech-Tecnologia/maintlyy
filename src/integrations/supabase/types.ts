@@ -334,34 +334,43 @@ export type Database = {
       }
       permission_profiles: {
         Row: {
+          client_access: Json
           client_permissions_mode: string
           created_at: string
+          empresa_access: Json
           empresa_permissions_mode: string
           id: string
           is_admin_profile: boolean
           nome_perfil: string
+          password_access: Json
           system_permissions: Json
           updated_at: string
           user_id: string
         }
         Insert: {
+          client_access?: Json
           client_permissions_mode?: string
           created_at?: string
+          empresa_access?: Json
           empresa_permissions_mode?: string
           id?: string
           is_admin_profile?: boolean
           nome_perfil: string
+          password_access?: Json
           system_permissions?: Json
           updated_at?: string
           user_id: string
         }
         Update: {
+          client_access?: Json
           client_permissions_mode?: string
           created_at?: string
+          empresa_access?: Json
           empresa_permissions_mode?: string
           id?: string
           is_admin_profile?: boolean
           nome_perfil?: string
+          password_access?: Json
           system_permissions?: Json
           updated_at?: string
           user_id?: string
