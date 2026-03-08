@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
