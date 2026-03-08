@@ -39,8 +39,8 @@ const securityItems = [
 ]
 
 const systemItems = [
-  { title: "Perfis de Usuários", url: "/perfil-usuarios", icon: Settings },
-  { title: "Permissões", url: "/permissoes", icon: Shield },
+  { title: "Usuários", url: "/perfil-usuarios", icon: Settings },
+  { title: "Perfil", url: "/permissoes", icon: Shield },
 ]
 
 export function AppSidebar() {
