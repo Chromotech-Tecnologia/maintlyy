@@ -31,6 +31,7 @@ interface CofreSenha {
   cliente_id: string | null
   empresa_terceira_id: string | null
   created_at: string
+  user_id: string
   clientes?: { nome_cliente: string }
   empresas_terceiras?: { nome_empresa: string }
 }
