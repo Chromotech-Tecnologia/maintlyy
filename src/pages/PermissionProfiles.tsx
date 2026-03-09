@@ -189,7 +189,10 @@ export default function PermissionProfiles() {
         nome_perfil: formName.trim(),
         is_admin_profile: formIsAdmin,
         system_permissions: formIsAdmin ? allPermissionsEnabled() : formPermissions,
-        user_id: user!.id
+        client_access: formClientAccess,
+        empresa_access: formEmpresaAccess,
+        password_access: formPasswordAccess,
+        user_id: user!.id,
       }
 
       if (editingProfile) {
@@ -198,6 +201,18 @@ export default function PermissionProfiles() {
           .update(data)
           .eq('id', editingProfile.id)
         if (error) throw error
+
+        try {
+          await syncProfileAccessToUsers(editingProfile.id, {
+            clientAccess: formClientAccess,
+            empresaAccess: formEmpresaAccess,
+            passwordAccess: formPasswordAccess,
+          })
+        } catch (syncError: any) {
+          console.error('Erro ao sincronizar acessos:', syncError)
+          toast.error('Perfil salvo, mas falhou a sincronização de acessos para usuários vinculados')
+        }
+
         toast.success('Perfil atualizado!')
       } else {
         const { error } = await supabase
