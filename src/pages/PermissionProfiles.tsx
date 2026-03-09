@@ -117,9 +117,9 @@ export default function PermissionProfiles() {
   const [formIsAdmin, setFormIsAdmin] = useState(false)
   const [formPermissions, setFormPermissions] = useState<Record<string, any>>(emptyPermissions())
 
-  const [formClientAccess, setFormClientAccess] = useState<any[]>([])
-  const [formEmpresaAccess, setFormEmpresaAccess] = useState<any[]>([])
-  const [formPasswordAccess, setFormPasswordAccess] = useState<any[]>([])
+  const [formClientAccess, setFormClientAccess] = useState<ClientAccessRow[]>([])
+  const [formEmpresaAccess, setFormEmpresaAccess] = useState<EmpresaAccessRow[]>([])
+  const [formPasswordAccess, setFormPasswordAccess] = useState<PasswordAccessRow[]>([])
 
   const [usersCount, setUsersCount] = useState<Record<string, number>>({})
 

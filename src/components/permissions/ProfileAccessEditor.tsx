@@ -52,13 +52,13 @@ interface ProfileAccessEditorProps {
   resetKey?: string
 
   clientAccess: ClientAccessRow[]
-  setClientAccess: React.Dispatch<React.SetStateAction<ClientAccessRow[]>>
+  setClientAccess: Dispatch<SetStateAction<ClientAccessRow[]>>
 
   empresaAccess: EmpresaAccessRow[]
-  setEmpresaAccess: React.Dispatch<React.SetStateAction<EmpresaAccessRow[]>>
+  setEmpresaAccess: Dispatch<SetStateAction<EmpresaAccessRow[]>>
 
   passwordAccess: PasswordAccessRow[]
-  setPasswordAccess: React.Dispatch<React.SetStateAction<PasswordAccessRow[]>>
+  setPasswordAccess: Dispatch<SetStateAction<PasswordAccessRow[]>>
 }
 
 export function ProfileAccessEditor({
