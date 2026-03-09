@@ -11,6 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Edit, Trash2, Shield, Check, X, Users, Key } from "lucide-react"
 import { ProfileAccessDialog } from "@/components/permissions/ProfileAccessDialog"
+import {
+  ProfileAccessEditor,
+  type ClientAccessRow,
+  type EmpresaAccessRow,
+  type PasswordAccessRow,
+} from "@/components/permissions/ProfileAccessEditor"
+import { syncProfileAccessToUsers } from "@/lib/permissions/syncProfileAccessToUsers"
 import { toast } from "sonner"
 
 interface PermissionProfile {
@@ -109,6 +116,11 @@ export default function PermissionProfiles() {
   const [formName, setFormName] = useState("")
   const [formIsAdmin, setFormIsAdmin] = useState(false)
   const [formPermissions, setFormPermissions] = useState<Record<string, any>>(emptyPermissions())
+
+  const [formClientAccess, setFormClientAccess] = useState<ClientAccessRow[]>([])
+  const [formEmpresaAccess, setFormEmpresaAccess] = useState<EmpresaAccessRow[]>([])
+  const [formPasswordAccess, setFormPasswordAccess] = useState<PasswordAccessRow[]>([])
+
   const [usersCount, setUsersCount] = useState<Record<string, number>>({})
 
   // Access dialog state
@@ -153,6 +165,9 @@ export default function PermissionProfiles() {
     setFormName("")
     setFormIsAdmin(false)
     setFormPermissions(emptyPermissions())
+    setFormClientAccess([])
+    setFormEmpresaAccess([])
+    setFormPasswordAccess([])
     setDialogOpen(true)
   }
 
@@ -161,6 +176,9 @@ export default function PermissionProfiles() {
     setFormName(profile.nome_perfil)
     setFormIsAdmin(profile.is_admin_profile)
     setFormPermissions(normalizeSystemPermissions(profile.system_permissions))
+    setFormClientAccess(Array.isArray(profile.client_access) ? [...profile.client_access] : [])
+    setFormEmpresaAccess(Array.isArray(profile.empresa_access) ? [...profile.empresa_access] : [])
+    setFormPasswordAccess(Array.isArray(profile.password_access) ? [...profile.password_access] : [])
     setDialogOpen(true)
   }
 
@@ -176,7 +194,10 @@ export default function PermissionProfiles() {
         nome_perfil: formName.trim(),
         is_admin_profile: formIsAdmin,
         system_permissions: formIsAdmin ? allPermissionsEnabled() : formPermissions,
-        user_id: user!.id
+        client_access: formClientAccess,
+        empresa_access: formEmpresaAccess,
+        password_access: formPasswordAccess,
+        user_id: user!.id,
       }
 
       if (editingProfile) {
@@ -185,6 +206,18 @@ export default function PermissionProfiles() {
           .update(data)
           .eq('id', editingProfile.id)
         if (error) throw error
+
+        try {
+          await syncProfileAccessToUsers(editingProfile.id, {
+            clientAccess: formClientAccess,
+            empresaAccess: formEmpresaAccess,
+            passwordAccess: formPasswordAccess,
+          })
+        } catch (syncError: any) {
+          console.error('Erro ao sincronizar acessos:', syncError)
+          toast.error('Perfil salvo, mas falhou a sincronização de acessos para usuários vinculados')
+        }
+
         toast.success('Perfil atualizado!')
       } else {
         const { error } = await supabase
@@ -391,51 +424,71 @@ export default function PermissionProfiles() {
             )}
 
             {!formIsAdmin && (
-              <>
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Permissões do Sistema</h3>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => toggleAllPermissions(true)}>
-                      <Check className="w-4 h-4 mr-1" /> Marcar Todos
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => toggleAllPermissions(false)}>
-                      <X className="w-4 h-4 mr-1" /> Desmarcar Todos
-                    </Button>
-                  </div>
-                </div>
+              <Tabs defaultValue="sistema" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="sistema">Sistema</TabsTrigger>
+                  <TabsTrigger value="acessos">Acessos</TabsTrigger>
+                </TabsList>
 
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {SYSTEM_RESOURCES.map((resource) => (
-                    <div key={resource.key} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium">{resource.label}</h4>
-                        <div className="flex gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => toggleResourcePermissions(resource.key, true)}>
-                            <Check className="w-3 h-3" />
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => toggleResourcePermissions(resource.key, false)}>
-                            <X className="w-3 h-3" />
-                          </Button>
+                <TabsContent value="sistema" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">Permissões do Sistema</h3>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => toggleAllPermissions(true)}>
+                        <Check className="w-4 h-4 mr-1" /> Marcar Todos
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => toggleAllPermissions(false)}>
+                        <X className="w-4 h-4 mr-1" /> Desmarcar Todos
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {SYSTEM_RESOURCES.map((resource) => (
+                      <div key={resource.key} className="p-4 border border-border rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">{resource.label}</h4>
+                          <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => toggleResourcePermissions(resource.key, true)}>
+                              <Check className="w-3 h-3" />
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => toggleResourcePermissions(resource.key, false)}>
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          {PERMISSION_TYPES.map((perm) => (
+                            <div key={perm.key} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${resource.key}-${perm.key}`}
+                                checked={formPermissions[resource.key]?.[perm.key] || false}
+                                onCheckedChange={(checked) => handlePermissionChange(resource.key, perm.key, !!checked)}
+                              />
+                              <Label htmlFor={`${resource.key}-${perm.key}`} className="text-xs">
+                                {perm.label}
+                              </Label>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        {PERMISSION_TYPES.map((perm) => (
-                          <div key={perm.key} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${resource.key}-${perm.key}`}
-                              checked={formPermissions[resource.key]?.[perm.key] || false}
-                              onCheckedChange={(checked) => 
-                                handlePermissionChange(resource.key, perm.key, !!checked)
-                              }
-                            />
-                            <Label htmlFor={`${resource.key}-${perm.key}`} className="text-xs">{perm.label}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="acessos" className="space-y-4">
+                  <ProfileAccessEditor
+                    active={dialogOpen}
+                    resetKey={editingProfile?.id || "new"}
+                    clientAccess={formClientAccess}
+                    setClientAccess={setFormClientAccess}
+                    empresaAccess={formEmpresaAccess}
+                    setEmpresaAccess={setFormEmpresaAccess}
+                    passwordAccess={formPasswordAccess}
+                    setPasswordAccess={setFormPasswordAccess}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
 
             <div className="flex justify-end space-x-2">
