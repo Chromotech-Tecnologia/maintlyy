@@ -82,6 +82,7 @@ export default function CofreSenhas() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewingPassword, setViewingPassword] = useState<CofreSenha | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
   const [filtroGrupo, setFiltroGrupo] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
