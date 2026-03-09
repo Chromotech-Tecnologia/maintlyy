@@ -437,7 +437,7 @@ export default function CofreSenhas() {
       
       for (const chunk of chunks) {
         for (const senha of chunk) {
-          const decryptedPassword = senhasDescriptografadas.get(senha.id) || decryptPassword(senha.senha, user.id)
+          const decryptedPassword = senhasDescriptografadas.get(senha.id) || decryptPassword(senha.senha, senha.user_id)
           decryptedSenhas.push({
             ...senha,
             senha: decryptedPassword
