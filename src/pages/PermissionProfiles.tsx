@@ -68,6 +68,38 @@ const emptyPermissions = () => {
   return perms
 }
 
+const normalizeSystemPermissions = (raw: any) => {
+  const perms = emptyPermissions()
+
+  // Supports both current shape (can_*) and legacy shape (view/create/edit/delete)
+  const keyMap: Record<string, string[]> = {
+    can_view: ["can_view", "view"],
+    can_view_details: ["can_view_details", "view_details", "details"],
+    can_edit: ["can_edit", "edit", "update"],
+    can_create: ["can_create", "create", "insert"],
+    can_delete: ["can_delete", "delete", "remove"],
+  }
+
+  Object.keys(raw || {}).forEach((resource) => {
+    if (!perms[resource]) return
+
+    const resourcePerms = raw?.[resource] || {}
+
+    Object.entries(keyMap).forEach(([targetKey, possibleKeys]) => {
+      perms[resource][targetKey] = possibleKeys.some((k) => resourcePerms?.[k] === true)
+    })
+
+    // Keep the UI rule: if menu visibility is off, everything else must be off.
+    if (!perms[resource].can_view) {
+      PERMISSION_TYPES.forEach((p) => {
+        perms[resource][p.key] = false
+      })
+    }
+  })
+
+  return perms
+}
+
 export default function PermissionProfiles() {
   const { user } = useAuth()
   const [profiles, setProfiles] = useState<PermissionProfile[]>([])
@@ -128,15 +160,7 @@ export default function PermissionProfiles() {
     setEditingProfile(profile)
     setFormName(profile.nome_perfil)
     setFormIsAdmin(profile.is_admin_profile)
-    const perms = emptyPermissions()
-    Object.keys(profile.system_permissions || {}).forEach(resource => {
-      if (perms[resource]) {
-        Object.keys(profile.system_permissions[resource] || {}).forEach(perm => {
-          perms[resource][perm] = profile.system_permissions[resource][perm]
-        })
-      }
-    })
-    setFormPermissions(perms)
+    setFormPermissions(normalizeSystemPermissions(profile.system_permissions))
     setDialogOpen(true)
   }
 
