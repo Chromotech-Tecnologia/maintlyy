@@ -111,6 +111,11 @@ export default function PermissionProfiles() {
   const [formName, setFormName] = useState("")
   const [formIsAdmin, setFormIsAdmin] = useState(false)
   const [formPermissions, setFormPermissions] = useState<Record<string, any>>(emptyPermissions())
+
+  const [formClientAccess, setFormClientAccess] = useState<any[]>([])
+  const [formEmpresaAccess, setFormEmpresaAccess] = useState<any[]>([])
+  const [formPasswordAccess, setFormPasswordAccess] = useState<any[]>([])
+
   const [usersCount, setUsersCount] = useState<Record<string, number>>({})
 
   // Access dialog state
