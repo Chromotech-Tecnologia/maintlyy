@@ -23,6 +23,10 @@ interface Senha {
   nome_acesso: string
   login?: string
   cliente_id?: string
+  senha?: string
+  user_id?: string
+  url_acesso?: string
+  descricao?: string
 }
 
 export type ClientAccessRow = {
