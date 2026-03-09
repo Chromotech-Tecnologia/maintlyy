@@ -1192,7 +1192,7 @@ export default function CofreSenhas() {
                          </div>
                        )}
 
-                       <div className="flex gap-2 pt-2">
+                       <div className="flex gap-2 pt-2 mt-auto">
                          {/* Botão Visualizar: apenas view, sem edit */}
                          {!permissions.isAdmin && !permissions.canEditClient(senha.cliente_id || '') && permissions.canViewClient(senha.cliente_id || '') && (
                            <Button
