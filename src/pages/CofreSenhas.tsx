@@ -192,9 +192,9 @@ export default function CofreSenhas() {
     
     // Descriptografar sob demanda
     const senha = senhasEncriptadas.find(s => s.id === senhaId)
-    if (senha && user) {
+    if (senha) {
       try {
-        const decrypted = decryptPassword(senha.senha, user.id)
+        const decrypted = decryptPassword(senha.senha, senha.user_id)
         // Armazenar no cache
         setSenhasDescriptografadas(prev => new Map(prev).set(senhaId, decrypted))
         return decrypted
