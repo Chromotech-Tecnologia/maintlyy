@@ -143,7 +143,7 @@ export default function CofreSenhas() {
           .from('cofre_senhas')
           .select(`
             id, nome_acesso, senha, login, url_acesso, descricao, grupo,
-            cliente_id, empresa_terceira_id, created_at,
+            cliente_id, empresa_terceira_id, created_at, user_id,
             clientes(nome_cliente),
             empresas_terceiras(nome_empresa)
           `)
