@@ -1092,7 +1092,7 @@ export default function CofreSenhas() {
                   </h4>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {dadosCliente.senhas.map((senha) => (
-                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
+                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300 flex flex-col h-full">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -1109,7 +1109,7 @@ export default function CofreSenhas() {
                       </div>
                     </CardHeader>
                     
-                     <CardContent className="space-y-3">
+                     <CardContent className="space-y-3 flex-1 flex flex-col">
                        {senha.login && (
                          <div className="space-y-1">
                            <span className="text-xs font-medium text-muted-foreground">Login:</span>
