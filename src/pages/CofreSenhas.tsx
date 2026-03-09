@@ -31,6 +31,7 @@ interface CofreSenha {
   cliente_id: string | null
   empresa_terceira_id: string | null
   created_at: string
+  user_id: string
   clientes?: { nome_cliente: string }
   empresas_terceiras?: { nome_empresa: string }
 }
@@ -142,7 +143,7 @@ export default function CofreSenhas() {
           .from('cofre_senhas')
           .select(`
             id, nome_acesso, senha, login, url_acesso, descricao, grupo,
-            cliente_id, empresa_terceira_id, created_at,
+            cliente_id, empresa_terceira_id, created_at, user_id,
             clientes(nome_cliente),
             empresas_terceiras(nome_empresa)
           `)
@@ -191,9 +192,9 @@ export default function CofreSenhas() {
     
     // Descriptografar sob demanda
     const senha = senhasEncriptadas.find(s => s.id === senhaId)
-    if (senha && user) {
+    if (senha) {
       try {
-        const decrypted = decryptPassword(senha.senha, user.id)
+        const decrypted = decryptPassword(senha.senha, senha.user_id)
         // Armazenar no cache
         setSenhasDescriptografadas(prev => new Map(prev).set(senhaId, decrypted))
         return decrypted
@@ -436,7 +437,7 @@ export default function CofreSenhas() {
       
       for (const chunk of chunks) {
         for (const senha of chunk) {
-          const decryptedPassword = senhasDescriptografadas.get(senha.id) || decryptPassword(senha.senha, user.id)
+          const decryptedPassword = senhasDescriptografadas.get(senha.id) || decryptPassword(senha.senha, senha.user_id)
           decryptedSenhas.push({
             ...senha,
             senha: decryptedPassword
