@@ -82,6 +82,7 @@ export default function CofreSenhas() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewingPassword, setViewingPassword] = useState<CofreSenha | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
   const [filtroGrupo, setFiltroGrupo] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
@@ -1191,29 +1192,41 @@ export default function CofreSenhas() {
                          </div>
                        )}
 
-                      <div className="flex gap-2 pt-2">
-                        {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => handleEdit(senha)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
-                        )}
-                        {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(senha.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                       <div className="flex gap-2 pt-2">
+                         {/* Botão Visualizar: apenas view, sem edit */}
+                         {!permissions.isAdmin && !permissions.canEditClient(senha.cliente_id || '') && permissions.canViewClient(senha.cliente_id || '') && (
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             className="flex-1"
+                             onClick={() => setViewingPassword(senha)}
+                           >
+                             <Eye className="h-4 w-4 mr-1" />
+                             Visualizar
+                           </Button>
+                         )}
+                         {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="flex-1"
+                             onClick={() => handleEdit(senha)}
+                           >
+                             <Edit className="h-4 w-4 mr-1" />
+                             Editar
+                           </Button>
+                         )}
+                         {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="text-destructive hover:text-destructive"
+                             onClick={() => handleDelete(senha.id)}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         )}
+                       </div>
                     </CardContent>
                   </Card>
                     ))}
@@ -1341,6 +1354,75 @@ export default function CofreSenhas() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal somente leitura */}
+      <Dialog open={!!viewingPassword} onOpenChange={(open) => !open && setViewingPassword(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" />
+              {viewingPassword?.nome_acesso}
+            </DialogTitle>
+          </DialogHeader>
+          {viewingPassword && (
+            <div className="space-y-4">
+              {viewingPassword.grupo && (
+                <div className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Grupo</span>
+                  <p className="text-sm px-3 py-2 bg-muted/30 rounded">{viewingPassword.grupo}</p>
+                </div>
+              )}
+              {viewingPassword.login && (
+                <div className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Login</span>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded">
+                    <span className="text-sm flex-1">{viewingPassword.login}</span>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => copyToClipboard(viewingPassword.login!)}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Senha</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded">
+                  <span className="text-sm font-mono flex-1">
+                    {visiblePasswords.has(`view-${viewingPassword.id}`)
+                      ? getDecryptedPassword(viewingPassword.id)
+                      : "••••••••"}
+                  </span>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => togglePasswordVisibility(`view-${viewingPassword.id}`)}>
+                    {visiblePasswords.has(`view-${viewingPassword.id}`) ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => copyToClipboard(getDecryptedPassword(viewingPassword.id))}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              {viewingPassword.url_acesso && (
+                <div className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">URL</span>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded">
+                    <span className="text-sm flex-1 truncate">{viewingPassword.url_acesso}</span>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => window.open(viewingPassword.url_acesso!, '_blank')}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {viewingPassword.descricao && (
+                <div className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Descrição</span>
+                  <p className="text-sm px-3 py-2 bg-muted/30 rounded whitespace-pre-wrap">{viewingPassword.descricao}</p>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" onClick={() => setViewingPassword(null)}>Fechar</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
