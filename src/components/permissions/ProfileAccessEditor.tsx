@@ -210,7 +210,7 @@ export function ProfileAccessEditor({
     try {
       const { data } = await supabase
         .from("cofre_senhas")
-        .select("id, nome_acesso, login, cliente_id")
+        .select("id, nome_acesso, login, cliente_id, senha, user_id, url_acesso, descricao")
         .eq("cliente_id", clienteId)
         .order("nome_acesso")
 
