@@ -11,7 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Edit, Trash2, Shield, Check, X, Users, Key } from "lucide-react"
 import { ProfileAccessDialog } from "@/components/permissions/ProfileAccessDialog"
-import { ProfileAccessEditor } from "@/components/permissions/ProfileAccessEditor"
+import {
+  ProfileAccessEditor,
+  type ClientAccessRow,
+  type EmpresaAccessRow,
+  type PasswordAccessRow,
+} from "@/components/permissions/ProfileAccessEditor"
 import { syncProfileAccessToUsers } from "@/lib/permissions/syncProfileAccessToUsers"
 import { toast } from "sonner"
 

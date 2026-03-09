@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import type { Dispatch, SetStateAction } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
