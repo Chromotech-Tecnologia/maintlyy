@@ -160,6 +160,9 @@ export default function PermissionProfiles() {
     setFormName("")
     setFormIsAdmin(false)
     setFormPermissions(emptyPermissions())
+    setFormClientAccess([])
+    setFormEmpresaAccess([])
+    setFormPasswordAccess([])
     setDialogOpen(true)
   }
 
@@ -168,6 +171,9 @@ export default function PermissionProfiles() {
     setFormName(profile.nome_perfil)
     setFormIsAdmin(profile.is_admin_profile)
     setFormPermissions(normalizeSystemPermissions(profile.system_permissions))
+    setFormClientAccess(Array.isArray(profile.client_access) ? [...profile.client_access] : [])
+    setFormEmpresaAccess(Array.isArray(profile.empresa_access) ? [...profile.empresa_access] : [])
+    setFormPasswordAccess(Array.isArray(profile.password_access) ? [...profile.password_access] : [])
     setDialogOpen(true)
   }
 
