@@ -434,35 +434,68 @@ export function ProfileAccessEditor({
                           <div className="space-y-3">
                             {senhas.map((senha) => {
                               const perm = getPasswordPerm(senha.id)
+                              const decryptedSenha = (senha.senha && senha.user_id) ? decryptPassword(senha.senha, senha.user_id) : "••••••••";
+                              
                               return (
-                                <div key={senha.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                  <div>
-                                    <p className="font-medium text-sm">{senha.nome_acesso}</p>
-                                    {senha.login && <p className="text-xs text-muted-foreground">Login: {senha.login}</p>}
+                                <Collapsible key={senha.id}>
+                                  <div className="border border-border rounded-lg bg-muted/10 overflow-hidden">
+                                    <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors">
+                                      <div className="flex flex-col items-start text-left">
+                                        <p className="font-medium text-sm flex items-center gap-2">
+                                          {senha.nome_acesso}
+                                          <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
+                                        </p>
+                                        {senha.login && <p className="text-xs text-muted-foreground mt-0.5">Login: {senha.login}</p>}
+                                      </div>
+                                      <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`pa-view-${senha.id}`}
+                                            checked={!!perm?.can_view}
+                                            onCheckedChange={(checked) => setPasswordPerm(senha.id, "can_view", !!checked)}
+                                          />
+                                          <Label htmlFor={`pa-view-${senha.id}`} className="text-xs cursor-pointer">
+                                            Ver
+                                          </Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`pa-edit-${senha.id}`}
+                                            checked={!!perm?.can_edit}
+                                            onCheckedChange={(checked) => setPasswordPerm(senha.id, "can_edit", !!checked)}
+                                          />
+                                          <Label htmlFor={`pa-edit-${senha.id}`} className="text-xs cursor-pointer">
+                                            Editar
+                                          </Label>
+                                        </div>
+                                      </div>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                      <div className="px-3 pb-3 pt-1 border-t border-border/50 text-xs space-y-2 bg-muted/20">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          <div>
+                                            <span className="text-muted-foreground block mb-0.5">Senha:</span>
+                                            <span className="font-mono bg-background px-2 py-1 rounded border border-border/50 select-all">{decryptedSenha}</span>
+                                          </div>
+                                          {senha.url_acesso && (
+                                            <div>
+                                              <span className="text-muted-foreground block mb-0.5">URL:</span>
+                                              <a href={senha.url_acesso} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate block">
+                                                {senha.url_acesso}
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {senha.descricao && (
+                                          <div>
+                                            <span className="text-muted-foreground block mb-0.5">Descrição:</span>
+                                            <p className="text-muted-foreground whitespace-pre-wrap bg-background p-2 rounded border border-border/50">{senha.descricao}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </CollapsibleContent>
                                   </div>
-                                  <div className="flex items-center gap-4">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={`pa-view-${senha.id}`}
-                                        checked={!!perm?.can_view}
-                                        onCheckedChange={(checked) => setPasswordPerm(senha.id, "can_view", !!checked)}
-                                      />
-                                      <Label htmlFor={`pa-view-${senha.id}`} className="text-xs">
-                                        Ver
-                                      </Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={`pa-edit-${senha.id}`}
-                                        checked={!!perm?.can_edit}
-                                        onCheckedChange={(checked) => setPasswordPerm(senha.id, "can_edit", !!checked)}
-                                      />
-                                      <Label htmlFor={`pa-edit-${senha.id}`} className="text-xs">
-                                        Editar
-                                      </Label>
-                                    </div>
-                                  </div>
-                                </div>
+                                </Collapsible>
                               )
                             })}
                           </div>
