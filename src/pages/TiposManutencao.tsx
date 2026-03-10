@@ -248,8 +248,23 @@ export default function TiposManutencao() {
         </DialogContent>
       </Dialog>
 
+      {/* Busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou descrição..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {tipos.map((tipo) => (
+        {tipos.filter(t => {
+          if (!searchTerm) return true
+          const s = searchTerm.toLowerCase()
+          return t.nome_tipo_manutencao.toLowerCase().includes(s) || t.descricao?.toLowerCase().includes(s)
+        }).map((tipo) => (
           <Card key={tipo.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">

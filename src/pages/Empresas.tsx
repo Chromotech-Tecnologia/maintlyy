@@ -197,7 +197,16 @@ export default function Empresas() {
             {empresas.length} empresas registradas
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome da empresa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -207,7 +216,7 @@ export default function Empresas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {empresas.map((empresa) => (
+              {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
                 <TableRow key={empresa.id}>
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
                   <TableCell>
