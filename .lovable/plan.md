@@ -1,108 +1,65 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+# Plan: Card Alignment, Sidebar Theme, Super Admin Fix, Users Subordinate Filter
 
-### Problemas Identificados e Corrigidos
+## 1. Password Cards -- Buttons Aligned to Bottom
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
+**File**: `src/pages/CofreSenhas.tsx`
 
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
+The card already uses `flex flex-col h-full` and `mt-auto` on the button row. The issue is that the card content area needs `flex-1` properly and the button div needs to always be at the bottom. Will ensure the structure is:
+- Card: `flex flex-col h-full`
+- CardContent: `flex-1 flex flex-col`
+- Button row: `mt-auto pt-3`
 
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
+This ensures all cards in the same row have buttons perfectly aligned at the bottom regardless of content height.
 
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
+## 2. Sidebar Menu -- White Text + Left Border Active + Dark/Light Theme
 
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
+**File**: `src/components/layout/AppSidebar.tsx`, `src/index.css`
 
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+Current issue: sidebar text uses `text-sidebar-foreground/60` which appears blue-ish. The active state uses `bg-primary/8 text-primary` which blends in.
 
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
+Changes:
+- Default items: `text-sidebar-foreground` (white/light) at ~70% opacity
+- Active item: left border indicator (`border-l-[3px] border-primary`) + subtle light background (`bg-sidebar-accent`) + full white text
+- Group labels: lighter opacity
+- In light mode, sidebar should use the dark background (keep current `--sidebar-background`), so text stays white. In dark mode, same dark sidebar approach. The sidebar always stays dark -- this matches the reference image.
 
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+## 3. Super Admin Panel Error Fix
+
+**File**: `supabase/functions/admin-operations/index.ts` (redeploy)
+
+The edge function is returning 401. The issue is likely that the `supabase.auth.getUser()` call uses the anon-key client. Need to ensure proper auth validation. Will switch to using `supabaseAdmin.auth.getUser()` for token validation to avoid RLS issues on the auth check, and add better error logging.
+
+Also from the data: `site@chromotech.com.br` has `is_admin: true, is_super_admin: false` and should appear. The edge function filters correctly (`is_admin = true` and `!is_super_admin`). The data fetch itself should work once the auth issue is resolved.
+
+## 4. Users Page -- Show Only Admin's Subordinates
+
+**File**: `src/pages/PerfilUsuarios.tsx`
+
+Current filter: `(!p.is_admin && !p.is_super_admin)` -- shows ALL non-admin users globally (broken multi-tenancy).
+
+Fix: Query `permission_profiles` owned by the current admin, then filter `user_profiles` to show only users whose `permission_profile_id` is in that set, plus the admin's own profile. Users with no permission_profile_id who were created by this admin should also show (we can include users with `null` permission_profile_id only if they match some criteria, but for now we include them as orphans the admin should manage).
+
+Updated logic:
+```
+const myProfileIds = permissionProfiles.map(p => p.id)
+const filtered = allProfiles.filter(p =>
+  p.user_id === user.id ||
+  myProfileIds.includes(p.permission_profile_id)
+)
+```
+
+This correctly scopes to the admin's own permission profiles.
 
 ---
 
-## Arquivos Modificados
+## Files Summary
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+| File | Change |
+|------|--------|
+| `src/pages/CofreSenhas.tsx` | Ensure card button row uses `mt-auto` consistently |
+| `src/components/layout/AppSidebar.tsx` | White text, left border active state, proper theme colors |
+| `supabase/functions/admin-operations/index.ts` | Fix auth validation, redeploy |
+| `src/pages/PerfilUsuarios.tsx` | Filter subordinates by admin's permission profiles |
 
----
-
-## Fluxo de Permissões Implementado
-
-```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
-
-## Mapeamento Resource x Menu
-
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
-
-## Estrutura de Permissões Atualizada
-
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
-
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
-
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
-
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
