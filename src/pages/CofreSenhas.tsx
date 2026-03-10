@@ -738,7 +738,7 @@ export default function CofreSenhas() {
                     name="cliente_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cliente (Opcional)</FormLabel>
+                        <FormLabel>Cliente</FormLabel>
                         <FormControl>
                           <Combobox
                             value={field.value || ""}
