@@ -208,7 +208,7 @@ export function EmpresaPermissionsTab({ selectedProfile }: EmpresaPermissionsTab
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-green-600" />
           <span className="text-sm font-medium text-green-800">
-            Este usuário é administrador e tem acesso total a todas as empresas terceiras
+            Este usuário é administrador e tem acesso total a todas as empresas
           </span>
         </div>
       </div>
