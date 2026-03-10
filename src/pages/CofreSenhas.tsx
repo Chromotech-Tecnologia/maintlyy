@@ -735,7 +735,7 @@ export default function CofreSenhas() {
                 Nova Senha
               </Button>
             </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? "Editar Senha" : "Nova Senha"}
