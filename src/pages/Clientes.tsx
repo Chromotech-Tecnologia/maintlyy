@@ -397,7 +397,7 @@ export default function Clientes() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {clientes.filter(c => {
           if (!searchTerm) return true
           const s = searchTerm.toLowerCase()
@@ -408,105 +408,73 @@ export default function Clientes() {
             c.endereco?.toLowerCase().includes(s) ||
             c.empresas_terceiras?.nome_empresa?.toLowerCase().includes(s)
         }).map((cliente) => (
-          <Card key={cliente.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{cliente.nome_cliente}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{cliente.cnpj}</p>
-                  </div>
+          <div key={cliente.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
-                <Badge variant="default" className="bg-success text-success-foreground">
-                  Ativo
-                </Badge>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm truncate">{cliente.nome_cliente}</h3>
+                  {cliente.cnpj && <p className="text-xs text-muted-foreground">{cliente.cnpj}</p>}
+                </div>
               </div>
-            </CardHeader>
+              <Badge className="bg-success/15 text-success border border-success/20 text-[10px] shrink-0">Ativo</Badge>
+            </div>
             
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                {cliente.endereco && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{cliente.endereco}</span>
-                  </div>
-                )}
-                {cliente.telefone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{cliente.telefone}</span>
-                  </div>
-                )}
-                {cliente.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{cliente.email}</span>
-                  </div>
-                )}
-              </div>
-
-              {cliente.empresas_terceiras && (
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-sm mb-1">Empresa</h4>
-                  <p className="text-xs text-muted-foreground">{cliente.empresas_terceiras.nome_empresa}</p>
+            <div className="space-y-1.5">
+              {cliente.telefone && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Phone className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{cliente.telefone}</span>
                 </div>
               )}
+              {cliente.email && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{cliente.email}</span>
+                </div>
+              )}
+              {cliente.endereco && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{cliente.endereco}</span>
+                </div>
+              )}
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                {(isAdmin || canViewDetailsSystem('clientes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleView(cliente)}
-                    title="Ver detalhes"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                )}
-                {(isAdmin || permissions.canEditClient(cliente.id) || canEditSystem('clientes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(cliente)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                )}
-                {(isAdmin || permissions.canDeleteClient(cliente.id) || canDeleteSystem('clientes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(cliente.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+            {cliente.empresas_terceiras && (
+              <div className="px-3 py-2 bg-muted/40 rounded-lg">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Empresa</p>
+                <p className="text-xs font-medium">{cliente.empresas_terceiras.nome_empresa}</p>
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+            <div className="flex gap-2">
+              {(isAdmin || canViewDetailsSystem('clientes')) && (
+                <Button variant="outline" size="sm" onClick={() => handleView(cliente)} className="h-8 rounded-lg text-xs"><Eye className="h-3.5 w-3.5 mr-1" />Ver</Button>
+              )}
+              {(isAdmin || permissions.canEditClient(cliente.id) || canEditSystem('clientes')) && (
+                <Button variant="outline" size="sm" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleEdit(cliente)}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Button>
+              )}
+              {(isAdmin || permissions.canDeleteClient(cliente.id) || canDeleteSystem('clientes')) && (
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDelete(cliente.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
       {clientes.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhum cliente cadastrado</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Comece adicionando seu primeiro cliente para gerenciar suas manutenções.
-            </p>
-            <Button onClick={openNewDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Primeiro Cliente
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="glass-card text-center py-12">
+          <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <h3 className="font-display font-semibold mb-1">Nenhum cliente cadastrado</h3>
+          <p className="text-sm text-muted-foreground mb-4">Comece adicionando seu primeiro cliente.</p>
+          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl">
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Primeiro Cliente
+          </Button>
+        </div>
       )}
     </div>
   )
