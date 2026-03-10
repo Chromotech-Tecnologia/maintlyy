@@ -29,7 +29,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench },
   { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Empresas Terceiras", url: "/empresas", icon: Building2 },
+  { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Equipes", url: "/equipes", icon: UserCog },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar },
 ]
