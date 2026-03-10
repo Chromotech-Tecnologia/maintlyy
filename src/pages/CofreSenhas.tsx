@@ -966,6 +966,19 @@ export default function CofreSenhas() {
         </div>
       </div>
 
+      {/* Busca geral + Filtros */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, login, URL, descrição, grupo, cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       {/* Filtros */}
       <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted/30 rounded-lg">
         <div className="space-y-2">
