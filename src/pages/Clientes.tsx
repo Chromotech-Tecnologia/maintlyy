@@ -335,14 +335,14 @@ export default function Clientes() {
         )}
       </div>
 
-      {/* Busca */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Search */}
+      <div className="search-bar">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
         <Input
-          placeholder="Buscar por nome, email, CNPJ, telefone, endereço, empresa..."
+          placeholder="Buscar por nome, email, CNPJ, telefone, empresa..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
         />
       </div>
 
