@@ -219,11 +219,11 @@ export default function PerfilUsuarios() {
   const isSingleUser = profiles.length === 1
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{isSingleUser ? "Minha Conta" : "Usuários"}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{isSingleUser ? "Minha Conta" : "Usuários"}</h1>
+          <p className="text-sm text-muted-foreground">
             {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie usuários e atribua perfis de permissão"}
           </p>
         </div>
