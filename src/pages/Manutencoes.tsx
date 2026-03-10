@@ -675,150 +675,126 @@ export default function Manutencoes() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Lista de Manutenções</CardTitle>
-          <CardDescription>
-            {manutencoesFiltradas.length} de {manutencoes.length} manutenções
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {/* Desktop Table */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Tempo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Equipe</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {manutencoesFiltradas.map((manutencao) => (
-                  <TableRow key={manutencao.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{manutencao.clientes?.nome_cliente || "Sem nome"}</div>
-                        <div className="text-sm text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{manutencao.tipos_manutencao?.nome_tipo_manutencao}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(manutencao.data_inicio).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {manutencao.hora_inicio}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatTempo(manutencao.tempo_total)}</TableCell>
-                    <TableCell>
-                      <Badge variant={manutencao.status === "Finalizado" ? "default" : "secondary"}>
-                        {manutencao.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{manutencao.equipes?.nome_equipe || "-"}</TableCell>
-                    <TableCell>
-                      <div className="max-w-40 truncate" title={manutencao.descricao || ""}>
-                        {manutencao.descricao || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {(isAdmin || canViewDetailsSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleView(manutencao)} title="Ver detalhes">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {(isAdmin || canEditSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)} title="Editar">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {(isAdmin || canDeleteSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)} title="Excluir">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+      {/* Results count */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {manutencoesFiltradas.length} de {manutencoes.length} manutenções
+        </p>
+      </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
+      {/* Desktop Table */}
+      <div className="glass-card border-0 hidden md:block overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 bg-muted/30">
+              <TableHead className="font-semibold text-xs">Cliente</TableHead>
+              <TableHead className="font-semibold text-xs">Tipo</TableHead>
+              <TableHead className="font-semibold text-xs">Data/Hora</TableHead>
+              <TableHead className="font-semibold text-xs">Tempo</TableHead>
+              <TableHead className="font-semibold text-xs">Status</TableHead>
+              <TableHead className="font-semibold text-xs">Equipe</TableHead>
+              <TableHead className="font-semibold text-xs w-24">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {manutencoesFiltradas.map((manutencao) => (
-              <Card key={manutencao.id} className="border shadow-sm">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{manutencao.clientes?.nome_cliente || "Sem nome"}</p>
-                      <p className="text-xs text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</p>
-                    </div>
-                    <Badge variant={manutencao.status === "Finalizado" ? "default" : "secondary"} className="text-xs">
-                      {manutencao.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground text-xs">Tipo:</span>
-                      <p className="text-xs">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Equipe:</span>
-                      <p className="text-xs">{manutencao.equipes?.nome_equipe || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Data:</span>
-                      <p className="text-xs">{new Date(manutencao.data_inicio).toLocaleDateString()} {manutencao.hora_inicio}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Tempo:</span>
-                      <p className="text-xs">{formatTempo(manutencao.tempo_total)}</p>
-                    </div>
-                  </div>
-                  {manutencao.descricao && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{manutencao.descricao}</p>
-                  )}
-                  <div className="flex gap-1 pt-1">
+              <TableRow key={manutencao.id} className="border-border/30 hover:bg-muted/30 transition-colors">
+                <TableCell>
+                  <div className="font-medium text-sm">{manutencao.clientes?.nome_cliente || "N/A"}</div>
+                  <div className="text-xs text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</div>
+                </TableCell>
+                <TableCell className="text-sm">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</TableCell>
+                <TableCell>
+                  <div className="text-sm">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-xs text-muted-foreground">{manutencao.hora_inicio}</div>
+                </TableCell>
+                <TableCell className="text-sm">{formatTempo(manutencao.tempo_total)}</TableCell>
+                <TableCell>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    manutencao.status === "Finalizado" 
+                      ? "bg-success/15 text-success border border-success/20" 
+                      : "bg-warning/15 text-warning border border-warning/20"
+                  }`}>
+                    {manutencao.status}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm">{manutencao.equipes?.nome_equipe || "-"}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
                     {(isAdmin || canViewDetailsSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => handleView(manutencao)}>
-                        <Eye className="h-3 w-3 mr-1" /> Ver
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleView(manutencao)} className="h-8 w-8 p-0 rounded-lg"><Eye className="h-3.5 w-3.5" /></Button>
                     )}
                     {(isAdmin || canEditSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => handleEdit(manutencao)}>
-                        <Edit className="h-3 w-3 mr-1" /> Editar
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)} className="h-8 w-8 p-0 rounded-lg"><Edit className="h-3.5 w-3.5" /></Button>
                     )}
                     {(isAdmin || canDeleteSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="h-8 text-xs text-destructive" onClick={() => handleDelete(manutencao.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)} className="h-8 w-8 p-0 rounded-lg text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-          
-          {manutencoesFiltradas.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhuma manutenção encontrada
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {manutencoesFiltradas.map((manutencao) => (
+          <div key={manutencao.id} className="mobile-card">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate">{manutencao.clientes?.nome_cliente || "N/A"}</p>
+                <p className="text-xs text-muted-foreground truncate">{manutencao.empresas_terceiras?.nome_empresa}</p>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${
+                manutencao.status === "Finalizado" 
+                  ? "bg-success/15 text-success border border-success/20" 
+                  : "bg-warning/15 text-warning border border-warning/20"
+              }`}>
+                {manutencao.status}
+              </span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="mobile-card-label">Tipo</p>
+                <p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Equipe</p>
+                <p className="text-xs font-medium">{manutencao.equipes?.nome_equipe || "-"}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Data</p>
+                <p className="text-xs font-medium">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')} {manutencao.hora_inicio}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Tempo</p>
+                <p className="text-xs font-medium">{formatTempo(manutencao.tempo_total)}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              {(isAdmin || canViewDetailsSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleView(manutencao)}><Eye className="h-3 w-3 mr-1" />Ver</Button>
+              )}
+              {(isAdmin || canEditSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleEdit(manutencao)}><Edit className="h-3 w-3 mr-1" />Editar</Button>
+              )}
+              {(isAdmin || canDeleteSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg text-destructive" onClick={() => handleDelete(manutencao.id)}><Trash2 className="h-3 w-3" /></Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {manutencoesFiltradas.length === 0 && (
+        <div className="glass-card text-center py-12">
+          <Wrench className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <h3 className="font-display font-semibold mb-1">Nenhuma manutenção encontrada</h3>
+          <p className="text-sm text-muted-foreground">Tente ajustar os filtros ou adicione uma nova manutenção.</p>
+        </div>
+      )}
     </div>
   )
 }
