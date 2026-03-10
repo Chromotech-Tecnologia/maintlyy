@@ -445,7 +445,7 @@ export default function Clientes() {
 
               {cliente.empresas_terceiras && (
                 <div className="p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-sm mb-1">Empresa Terceira</h4>
+                  <h4 className="font-medium text-sm mb-1">Empresa</h4>
                   <p className="text-xs text-muted-foreground">{cliente.empresas_terceiras.nome_empresa}</p>
                 </div>
               )}

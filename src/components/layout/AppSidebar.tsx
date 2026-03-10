@@ -61,7 +61,7 @@ export function AppSidebar() {
     "Dashboard": "dashboard",
     "Manutenções": "manutencoes",
     "Clientes": "clientes",
-    "Empresas Terceiras": "empresas_terceiras",
+    "Empresas": "empresas_terceiras",
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",

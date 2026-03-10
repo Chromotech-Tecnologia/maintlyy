@@ -40,7 +40,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
     const template = [
       {
         cliente_nome: 'Cliente Exemplo',
-        empresa_terceira_nome: 'Empresa Terceira (opcional)',
+        empresa_terceira_nome: 'Empresa (opcional)',
         tipo_manutencao_nome: 'Manutenção Preventiva',
         equipe_nome: 'Equipe A (opcional)',
         data_inicio: '2024-01-15',

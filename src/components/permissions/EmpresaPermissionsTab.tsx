@@ -220,7 +220,7 @@ export function EmpresaPermissionsTab({ selectedProfile }: EmpresaPermissionsTab
       <div className="text-center py-8">
         <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground">
-          Nenhuma empresa terceira cadastrada.
+          Nenhuma empresa cadastrada.
         </p>
       </div>
     )

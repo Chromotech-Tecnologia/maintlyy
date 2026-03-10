@@ -134,9 +134,9 @@ export default function Empresas() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingId ? "Editar" : "Nova"} Empresa Terceira</DialogTitle>
-                <DialogDescription>
-                  Adicione uma empresa para a qual você presta serviços como terceirizado
+                <DialogTitle>{editingId ? "Editar" : "Nova"} Empresa</DialogTitle>
+                 <DialogDescription>
+                   Adicione uma empresa para a qual você presta serviços
                 </DialogDescription>
               </DialogHeader>
               

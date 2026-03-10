@@ -58,14 +58,27 @@ export default function Login() {
   const handleSignUp = async (data: SignupFormData) => {
     console.log('handleSignUp called with:', data)
     
-    const result = await signUp(data.email, data.password)
+    // Manual validation with zod v4 (zodResolver v3 is incompatible with zod v4)
+    const result = signupSchema.safeParse(data)
+    if (!result.success) {
+      const issues = result.error.issues || []
+      for (const issue of issues) {
+        const field = issue.path?.[0] as keyof SignupFormData | undefined
+        if (field) {
+          signupForm.setError(field, { message: issue.message })
+        }
+      }
+      return
+    }
     
-    console.log('signUp response:', result)
+    const signUpResult = await signUp(data.email, data.password)
     
-    if (result.error) {
-      console.error('Sign up error:', result.error)
-      toast.error(result.error.message || "Erro ao criar conta")
-    } else if (result.needsConfirmation) {
+    console.log('signUp response:', signUpResult)
+    
+    if (signUpResult.error) {
+      console.error('Sign up error:', signUpResult.error)
+      toast.error(signUpResult.error.message || "Erro ao criar conta")
+    } else if (signUpResult.needsConfirmation) {
       toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
       toast.success("Cadastro realizado com sucesso!")
