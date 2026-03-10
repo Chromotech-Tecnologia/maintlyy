@@ -1,27 +1,15 @@
 import { 
-  LayoutDashboard, 
-  Wrench, 
-  Users, 
-  Building2, 
-  Shield, 
-  Settings, 
-  UserCog,
-  KeyRound,
-  Calendar
+  LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
+  KeyRound, Calendar, Menu, X, ChevronDown
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
 
@@ -53,10 +41,8 @@ export function AppSidebar() {
   const location = useLocation()
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
-
   const { isAdmin, canViewSystem } = usePermissions()
   
-  // Mapeamento de título para resource_type
   const menuResourceMap: Record<string, string> = {
     "Dashboard": "dashboard",
     "Manutenções": "manutencoes",
@@ -69,25 +55,19 @@ export function AppSidebar() {
     "Perfil": "permissoes",
   }
   
-  // Para os itens principais, verifica permissão canViewSystem (Ver Menu)
   const filteredMainItems = mainItems.filter((item) => {
-    // Dashboard sempre visível para todos autenticados
     if (item.title === "Dashboard") return true
-    // Admin vê tudo
     if (isAdmin) return true
-    // Verifica permissão de "Ver Menu" (can_view)
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : true
   })
   
-  // Segurança: verifica permissão de ver menu
   const filteredSecurityItems = securityItems.filter((item) => {
     if (isAdmin) return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : true
   })
   
-  // Sistema: apenas admin ou com permissão específica
   const filteredSystemItems = getSystemItems(isAdmin).filter((item) => {
     if (isAdmin) return true
     if (item.url === "/perfil-usuarios") return true
@@ -101,90 +81,62 @@ export function AppSidebar() {
   }
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold border-r-3 border-sidebar-ring shadow-lg" 
-      : "hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 hover:text-sidebar-accent-foreground"
+    cn(
+      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+      isActive 
+        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/25" 
+        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    )
+
+  const renderSection = (label: string, items: typeof mainItems) => (
+    items.length > 0 && (
+      <SidebarGroup className="px-3 py-1">
+        <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-bold uppercase tracking-[0.15em] mb-1 px-3">
+          {label}
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu className="space-y-0.5">
+            {items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <NavLink to={item.url} end={item.url === "/"} className={getNavCls}>
+                    <item.icon className="h-4.5 w-4.5 shrink-0" />
+                    {!isCollapsed && <span>{item.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    )
+  )
 
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
-      <SidebarContent className="bg-sidebar border-r border-sidebar-border">
-        {/* Logo/Brand */}
-        <div className="p-4 border-b border-sidebar-border bg-gradient-to-r from-sidebar-accent to-sidebar-background">
+    <Sidebar className={cn("hidden md:flex", isCollapsed ? "w-16" : "w-64")} collapsible="icon">
+      <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
+        {/* Logo */}
+        <div className="p-4 border-b border-sidebar-border/30">
           <div className="flex items-center gap-3">
-            <img 
-              src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
-              alt="Maintly Logo" 
-              className="w-8 h-8"
-            />
+            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+              <img 
+                src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
+                alt="Maintly Logo" 
+                className="w-6 h-6"
+              />
+            </div>
             {!isCollapsed && (
               <div>
-                <h1 className="font-bold text-lg text-sidebar-foreground tracking-wide">Maintly</h1>
-                <p className="text-xs text-sidebar-foreground/70 font-medium">Gestão Profissional</p>
+                <h1 className="font-display font-bold text-lg text-sidebar-foreground tracking-tight">Maintly</h1>
+                <p className="text-[10px] text-sidebar-foreground/40 font-medium tracking-wider uppercase">Gestão Profissional</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Main Navigation */}
-        <SidebarGroup className="px-2">
-          <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {filteredMainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end={item.url === "/"} className={getNavCls}>
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Security Section */}
-        {filteredSecurityItems.length > 0 && (
-          <SidebarGroup className="px-2">
-            <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Segurança</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {filteredSecurityItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} className={getNavCls}>
-                        <item.icon className="mr-3 h-5 w-5" />
-                        {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* System Section */}
-        {filteredSystemItems.length > 0 && (
-          <SidebarGroup className="px-2">
-            <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs font-bold uppercase tracking-wider mb-2">Sistema</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {filteredSystemItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} className={getNavCls}>
-                        <item.icon className="mr-3 h-5 w-5" />
-                        {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderSection("Principal", filteredMainItems)}
+        {renderSection("Segurança", filteredSecurityItems)}
+        {renderSection("Sistema", filteredSystemItems)}
       </SidebarContent>
     </Sidebar>
   )
