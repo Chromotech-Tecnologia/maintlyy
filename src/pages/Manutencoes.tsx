@@ -507,123 +507,100 @@ export default function Manutencoes() {
 
       {/* Search & Filters */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex gap-2">
+          <div className="search-bar flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
             <Input
-              placeholder="Buscar por cliente, empresa, tipo, descrição..."
+              placeholder="Buscar por cliente, empresa, tipo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
             />
           </div>
           <Button
             variant={showFilters ? "default" : "outline"}
             onClick={() => setShowFilters(!showFilters)}
-            className="sm:w-auto"
+            className="h-11 rounded-xl shrink-0"
           >
-            <Filter className="mr-2 h-4 w-4" />
-            Filtros
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtros</span>
             {hasActiveFilters && (
-              <span className="ml-2 bg-primary-foreground text-primary rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                !
-              </span>
+              <span className="ml-1 bg-primary-foreground text-primary rounded-full h-4 w-4 flex items-center justify-center text-[10px] font-bold">!</span>
             )}
           </Button>
         </div>
 
         {showFilters && (
-          <Card className="border-0 shadow-elegant">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Cliente</Label>
-                  <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {clientes.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Empresa</Label>
-                  <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {empresas.map((e: any) => (
-                        <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Tipo</Label>
-                  <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {tipos.map((t: any) => (
-                        <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Equipe</Label>
-                  <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {equipes.map((eq: any) => (
-                        <SelectItem key={eq.id} value={eq.id}>{eq.nome_equipe}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
-                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="Em andamento">Em andamento</SelectItem>
-                      <SelectItem value="Finalizado">Finalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Data Início (de)</Label>
-                  <Input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} className="h-9" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Data Início (até)</Label>
-                  <Input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} className="h-9" />
-                </div>
-                {hasActiveFilters && (
-                  <div className="flex items-end">
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
-                      <X className="mr-1 h-4 w-4" />
-                      Limpar filtros
-                    </Button>
-                  </div>
-                )}
+          <div className="glass-card p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</Label>
+                <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {clientes.map((c: any) => (<SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</Label>
+                <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    {empresas.map((e: any) => (<SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tipo</Label>
+                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {tipos.map((t: any) => (<SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equipe</Label>
+                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    {equipes.map((eq: any) => (<SelectItem key={eq.id} value={eq.id}>{eq.nome_equipe}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="Em andamento">Em andamento</SelectItem>
+                    <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Data de</Label>
+                <Input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} className="h-9 rounded-lg text-xs" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Data até</Label>
+                <Input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} className="h-9 rounded-lg text-xs" />
+              </div>
+              {hasActiveFilters && (
+                <div className="flex items-end">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive h-9 rounded-lg text-xs">
+                    <X className="mr-1 h-3.5 w-3.5" /> Limpar
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
