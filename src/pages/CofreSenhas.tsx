@@ -783,7 +783,7 @@ export default function CofreSenhas() {
                       
                       return (
                         <FormItem>
-                          <FormLabel>Empresa Terceira (Opcional)</FormLabel>
+                          <FormLabel>Empresa Terceira *</FormLabel>
                           <FormControl>
                             {isDisabled ? (
                               <Input
