@@ -32,6 +32,7 @@ export default function Equipes() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewingEquipe, setViewingEquipe] = useState<Equipe | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const form = useForm<EquipeFormData>({
     resolver: zodResolver(equipeSchema),
