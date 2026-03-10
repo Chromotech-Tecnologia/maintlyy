@@ -253,105 +253,68 @@ export default function Equipes() {
         </DialogContent>
       </Dialog>
 
-      {/* Busca */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Search */}
+      <div className="search-bar">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
         <Input
           placeholder="Buscar por nome ou membros..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {equipes.filter(eq => {
           if (!searchTerm) return true
           const s = searchTerm.toLowerCase()
           return eq.nome_equipe.toLowerCase().includes(s) || eq.membros?.toLowerCase().includes(s)
         }).map((equipe) => (
-          <Card key={equipe.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <UserCog className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{equipe.nome_equipe}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(equipe.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
+          <div key={equipe.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <UserCog className="h-5 w-5 text-primary" />
               </div>
-            </CardHeader>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{equipe.nome_equipe}</h3>
+                <p className="text-xs text-muted-foreground">{new Date(equipe.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
             
-            <CardContent className="space-y-4">
-              {equipe.membros && (
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Membros
-                  </h4>
-                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                    {equipe.membros}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                {(isAdmin || canViewDetailsSystem('equipes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleView(equipe)}
-                    title="Ver detalhes"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                )}
-                {(isAdmin || canEditSystem('equipes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(equipe)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                )}
-                {(isAdmin || canDeleteSystem('equipes')) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(equipe.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+            {equipe.membros && (
+              <div className="p-3 bg-muted/40 rounded-lg">
+                <h4 className="font-medium text-xs mb-1 flex items-center gap-1.5 text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" /> Membros
+                </h4>
+                <p className="text-xs text-foreground line-clamp-2">{equipe.membros}</p>
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+            <div className="flex gap-2">
+              {(isAdmin || canViewDetailsSystem('equipes')) && (
+                <Button variant="outline" size="sm" onClick={() => handleView(equipe)} className="h-8 rounded-lg text-xs"><Eye className="h-3.5 w-3.5 mr-1" />Ver</Button>
+              )}
+              {(isAdmin || canEditSystem('equipes')) && (
+                <Button variant="outline" size="sm" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleEdit(equipe)}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Button>
+              )}
+              {(isAdmin || canDeleteSystem('equipes')) && (
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDelete(equipe.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
       {equipes.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <UserCog className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Nenhuma equipe cadastrada</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Comece criando sua primeira equipe de manutenção.
-            </p>
-            <Button onClick={openNewDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Primeira Equipe
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="glass-card text-center py-12">
+          <UserCog className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <h3 className="font-display font-semibold mb-1">Nenhuma equipe cadastrada</h3>
+          <p className="text-sm text-muted-foreground mb-4">Comece criando sua primeira equipe de manutenção.</p>
+          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl">
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Primeira Equipe
+          </Button>
+        </div>
       )}
     </div>
   )
