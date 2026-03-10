@@ -8,11 +8,13 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
-  XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle
+  XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table"
@@ -26,8 +28,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
 
 interface UserProfile {
   id: string
@@ -53,11 +53,13 @@ interface AuthUser {
 
 export default function SuperAdminPanel() {
   const { session } = useAuth()
-  const { isSuperAdmin } = usePermissions()
+  const { isSuperAdmin, loading: permissionsLoading } = usePermissions()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [defaultTrialDays, setDefaultTrialDays] = useState("7")
+  const [savingSettings, setSavingSettings] = useState(false)
 
   // Dialogs
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
@@ -68,13 +70,41 @@ export default function SuperAdminPanel() {
   const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
-    if (isSuperAdmin) fetchData()
+    if (isSuperAdmin) {
+      fetchData()
+      fetchSettings()
+    }
   }, [isSuperAdmin])
+
+  const fetchSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'default_trial_days')
+        .single()
+      if (data?.value) setDefaultTrialDays(data.value)
+    } catch {}
+  }
+
+  const saveDefaultTrialDays = async () => {
+    setSavingSettings(true)
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ value: defaultTrialDays })
+        .eq('key', 'default_trial_days')
+      if (error) throw error
+      toast.success("Configuração salva!")
+    } catch {
+      toast.error("Erro ao salvar configuração")
+    }
+    setSavingSettings(false)
+  }
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch all profiles (super admin RLS allows this)
       const { data: profilesData } = await supabase
         .from('user_profiles')
         .select('*')
@@ -82,7 +112,6 @@ export default function SuperAdminPanel() {
 
       setProfiles((profilesData as any[]) || [])
 
-      // Fetch auth users via edge function
       const { data: authData } = await supabase.functions.invoke('admin-operations', {
         body: { operation: 'listUsers' }
       })
@@ -174,6 +203,18 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
+  // Wait for permissions to load before redirecting
+  if (permissionsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!isSuperAdmin) return <Navigate to="/" replace />
 
   const getAuthUser = (userId: string) => authUsers.find(u => u.id === userId)
@@ -218,14 +259,13 @@ export default function SuperAdminPanel() {
     )
   })
 
-  // Stats
   const totalUsers = profiles.filter(p => !p.is_super_admin).length
   const activeUsers = profiles.filter(p => !p.is_super_admin && (p.account_status === 'active' || p.is_permanent)).length
   const pendingUsers = profiles.filter(p => p.account_status === 'pending').length
   const trialUsers = profiles.filter(p => p.account_status === 'trial').length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -238,6 +278,30 @@ export default function SuperAdminPanel() {
           </div>
         </div>
       </div>
+
+      {/* Default Trial Config */}
+      <Card className="glass-card">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium whitespace-nowrap">Dias de teste para novos cadastros:</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={defaultTrialDays}
+                onChange={(e) => setDefaultTrialDays(e.target.value)}
+                className="w-20 h-9"
+                min="1"
+              />
+              <Button size="sm" onClick={saveDefaultTrialDays} disabled={savingSettings}>
+                {savingSettings ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -278,7 +342,6 @@ export default function SuperAdminPanel() {
         />
       </div>
 
-      {/* Table - Desktop */}
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -358,18 +421,18 @@ export default function SuperAdminPanel() {
               <Card key={profile.id} className="glass-card">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{profile.display_name || '—'}</span>
+                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">{profile.display_name || '—'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Mail className="h-3.5 w-3.5" />
-                        <span>{profile.email || '—'}</span>
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{profile.email || '—'}</span>
                       </div>
                       {profile.phone && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-3.5 w-3.5" />
+                          <Phone className="h-3.5 w-3.5 shrink-0" />
                           <span>{profile.phone}</span>
                         </div>
                       )}
@@ -377,7 +440,7 @@ export default function SuperAdminPanel() {
                     {!profile.is_super_admin && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -430,7 +493,7 @@ export default function SuperAdminPanel() {
 
       {/* Change Password Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(open) => setPasswordDialog(prev => ({ ...prev, open }))}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Alterar Senha</DialogTitle>
             <DialogDescription>Alterar a senha do usuário {passwordDialog.email}</DialogDescription>
@@ -452,7 +515,7 @@ export default function SuperAdminPanel() {
 
       {/* Trial Period Dialog */}
       <Dialog open={trialDialog.open} onOpenChange={(open) => setTrialDialog(prev => ({ ...prev, open }))}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Configurar Período de Teste</DialogTitle>
             <DialogDescription>Definir período de teste para {trialDialog.email}</DialogDescription>
@@ -474,14 +537,14 @@ export default function SuperAdminPanel() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               Excluir conta
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a conta <strong>{deleteDialog.email}</strong>? Esta ação é irreversível e todos os dados serão perdidos.
+              Tem certeza que deseja excluir a conta <strong>{deleteDialog.email}</strong>? Esta ação é irreversível.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

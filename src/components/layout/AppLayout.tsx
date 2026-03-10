@@ -1,9 +1,10 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "./AppSidebar"
 import { MobileNav } from "./MobileNav"
-import { LogOut, User, Bell } from "lucide-react"
+import { LogOut, User, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
+import { useTheme } from "next-themes"
 import { toast } from "sonner"
 
 interface AppLayoutProps {
@@ -12,6 +13,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   const handleSignOut = async () => {
     try {
@@ -33,7 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hidden md:flex" />
               <div className="flex md:hidden items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
                   <img 
                     src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
                     alt="Maintly" 
@@ -54,6 +56,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </div>
                 <span className="hidden lg:inline text-xs font-medium">{user?.email}</span>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="h-9 w-9 rounded-xl"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive">
                 <LogOut className="h-4 w-4" />
               </Button>

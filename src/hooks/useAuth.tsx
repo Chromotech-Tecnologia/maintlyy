@@ -44,6 +44,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, displayName: string, phone: string) => {
     const redirectUrl = `${window.location.origin}/`
 
+    // Fetch default trial days from system_settings
+    let defaultTrialDays = 7
+    try {
+      const { data: setting } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'default_trial_days')
+        .single()
+      if (setting?.value) {
+        defaultTrialDays = parseInt(setting.value) || 7
+      }
+    } catch {}
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -57,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: { message: 'Este email já está cadastrado. Tente fazer login.' } }
     }
 
-    // If session exists (autoconfirm), create profile as tenant admin
+    // If session exists (autoconfirm), create profile as tenant admin with auto trial
     if (data.session && data.user) {
       try {
         await supabase.from('user_profiles').insert([{
@@ -66,7 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: displayName,
           phone: phone,
           is_admin: true,
-          account_status: 'pending',
+          account_status: 'trial',
+          trial_days: defaultTrialDays,
+          trial_start: new Date().toISOString().split('T')[0],
         }])
       } catch (profileError) {
         console.error('Erro ao criar perfil:', profileError)

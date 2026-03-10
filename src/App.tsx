@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -18,42 +19,46 @@ import ResetPassword from "./pages/ResetPassword";
 import PerfilUsuarios from "./pages/PerfilUsuarios";
 import PermissionProfiles from "./pages/PermissionProfiles";
 import SuperAdminPanel from "./pages/SuperAdminPanel";
+import Relatorios from "./pages/Relatorios";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/clientes" element={<Clientes />} />
-                    <Route path="/manutencoes" element={<Manutencoes />} />
-                    <Route path="/empresas" element={<Empresas />} />
-                    <Route path="/equipes" element={<Equipes />} />
-                    <Route path="/tipos-manutencao" element={<TiposManutencao />} />
-                    <Route path="/cofre" element={<CofreSenhas />} />
-                    <Route path="/perfil-usuarios" element={<PerfilUsuarios />} />
-                    <Route path="/permissoes" element={<PermissionProfiles />} />
-                    <Route path="/super-admin" element={<SuperAdminPanel />} />
-                  </Routes>
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/*" element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/clientes" element={<Clientes />} />
+                      <Route path="/manutencoes" element={<Manutencoes />} />
+                      <Route path="/empresas" element={<Empresas />} />
+                      <Route path="/equipes" element={<Equipes />} />
+                      <Route path="/tipos-manutencao" element={<TiposManutencao />} />
+                      <Route path="/cofre" element={<CofreSenhas />} />
+                      <Route path="/perfil-usuarios" element={<PerfilUsuarios />} />
+                      <Route path="/permissoes" element={<PermissionProfiles />} />
+                      <Route path="/super-admin" element={<SuperAdminPanel />} />
+                      <Route path="/relatorios" element={<Relatorios />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

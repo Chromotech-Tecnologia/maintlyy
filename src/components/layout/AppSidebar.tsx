@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Crown
+  KeyRound, Calendar, Crown, FileBarChart
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -19,6 +19,7 @@ const mainItems = [
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Equipes", url: "/equipes", icon: UserCog },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar },
+  { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
 ]
 
 const securityItems = [
@@ -52,10 +53,11 @@ export function AppSidebar() {
     "Cofre de Senhas": "cofre_senhas",
     "Usuários": "perfis_usuarios",
     "Perfil": "permissoes",
+    "Relatórios": "relatorios",
   }
   
   const filteredMainItems = mainItems.filter((item) => {
-    if (item.title === "Dashboard") return true
+    if (item.title === "Dashboard" || item.title === "Relatórios") return true
     if (isAdmin) return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : true
@@ -83,7 +85,7 @@ export function AppSidebar() {
     cn(
       "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
       isActive 
-        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/25" 
+        ? "bg-primary/20 text-sidebar-primary-foreground shadow-md shadow-primary/20 border border-primary/30" 
         : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     )
 
@@ -117,7 +119,7 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border/30">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
               <img 
                 src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
                 alt="Maintly Logo" 
