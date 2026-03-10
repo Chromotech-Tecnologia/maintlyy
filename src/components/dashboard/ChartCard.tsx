@@ -10,15 +10,19 @@ interface ChartCardProps {
 
 export function ChartCard({ title, description, icon: Icon, children }: ChartCardProps) {
   return (
-    <Card className="border-0 shadow-elegant">
+    <Card className="glass-card border-0">
       <CardHeader className="pb-4">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-5 w-5 text-primary" />}
-          <CardTitle className="text-lg">{title}</CardTitle>
+        <div className="flex items-center gap-2.5">
+          {Icon && (
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Icon className="h-4 w-4 text-primary" />
+            </div>
+          )}
+          <div>
+            <CardTitle className="text-base font-display font-semibold">{title}</CardTitle>
+            {description && <CardDescription className="text-xs">{description}</CardDescription>}
+          </div>
         </div>
-        {description && (
-          <CardDescription>{description}</CardDescription>
-        )}
       </CardHeader>
       <CardContent>
         {children}
