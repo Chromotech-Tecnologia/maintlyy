@@ -35,11 +35,11 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hidden md:flex" />
               <div className="flex md:hidden items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
                   <img 
                     src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
                     alt="Maintly" 
-                    className="w-5 h-5"
+                    className="w-7 h-7"
                   />
                 </div>
                 <span className="font-display font-bold text-base">Maintly</span>

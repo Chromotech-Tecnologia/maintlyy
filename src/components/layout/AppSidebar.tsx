@@ -119,11 +119,11 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border/30">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
+            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
               <img 
                 src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
                 alt="Maintly Logo" 
-                className="w-6 h-6"
+                className="w-8 h-8"
               />
             </div>
             {!isCollapsed && (
