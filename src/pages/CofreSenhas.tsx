@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { searchMatch } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -537,18 +538,18 @@ export default function CofreSenhas() {
     }
     
     // Busca geral por texto
-    const searchLower = searchTerm.toLowerCase()
-    const searchMatch = !searchTerm || 
-      senha.nome_acesso?.toLowerCase().includes(searchLower) ||
-      senha.login?.toLowerCase().includes(searchLower) ||
-      senha.url_acesso?.toLowerCase().includes(searchLower) ||
-      senha.descricao?.toLowerCase().includes(searchLower) ||
-      senha.grupo?.toLowerCase().includes(searchLower) ||
-      senha.clientes?.nome_cliente?.toLowerCase().includes(searchLower) ||
-      senha.empresas_terceiras?.nome_empresa?.toLowerCase().includes(searchLower)
+    const searchLower = searchTerm
+    const searchMatchResult = !searchTerm || 
+      searchMatch(senha.nome_acesso, searchTerm) ||
+      searchMatch(senha.login, searchTerm) ||
+      searchMatch(senha.url_acesso, searchTerm) ||
+      searchMatch(senha.descricao, searchTerm) ||
+      searchMatch(senha.grupo, searchTerm) ||
+      searchMatch(senha.clientes?.nome_cliente, searchTerm) ||
+      searchMatch(senha.empresas_terceiras?.nome_empresa, searchTerm)
     
     // Filtro por grupo
-    const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
+    const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || searchMatch(senha.grupo, filtroGrupo)
     
     // Filtro por cliente
     const clienteMatch = !filtroCliente || filtroCliente === "todos" || senha.cliente_id === filtroCliente
@@ -556,7 +557,7 @@ export default function CofreSenhas() {
     // Filtro por empresa
     const empresaMatch = !filtroEmpresa || filtroEmpresa === "todos" || senha.empresa_terceira_id === filtroEmpresa
     
-    return searchMatch && grupoMatch && clienteMatch && empresaMatch
+    return searchMatchResult && grupoMatch && clienteMatch && empresaMatch
   })
 
   // Interface para agrupamento de senhas

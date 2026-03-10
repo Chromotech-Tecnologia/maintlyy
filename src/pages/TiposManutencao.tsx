@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { searchMatch } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -267,8 +268,7 @@ export default function TiposManutencao() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tipos.filter(t => {
           if (!searchTerm) return true
-          const s = searchTerm.toLowerCase()
-          return t.nome_tipo_manutencao.toLowerCase().includes(s) || t.descricao?.toLowerCase().includes(s)
+          return searchMatch(t.nome_tipo_manutencao, searchTerm) || searchMatch(t.descricao, searchTerm)
         }).map((tipo) => (
           <div key={tipo.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
             <div className="flex items-center gap-3">
