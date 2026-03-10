@@ -1,108 +1,121 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+# Plan: Multi-Tenant SaaS with Super Admin Panel
 
-### Problemas Identificados e Corrigidos
+## Summary
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
-
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
-
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
-
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
-
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
-
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
-
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
-
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+Transform Maintly into a multi-tenant SaaS where each new signup creates an independent admin account (tenant owner) who manages their own data. Alexandre's account (`alexandre@chromotech.com.br`) becomes the **Super Admin** (platform owner) with a dedicated panel to manage all tenant accounts.
 
 ---
 
-## Arquivos Modificados
+## Architecture Changes
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+### 1. New Concept: `is_super_admin`
+
+Add a `is_super_admin` boolean to `user_profiles` to distinguish:
+- **Super Admin** (alexandre): sees/manages ALL tenants, has platform admin panel
+- **Tenant Admin** (new signups): `is_admin = true`, manages only their own data
+- **Tenant Users** (created by tenant admins): scoped by permissions as today
+
+### 2. Database Migration
+
+```sql
+-- Add super_admin flag
+ALTER TABLE user_profiles ADD COLUMN is_super_admin boolean DEFAULT false;
+
+-- Set alexandre as super admin
+UPDATE user_profiles SET is_super_admin = true 
+WHERE email = 'alexandre@chromotech.com.br';
+
+-- Add account status fields for tenant management
+ALTER TABLE user_profiles ADD COLUMN account_status text DEFAULT 'active';
+ALTER TABLE user_profiles ADD COLUMN trial_days integer DEFAULT 0;
+ALTER TABLE user_profiles ADD COLUMN trial_start date;
+ALTER TABLE user_profiles ADD COLUMN is_permanent boolean DEFAULT false;
+ALTER TABLE user_profiles ADD COLUMN phone text;
+
+-- RLS: Super admin can see ALL user_profiles
+CREATE POLICY "Super admins can view all profiles"
+ON user_profiles FOR SELECT TO authenticated
+USING (
+  EXISTS (SELECT 1 FROM user_profiles WHERE user_id = auth.uid() AND is_super_admin = true)
+);
+
+-- Super admin can update any profile
+CREATE POLICY "Super admins can update all profiles" 
+ON user_profiles FOR UPDATE TO authenticated
+USING (
+  EXISTS (SELECT 1 FROM user_profiles WHERE user_id = auth.uid() AND is_super_admin = true)
+);
+```
+
+### 3. Signup Form Changes (`Login.tsx`)
+
+Add fields to signup form:
+- **Nome** (display_name) - required
+- **Telefone** - required
+- **Confirmação de senha** - must match password
+- Update `signupSchema` in `validations.ts` accordingly
+
+On signup, create `user_profiles` with `is_admin = true` (tenant admin), `account_status = 'pending'`.
+
+### 4. ProtectedRoute Changes
+
+Update to handle:
+- `is_super_admin` → full access + super admin panel
+- `is_admin` (tenant) → access as today, but only own data
+- `account_status = 'disabled'` → show "account disabled" message
+- `account_status = 'pending'` → show "awaiting activation" message
+
+### 5. New Page: `SuperAdminPanel.tsx`
+
+Visible only to `is_super_admin`. Based on the uploaded image reference, it will show a table with:
+
+| Column | Description |
+|--------|-------------|
+| Nome | display_name |
+| Email | email |
+| Status Email | Confirmado/Pendente (from auth) |
+| Telefone | phone field |
+| Status | Ativo/Desabilitado/Período teste |
+| Criado em | created_at |
+| Ações (dropdown) | Alterar senha, Configurar período teste, Ativar permanente, Desabilitar, Excluir |
+
+Actions use the existing `admin-operations` edge function (extended with new operations: `disableUser`, `deleteUser`).
+
+### 6. Edge Function Updates (`admin-operations`)
+
+Add operations:
+- `disableUser` → update `account_status` to `disabled`, call `admin.updateUserById` to ban
+- `deleteUser` → delete user from auth + cascade profile
+- `setTrialPeriod` → set `trial_days` + `trial_start`
+- `activatePermanent` → set `is_permanent = true`, `account_status = 'active'`
+
+Check `is_super_admin` instead of just `is_admin` for these operations.
+
+### 7. Sidebar Update
+
+Add "Painel Admin" menu item (Crown icon) visible only when `is_super_admin = true`. Route: `/super-admin`.
+
+### 8. Data Isolation
+
+The existing RLS policies already scope data by `user_id = auth.uid()`. Each tenant admin creates records with their own `user_id`, so data is already isolated. No RLS changes needed for data tables.
 
 ---
 
-## Fluxo de Permissões Implementado
+## Files to Create/Modify
 
-```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
+| File | Action |
+|------|--------|
+| `supabase/migrations/...` | Add `is_super_admin`, `account_status`, `trial_*`, `phone` columns + RLS |
+| `src/lib/validations.ts` | Add `display_name`, `phone`, `confirmPassword` to signup schema |
+| `src/pages/Login.tsx` | Add name, phone, confirm password fields to signup |
+| `src/hooks/useAuth.tsx` | Pass name/phone on signup, set `is_admin = true` for new accounts |
+| `src/pages/SuperAdminPanel.tsx` | **New** - full admin panel with user table + actions |
+| `src/components/ProtectedRoute.tsx` | Handle `account_status`, `is_super_admin` |
+| `src/hooks/usePermissions.tsx` | Add `isSuperAdmin` flag |
+| `src/components/layout/AppSidebar.tsx` | Add "Painel Admin" for super admin |
+| `src/components/layout/MobileNav.tsx` | Add "Painel Admin" for super admin |
+| `src/App.tsx` | Add `/super-admin` route |
+| `supabase/functions/admin-operations/index.ts` | Add disable/delete/trial/activate operations |
 
-## Mapeamento Resource x Menu
-
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
-
-## Estrutura de Permissões Atualizada
-
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
-
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
-
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
-
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
