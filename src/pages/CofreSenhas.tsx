@@ -619,7 +619,7 @@ export default function CofreSenhas() {
             Gerencie suas senhas de forma segura
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* Botão de Exportação */}
           <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogTrigger asChild>
