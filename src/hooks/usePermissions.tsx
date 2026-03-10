@@ -14,6 +14,7 @@ interface UserPermissions {
   hasAnyClientView: boolean
   isAdmin: boolean
   isSuperAdmin: boolean
+  loading: boolean
   clientPermissions: any[]
   systemPermissions: any[]
 }
@@ -23,6 +24,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
   const [clientPermissions, setClientPermissions] = useState<any[]>([])
   const [userProfile, setUserProfile] = useState<any>(null)
   const [profilePermissions, setProfilePermissions] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (user) {
@@ -31,11 +33,13 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
       setUserProfile(null)
       setClientPermissions([])
       setProfilePermissions({})
+      setLoading(false)
     }
   }, [user])
 
   const fetchPermissions = async () => {
     if (!user) return
+    setLoading(true)
 
     try {
       const { data: profile } = await supabase
@@ -90,6 +94,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
       setClientPermissions(clientPerms)
     } catch (error) {
       console.error('Erro ao buscar permissões:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -97,42 +103,34 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_view)
   }
-
   const canEditClient = (clienteId: string): boolean => {
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_edit)
   }
-
   const canCreateClient = (clienteId: string): boolean => {
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_create)
   }
-
   const canDeleteClient = (clienteId: string): boolean => {
     if (userProfile?.is_admin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_delete)
   }
-
   const canViewSystem = (resource: string): boolean => {
     if (userProfile?.is_admin) return true
     return profilePermissions[resource]?.can_view === true
   }
-
   const canViewDetailsSystem = (resource: string): boolean => {
     if (userProfile?.is_admin) return true
     return profilePermissions[resource]?.can_view_details === true
   }
-
   const canEditSystem = (resource: string): boolean => {
     if (userProfile?.is_admin) return true
     return profilePermissions[resource]?.can_edit === true
   }
-
   const canCreateSystem = (resource: string): boolean => {
     if (userProfile?.is_admin) return true
     return profilePermissions[resource]?.can_create === true
   }
-
   const canDeleteSystem = (resource: string): boolean => {
     if (userProfile?.is_admin) return true
     return profilePermissions[resource]?.can_delete === true
@@ -144,18 +142,12 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
   }))
 
   return {
-    canViewClient,
-    canEditClient,
-    canCreateClient,
-    canDeleteClient,
-    canViewSystem,
-    canViewDetailsSystem,
-    canEditSystem,
-    canCreateSystem,
-    canDeleteSystem,
+    canViewClient, canEditClient, canCreateClient, canDeleteClient,
+    canViewSystem, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem,
     hasAnyClientView: userProfile?.is_admin || clientPermissions.some(p => p.can_view),
     isAdmin: userProfile?.is_admin || false,
     isSuperAdmin: userProfile?.is_super_admin || false,
+    loading,
     clientPermissions,
     systemPermissions: systemPermissionsArray
   }

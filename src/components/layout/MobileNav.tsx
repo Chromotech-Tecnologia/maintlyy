@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, KeyRound, Menu, Building2,
-  UserCog, Calendar, Shield, Settings, ChevronRight, Crown
+  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -22,6 +22,7 @@ const allNavItems = [
   { title: "Empresas", url: "/empresas", icon: Building2, section: "Principal" },
   { title: "Equipes", url: "/equipes", icon: UserCog, section: "Principal" },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar, section: "Principal" },
+  { title: "Relatórios", url: "/relatorios", icon: FileBarChart, section: "Principal" },
   { title: "Cofre de Senhas", url: "/cofre", icon: KeyRound, section: "Segurança" },
 ]
 
@@ -47,7 +48,7 @@ export function MobileNav() {
   ]
 
   const filteredNavItems = allNavItems.filter((item) => {
-    if (item.title === "Dashboard") return true
+    if (item.title === "Dashboard" || item.title === "Relatórios") return true
     if (isAdmin) return true
     const resource = menuResourceMap[item.title]
     return resource ? canViewSystem(resource) : true
@@ -91,7 +92,7 @@ export function MobileNav() {
                   <div className="w-10 h-1 rounded-full bg-border" />
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
                     <img src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" alt="Maintly" className="w-6 h-6" />
                   </div>
                   <div>

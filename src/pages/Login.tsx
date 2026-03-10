@@ -13,6 +13,13 @@ import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
 import { Eye, EyeOff, Phone, User, Mail, Lock } from "lucide-react"
 
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits.length ? `(${digits}` : ''
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [showLoginPassword, setShowLoginPassword] = useState(false)
@@ -43,7 +50,6 @@ export default function Login() {
   }
 
   const handleSignUp = async (data: SignupFormData) => {
-    // Manual validation with zod v4
     const result = signupSchema.safeParse(data)
     if (!result.success) {
       const issues = result.error.issues || []
@@ -63,7 +69,7 @@ export default function Login() {
     } else if (signUpResult.needsConfirmation) {
       toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
-      toast.success("Cadastro realizado com sucesso! Aguarde a ativação pelo administrador.")
+      toast.success("Cadastro realizado! Você tem 7 dias de teste gratuito.")
     }
   }
 
@@ -201,7 +207,13 @@ export default function Login() {
                       <FormControl>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type="tel" placeholder="(11) 99999-9999" className="pl-10" {...field} />
+                          <Input 
+                            type="tel" 
+                            placeholder="(11) 99999-9999" 
+                            className="pl-10" 
+                            value={field.value}
+                            onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
