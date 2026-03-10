@@ -87,6 +87,7 @@ export default function CofreSenhas() {
   const [filtroGrupo, setFiltroGrupo] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroEmpresa, setFiltroEmpresa] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
   const [clienteExpandido, setClienteExpandido] = useState<string | null>(null)
   const [manutencoesPorCliente, setManutencoesPorCliente] = useState<Record<string, Manutencao[]>>({})
   
