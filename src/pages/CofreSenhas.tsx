@@ -299,11 +299,17 @@ export default function CofreSenhas() {
     if (!confirm("Tem certeza que deseja excluir esta senha?")) return
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('cofre_senhas')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
+
+      // Non-admin users can only delete their own passwords
+      if (!isAdmin) {
+        query = query.eq('user_id', user.id)
+      }
+
+      const { error } = await query
 
       if (error) throw error
       toast.success("Senha excluída com sucesso!")
