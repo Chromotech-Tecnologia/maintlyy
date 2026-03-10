@@ -1062,11 +1062,11 @@ export default function CofreSenhas() {
       </div>
 
       {/* Senhas agrupadas por cliente - Layout resumido */}
-      <div className="space-y-6">
+       <div className="space-y-6 min-w-0 overflow-hidden">
         {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, dadosCliente]) => (
-          <div key={nomeCliente} className="space-y-4">
+          <div key={nomeCliente} className="space-y-4 min-w-0">
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary"
+              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary min-w-0 overflow-hidden"
               onClick={async () => {
                 const novoExpandido = clienteExpandido === nomeCliente ? null : nomeCliente
                 setClienteExpandido(novoExpandido)
