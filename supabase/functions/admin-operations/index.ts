@@ -7,104 +7,73 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent'
   userId?: string
   updateData?: {
     email?: string
     password?: string
   }
+  trialDays?: number
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Get authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Create Supabase client with the user's token
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        },
-        auth: { 
-          persistSession: false,
-          autoRefreshToken: false
-        }
-      }
+      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
     )
 
-    // Get current user from JWT
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     if (authError || !user) {
-      console.error('Auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Invalid authorization' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Verify user is admin
+    // Check admin or super admin
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('is_admin')
+      .select('is_admin, is_super_admin')
       .eq('user_id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin) {
-      console.error('Profile error or not admin:', profileError, profile)
-      return new Response(
-        JSON.stringify({ error: 'Insufficient permissions' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (profileError || (!profile?.is_admin && !profile?.is_super_admin)) {
+      return new Response(JSON.stringify({ error: 'Insufficient permissions' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const body: AdminOperationRequest = await req.json()
+    const isSuperAdmin = profile?.is_super_admin === true
 
-    // Create admin client
+    // Operations that require super admin
+    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent']
+    if (superAdminOps.includes(body.operation) && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: 'Only super admins can perform this operation' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: { 
-          persistSession: false,
-          autoRefreshToken: false
-        }
-      }
+      { auth: { persistSession: false, autoRefreshToken: false } }
     )
 
     let result
-    
+
     switch (body.operation) {
       case 'getUserById':
-        if (!body.userId) {
-          return new Response(
-            JSON.stringify({ error: 'userId is required' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         result = await supabaseAdmin.auth.admin.getUserById(body.userId)
         break
 
       case 'updateUserById':
-        if (!body.userId || !body.updateData) {
-          return new Response(
-            JSON.stringify({ error: 'userId and updateData are required' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
+        if (!body.userId || !body.updateData) return new Response(JSON.stringify({ error: 'userId and updateData are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, body.updateData)
         break
 
@@ -112,23 +81,58 @@ serve(async (req) => {
         result = await supabaseAdmin.auth.admin.listUsers()
         break
 
+      case 'disableUser':
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        // Update profile status
+        await supabaseAdmin.from('user_profiles').update({ account_status: 'disabled' }).eq('user_id', body.userId)
+        // Ban user in auth
+        result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: '876000h' })
+        break
+
+      case 'enableUser':
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        await supabaseAdmin.from('user_profiles').update({ account_status: 'active' }).eq('user_id', body.userId)
+        result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
+        break
+
+      case 'deleteUser':
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        // Delete profile first, then auth user
+        await supabaseAdmin.from('user_profiles').delete().eq('user_id', body.userId)
+        result = await supabaseAdmin.auth.admin.deleteUser(body.userId)
+        break
+
+      case 'setTrialPeriod':
+        if (!body.userId || !body.trialDays) return new Response(JSON.stringify({ error: 'userId and trialDays are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        await supabaseAdmin.from('user_profiles').update({
+          account_status: 'trial',
+          trial_days: body.trialDays,
+          trial_start: new Date().toISOString().split('T')[0],
+          is_permanent: false,
+        }).eq('user_id', body.userId)
+        // Unban if was banned
+        result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
+        break
+
+      case 'activatePermanent':
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        await supabaseAdmin.from('user_profiles').update({
+          account_status: 'active',
+          is_permanent: true,
+          trial_days: 0,
+          trial_start: null,
+        }).eq('user_id', body.userId)
+        result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
+        break
+
       default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid operation' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify({ error: 'Invalid operation' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
     console.error('Function error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })

@@ -576,32 +576,50 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          account_status: string | null
           created_at: string
           display_name: string | null
           email: string | null
           id: string
           is_admin: boolean | null
+          is_permanent: boolean | null
+          is_super_admin: boolean | null
           permission_profile_id: string | null
+          phone: string | null
+          trial_days: number | null
+          trial_start: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_status?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
           is_admin?: boolean | null
+          is_permanent?: boolean | null
+          is_super_admin?: boolean | null
           permission_profile_id?: string | null
+          phone?: string | null
+          trial_days?: number | null
+          trial_start?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_status?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
           is_admin?: boolean | null
+          is_permanent?: boolean | null
+          is_super_admin?: boolean | null
           permission_profile_id?: string | null
+          phone?: string | null
+          trial_days?: number | null
+          trial_start?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -664,6 +682,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

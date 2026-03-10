@@ -13,6 +13,7 @@ interface UserPermissions {
   canDeleteSystem: (resource: string) => boolean
   hasAnyClientView: boolean
   isAdmin: boolean
+  isSuperAdmin: boolean
   clientPermissions: any[]
   systemPermissions: any[]
 }
@@ -37,7 +38,6 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
     if (!user) return
 
     try {
-      // Fetch user profile
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('*')
@@ -46,7 +46,6 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
 
       setUserProfile(profile)
 
-      // Fetch permission profile if assigned
       if (profile?.permission_profile_id) {
         const { data: permProfile } = await supabase
           .from('permission_profiles')
@@ -62,13 +61,11 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
           )
         }
       } else {
-        // Fallback: read from user_system_permissions for backwards compatibility
         const { data: systemPerms } = await supabase
           .from('user_system_permissions')
           .select('*')
           .eq('user_id', user.id)
 
-        // Convert to profile format
         const perms: Record<string, any> = {}
         systemPerms?.forEach(sp => {
           perms[sp.resource_type] = {
@@ -82,7 +79,6 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
         setProfilePermissions(perms)
       }
 
-      // Fetch client permissions
       let clientPerms: any[] = []
       if (!profile?.is_admin) {
         const { data } = await supabase
@@ -142,7 +138,6 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
     return profilePermissions[resource]?.can_delete === true
   }
 
-  // Build a systemPermissions array for backwards compatibility
   const systemPermissionsArray = Object.entries(profilePermissions).map(([resource, perms]) => ({
     resource_type: resource,
     ...perms
@@ -160,6 +155,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
     canDeleteSystem,
     hasAnyClientView: userProfile?.is_admin || clientPermissions.some(p => p.can_view),
     isAdmin: userProfile?.is_admin || false,
+    isSuperAdmin: userProfile?.is_super_admin || false,
     clientPermissions,
     systemPermissions: systemPermissionsArray
   }

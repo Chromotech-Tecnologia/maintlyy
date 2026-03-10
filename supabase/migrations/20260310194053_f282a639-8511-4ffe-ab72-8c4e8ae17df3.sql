@@ -1,0 +1,1 @@
+UPDATE user_profiles SET is_super_admin = true WHERE email = 'alexandre@chromotech.com.br';

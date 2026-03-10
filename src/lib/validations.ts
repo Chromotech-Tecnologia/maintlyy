@@ -6,10 +6,16 @@ export const loginSchema = z.object({
 })
 
 export const signupSchema = z.object({
+  display_name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
   email: z.string().email('Email inválido'),
+  phone: z.string().min(8, 'Telefone deve ter pelo menos 8 dígitos').max(20, 'Telefone inválido'),
   password: z.string()
     .min(8, 'A senha deve ter pelo menos 8 caracteres')
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter ao menos uma letra minúscula, uma maiúscula e um número'),
+  confirmPassword: z.string().min(1, 'Confirme sua senha'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
 })
 
 export const clienteSchema = z.object({
@@ -46,7 +52,7 @@ export const cofreSenhaSchema = z.object({
 
 export const manutencaoSchema = z.object({
   cliente_id: z.string().uuid('Cliente é obrigatório'),
-  empresa_terceira_id: z.string().uuid('Empresa terceira é obrigatória'),
+  empresa_terceira_id: z.string().uuid('Empresa é obrigatória'),
   tipo_manutencao_id: z.string().uuid('Tipo de manutenção é obrigatório'),
   data_inicio: z.string().min(1, 'Data de início é obrigatória'),
   hora_inicio: z.string().min(1, 'Hora de início é obrigatória'),
