@@ -185,24 +185,29 @@ export default function Clientes() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />)}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
-          <p className="text-muted-foreground">
-            Gerencie seus clientes e contratos de manutenção
-          </p>
+          <h1 className="page-title font-display">Clientes</h1>
+          <p className="page-subtitle">Gerencie seus clientes e contratos</p>
         </div>
         {(isAdmin || canCreateSystem('clientes')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+              <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                 <Plus className="mr-2 h-4 w-4" />
-                Novo Cliente
+                <span className="hidden sm:inline">Novo Cliente</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
