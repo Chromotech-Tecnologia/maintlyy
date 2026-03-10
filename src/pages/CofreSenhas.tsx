@@ -1081,28 +1081,23 @@ export default function CofreSenhas() {
                 }
               }}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <KeyRound className="h-5 w-5 text-primary" />
+              <CardHeader className="pb-3 px-3 sm:px-6">
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
+                      <KeyRound className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">{nomeCliente}</h3>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold truncate">{nomeCliente}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {dadosCliente.senhas.length} senha{dadosCliente.senhas.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        Grupos: {[...new Set(dadosCliente.senhas.map(s => s.grupo).filter(Boolean))].join(", ") || "Nenhum"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Clique para expandir
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
+                      {[...new Set(dadosCliente.senhas.map(s => s.grupo).filter(Boolean))].length} grupo(s)
+                    </span>
                     {clienteExpandido === nomeCliente ? (
                       <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     ) : (
