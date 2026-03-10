@@ -628,7 +628,7 @@ export default function CofreSenhas() {
                 Exportar Senhas
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
