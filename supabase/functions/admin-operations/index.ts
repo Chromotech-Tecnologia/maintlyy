@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats'
   userId?: string
   updateData?: {
     email?: string
@@ -53,7 +53,7 @@ serve(async (req) => {
     const isSuperAdmin = profile?.is_super_admin === true
 
     // Operations that require super admin
-    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent']
+    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats']
     if (superAdminOps.includes(body.operation) && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Only super admins can perform this operation' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -83,9 +83,7 @@ serve(async (req) => {
 
       case 'disableUser':
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        // Update profile status
         await supabaseAdmin.from('user_profiles').update({ account_status: 'disabled' }).eq('user_id', body.userId)
-        // Ban user in auth
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: '876000h' })
         break
 
@@ -97,33 +95,96 @@ serve(async (req) => {
 
       case 'deleteUser':
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        // Delete profile first, then auth user
         await supabaseAdmin.from('user_profiles').delete().eq('user_id', body.userId)
         result = await supabaseAdmin.auth.admin.deleteUser(body.userId)
         break
 
-      case 'setTrialPeriod':
-        if (!body.userId || !body.trialDays) return new Response(JSON.stringify({ error: 'userId and trialDays are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        await supabaseAdmin.from('user_profiles').update({
+      case 'setTrialPeriod': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const days = body.trialDays
+        if (!days || days < 1) return new Response(JSON.stringify({ error: 'trialDays must be a positive number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        
+        const { error: updateError } = await supabaseAdmin.from('user_profiles').update({
           account_status: 'trial',
-          trial_days: body.trialDays,
+          trial_days: days,
           trial_start: new Date().toISOString().split('T')[0],
           is_permanent: false,
         }).eq('user_id', body.userId)
+        
+        if (updateError) {
+          console.error('Error updating profile for trial:', updateError)
+          return new Response(JSON.stringify({ error: 'Failed to update profile: ' + updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
         // Unban if was banned
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
         break
+      }
 
-      case 'activatePermanent':
+      case 'activatePermanent': {
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        await supabaseAdmin.from('user_profiles').update({
+        const { error: activateError } = await supabaseAdmin.from('user_profiles').update({
           account_status: 'active',
           is_permanent: true,
           trial_days: 0,
           trial_start: null,
         }).eq('user_id', body.userId)
+        
+        if (activateError) {
+          console.error('Error activating permanent:', activateError)
+          return new Response(JSON.stringify({ error: 'Failed to activate: ' + activateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
         break
+      }
+
+      case 'getAdminStats': {
+        // Get all admin profiles (is_admin = true, not super_admin)
+        const { data: adminProfiles } = await supabaseAdmin
+          .from('user_profiles')
+          .select('user_id, display_name, email, phone, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent, created_at')
+          .eq('is_admin', true)
+          .order('created_at', { ascending: false })
+
+        const admins = (adminProfiles || []).filter(a => !a.is_super_admin)
+        
+        const statsPromises = admins.map(async (admin) => {
+          const [usersRes, clientsRes, senhasRes] = await Promise.all([
+            supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }).neq('user_id', admin.user_id).eq('is_admin', false),
+            supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+            supabaseAdmin.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+          ])
+          
+          // Count sub-users: profiles that have a permission_profile owned by this admin
+          const { data: adminPermProfiles } = await supabaseAdmin
+            .from('permission_profiles')
+            .select('id')
+            .eq('user_id', admin.user_id)
+          
+          const profileIds = (adminPermProfiles || []).map(p => p.id)
+          let subUserCount = 0
+          if (profileIds.length > 0) {
+            const { count } = await supabaseAdmin
+              .from('user_profiles')
+              .select('id', { count: 'exact', head: true })
+              .in('permission_profile_id', profileIds)
+          subUserCount = count || 0
+          }
+
+          return {
+            ...admin,
+            stats: {
+              usuarios: subUserCount,
+              clientes: clientsRes.count || 0,
+              senhas: senhasRes.count || 0,
+            }
+          }
+        })
+
+        const adminsWithStats = await Promise.all(statsPromises)
+        return new Response(JSON.stringify({ admins: adminsWithStats }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
 
       default:
         return new Response(JSON.stringify({ error: 'Invalid operation' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

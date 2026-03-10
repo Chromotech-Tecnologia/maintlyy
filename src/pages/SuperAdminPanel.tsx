@@ -8,7 +8,8 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
-  XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings
+  XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
+  Users, KeyRound, Building2
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -29,8 +30,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog"
 
-interface UserProfile {
-  id: string
+interface AdminWithStats {
   user_id: string
   email: string | null
   display_name: string | null
@@ -42,20 +42,17 @@ interface UserProfile {
   trial_start: string | null
   is_permanent: boolean | null
   created_at: string
-}
-
-interface AuthUser {
-  id: string
-  email?: string
-  email_confirmed_at?: string | null
-  created_at?: string
+  stats: {
+    usuarios: number
+    clientes: number
+    senhas: number
+  }
 }
 
 export default function SuperAdminPanel() {
   const { session } = useAuth()
   const { isSuperAdmin, loading: permissionsLoading } = usePermissions()
-  const [profiles, setProfiles] = useState<UserProfile[]>([])
-  const [authUsers, setAuthUsers] = useState<AuthUser[]>([])
+  const [admins, setAdmins] = useState<AdminWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [defaultTrialDays, setDefaultTrialDays] = useState("7")
@@ -105,20 +102,12 @@ export default function SuperAdminPanel() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const { data: profilesData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      setProfiles((profilesData as any[]) || [])
-
-      const { data: authData } = await supabase.functions.invoke('admin-operations', {
-        body: { operation: 'listUsers' }
+      const { data, error } = await supabase.functions.invoke('admin-operations', {
+        body: { operation: 'getAdminStats' }
       })
 
-      if (authData?.data?.users) {
-        setAuthUsers(authData.data.users)
-      }
+      if (error) throw error
+      setAdmins(data?.admins || [])
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error("Erro ao carregar dados")
@@ -203,7 +192,6 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
-  // Wait for permissions to load before redirecting
   if (permissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -217,21 +205,17 @@ export default function SuperAdminPanel() {
 
   if (!isSuperAdmin) return <Navigate to="/" replace />
 
-  const getAuthUser = (userId: string) => authUsers.find(u => u.id === userId)
-
-  const getStatusBadge = (profile: UserProfile) => {
-    const status = profile.account_status || 'active'
-    if (profile.is_super_admin) return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Super Admin</Badge>
-    if (profile.is_permanent) return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Permanente</Badge>
+  const getStatusBadge = (admin: AdminWithStats) => {
+    const status = admin.account_status || 'active'
+    if (admin.is_permanent) return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Permanente</Badge>
     switch (status) {
       case 'active': return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Ativo</Badge>
-      case 'pending': return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pendente</Badge>
       case 'trial': {
-        if (profile.trial_start && profile.trial_days) {
-          const end = new Date(profile.trial_start)
-          end.setDate(end.getDate() + profile.trial_days)
+        if (admin.trial_start && admin.trial_days) {
+          const end = new Date(admin.trial_start)
+          end.setDate(end.getDate() + admin.trial_days)
           const daysLeft = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-          return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Teste ({daysLeft > 0 ? `${daysLeft}d restantes` : 'Expirado'})</Badge>
+          return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Teste ({daysLeft > 0 ? `${daysLeft}d` : 'Expirado'})</Badge>
         }
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Teste</Badge>
       }
@@ -241,28 +225,19 @@ export default function SuperAdminPanel() {
     }
   }
 
-  const getEmailStatusBadge = (userId: string) => {
-    const authUser = getAuthUser(userId)
-    if (!authUser) return <Badge variant="secondary">—</Badge>
-    return authUser.email_confirmed_at
-      ? <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Confirmado</Badge>
-      : <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pendente</Badge>
-  }
-
-  const filtered = profiles.filter(p => {
+  const filtered = admins.filter(a => {
     if (!search) return true
     const s = search.toLowerCase()
     return (
-      (p.display_name || '').toLowerCase().includes(s) ||
-      (p.email || '').toLowerCase().includes(s) ||
-      (p.phone || '').toLowerCase().includes(s)
+      (a.display_name || '').toLowerCase().includes(s) ||
+      (a.email || '').toLowerCase().includes(s)
     )
   })
 
-  const totalUsers = profiles.filter(p => !p.is_super_admin).length
-  const activeUsers = profiles.filter(p => !p.is_super_admin && (p.account_status === 'active' || p.is_permanent)).length
-  const pendingUsers = profiles.filter(p => p.account_status === 'pending').length
-  const trialUsers = profiles.filter(p => p.account_status === 'trial').length
+  const totalAdmins = admins.length
+  const activeAdmins = admins.filter(a => a.account_status === 'active' || a.is_permanent).length
+  const trialAdmins = admins.filter(a => a.account_status === 'trial').length
+  const disabledAdmins = admins.filter(a => a.account_status === 'disabled').length
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -273,8 +248,8 @@ export default function SuperAdminPanel() {
             <Crown className="h-6 w-6 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display">Painel Administrativo</h1>
-            <p className="text-sm text-muted-foreground">Gerencie todas as contas do Maintly</p>
+            <h1 className="text-2xl font-bold font-display">Painel Super Admin</h1>
+            <p className="text-sm text-muted-foreground">Gerencie os administradores cadastrados no Maintly</p>
           </div>
         </div>
       </div>
@@ -307,26 +282,26 @@ export default function SuperAdminPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{totalUsers}</p>
-            <p className="text-xs text-muted-foreground">Total Contas</p>
+            <p className="text-2xl font-bold">{totalAdmins}</p>
+            <p className="text-xs text-muted-foreground">Administradores</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{activeUsers}</p>
+            <p className="text-2xl font-bold text-emerald-400">{activeAdmins}</p>
             <p className="text-xs text-muted-foreground">Ativos</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-amber-400">{pendingUsers}</p>
-            <p className="text-xs text-muted-foreground">Pendentes</p>
+            <p className="text-2xl font-bold text-blue-400">{trialAdmins}</p>
+            <p className="text-xs text-muted-foreground">Em Teste</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-blue-400">{trialUsers}</p>
-            <p className="text-xs text-muted-foreground">Em Teste</p>
+            <p className="text-2xl font-bold text-red-400">{disabledAdmins}</p>
+            <p className="text-xs text-muted-foreground">Desabilitados</p>
           </CardContent>
         </Card>
       </div>
@@ -335,7 +310,7 @@ export default function SuperAdminPanel() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nome, email ou telefone..."
+          placeholder="Buscar administrador..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
@@ -345,7 +320,7 @@ export default function SuperAdminPanel() {
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando contas...</p>
+          <p className="text-muted-foreground">Carregando administradores...</p>
         </div>
       ) : (
         <>
@@ -354,60 +329,75 @@ export default function SuperAdminPanel() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Nome</TableHead>
+                  <TableHead>Administrador</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status Email</TableHead>
-                  <TableHead>Telefone</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Usuários</TableHead>
+                  <TableHead className="text-center">Clientes</TableHead>
+                  <TableHead className="text-center">Senhas</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((profile) => (
-                  <TableRow key={profile.id} className="border-border/30 hover:bg-muted/30">
-                    <TableCell className="font-medium">{profile.display_name || '—'}</TableCell>
-                    <TableCell>{profile.email || '—'}</TableCell>
-                    <TableCell>{getEmailStatusBadge(profile.user_id)}</TableCell>
-                    <TableCell>{profile.phone || '—'}</TableCell>
-                    <TableCell>{getStatusBadge(profile)}</TableCell>
+                {filtered.map((admin) => (
+                  <TableRow key={admin.user_id} className="border-border/30 hover:bg-muted/30">
+                    <TableCell className="font-medium">{admin.display_name || '—'}</TableCell>
+                    <TableCell>{admin.email || '—'}</TableCell>
+                    <TableCell>{getStatusBadge(admin)}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{admin.stats.usuarios}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{admin.stats.clientes}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{admin.stats.senhas}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(profile.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(new Date(admin.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!profile.is_super_admin && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: profile.user_id, email: profile.email || '' }); setNewPassword("") }}>
-                              <Key className="h-4 w-4 mr-2" /> Alterar senha
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
+                            <Key className="h-4 w-4 mr-2" /> Alterar senha
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
+                            <Clock className="h-4 w-4 mr-2" /> Configurar período teste
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
+                            <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {admin.account_status === 'disabled' ? (
+                            <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
+                              <Shield className="h-4 w-4 mr-2" /> Reabilitar conta
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: profile.user_id, email: profile.email || '' })}>
-                              <Clock className="h-4 w-4 mr-2" /> Configurar período teste
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleDisable(admin.user_id)} className="text-destructive">
+                              <XCircle className="h-4 w-4 mr-2" /> Desabilitar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleActivatePermanent(profile.user_id)}>
-                              <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {profile.account_status === 'disabled' ? (
-                              <DropdownMenuItem onClick={() => handleEnable(profile.user_id)}>
-                                <Shield className="h-4 w-4 mr-2" /> Reabilitar conta
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem onClick={() => handleDisable(profile.user_id)} className="text-destructive">
-                                <XCircle className="h-4 w-4 mr-2" /> Desabilitar
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: profile.user_id, email: profile.email || '' })} className="text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> Excluir conta
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                          )}
+                          <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: admin.user_id, email: admin.email || '' })} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir conta
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -417,65 +407,82 @@ export default function SuperAdminPanel() {
 
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
-            {filtered.map((profile) => (
-              <Card key={profile.id} className="glass-card">
+            {filtered.map((admin) => (
+              <Card key={admin.user_id} className="glass-card">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="font-medium truncate">{profile.display_name || '—'}</span>
+                        <span className="font-medium truncate">{admin.display_name || '—'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Mail className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{profile.email || '—'}</span>
+                        <span className="truncate">{admin.email || '—'}</span>
                       </div>
-                      {profile.phone && (
+                      {admin.phone && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Phone className="h-3.5 w-3.5 shrink-0" />
-                          <span>{profile.phone}</span>
+                          <span>{admin.phone}</span>
                         </div>
                       )}
                     </div>
-                    {!profile.is_super_admin && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: profile.user_id, email: profile.email || '' }); setNewPassword("") }}>
-                            <Key className="h-4 w-4 mr-2" /> Alterar senha
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
+                          <Key className="h-4 w-4 mr-2" /> Alterar senha
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
+                          <Clock className="h-4 w-4 mr-2" /> Período teste
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {admin.account_status === 'disabled' ? (
+                          <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
+                            <Shield className="h-4 w-4 mr-2" /> Reabilitar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: profile.user_id, email: profile.email || '' })}>
-                            <Clock className="h-4 w-4 mr-2" /> Período teste
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleDisable(admin.user_id)} className="text-destructive">
+                            <XCircle className="h-4 w-4 mr-2" /> Desabilitar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleActivatePermanent(profile.user_id)}>
-                            <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {profile.account_status === 'disabled' ? (
-                            <DropdownMenuItem onClick={() => handleEnable(profile.user_id)}>
-                              <Shield className="h-4 w-4 mr-2" /> Reabilitar
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onClick={() => handleDisable(profile.user_id)} className="text-destructive">
-                              <XCircle className="h-4 w-4 mr-2" /> Desabilitar
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: profile.user_id, email: profile.email || '' })} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                        )}
+                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: admin.user_id, email: admin.email || '' })} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
+                      <Users className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium">{admin.stats.usuarios}</span>
+                      <span className="text-xs text-muted-foreground">usuários</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium">{admin.stats.clientes}</span>
+                      <span className="text-xs text-muted-foreground">clientes</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
+                      <KeyRound className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium">{admin.stats.senhas}</span>
+                      <span className="text-xs text-muted-foreground">senhas</span>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-2 flex-wrap">
-                    {getStatusBadge(profile)}
-                    {getEmailStatusBadge(profile.user_id)}
+                    {getStatusBadge(admin)}
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {format(new Date(profile.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(new Date(admin.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                   </div>
                 </CardContent>
@@ -485,7 +492,7 @@ export default function SuperAdminPanel() {
 
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              Nenhuma conta encontrada.
+              Nenhum administrador encontrado.
             </div>
           )}
         </>

@@ -60,7 +60,21 @@ export default function PerfilUsuarios() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setProfiles((data as any[]) || [])
+      
+      const allProfiles = (data as any[]) || []
+      
+      // If admin, show only own profile + subordinates (non-admin users)
+      // If not admin, show only own profile
+      if (permissions.isAdmin && user) {
+        const filtered = allProfiles.filter(p => 
+          p.user_id === user.id || (!p.is_admin && !p.is_super_admin)
+        )
+        setProfiles(filtered)
+      } else if (user) {
+        setProfiles(allProfiles.filter(p => p.user_id === user.id))
+      } else {
+        setProfiles(allProfiles)
+      }
     } catch (error) {
       console.error('Erro ao buscar perfis:', error)
       toast.error('Erro ao carregar perfis')
@@ -109,7 +123,6 @@ export default function PerfilUsuarios() {
           const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
           const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
 
-          // Sync client permissions
           await supabase.from('user_client_permissions').delete().eq('user_id', userId)
           if (clientAccess.length > 0) {
             await supabase.from('user_client_permissions').insert(
@@ -121,7 +134,6 @@ export default function PerfilUsuarios() {
             )
           }
 
-          // Sync empresa permissions
           await supabase.from('user_empresa_permissions').delete().eq('user_id', userId)
           if (empresaAccess.length > 0) {
             await supabase.from('user_empresa_permissions').insert(
@@ -133,7 +145,6 @@ export default function PerfilUsuarios() {
             )
           }
 
-          // Sync password permissions
           await supabase.from('user_password_permissions').delete().eq('user_id', userId)
           if (passwordAccess.length > 0) {
             await supabase.from('user_password_permissions').insert(
@@ -145,7 +156,6 @@ export default function PerfilUsuarios() {
           }
         }
       } else {
-        // If removing profile, clear access permissions
         await supabase.from('user_client_permissions').delete().eq('user_id', userId)
         await supabase.from('user_empresa_permissions').delete().eq('user_id', userId)
         await supabase.from('user_password_permissions').delete().eq('user_id', userId)
@@ -216,7 +226,7 @@ export default function PerfilUsuarios() {
     )
   }
 
-  const isSingleUser = profiles.length === 1
+  const isSingleUser = profiles.length === 1 && profiles[0]?.user_id === user?.id
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -224,65 +234,67 @@ export default function PerfilUsuarios() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{isSingleUser ? "Minha Conta" : "Usuários"}</h1>
           <p className="text-sm text-muted-foreground">
-            {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie usuários e atribua perfis de permissão"}
+            {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie seus usuários subordinados"}
           </p>
         </div>
-        <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Criar Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Usuário</DialogTitle>
-              <DialogDescription>
-                Crie um novo usuário no sistema com login e senha
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div>
-                <Label htmlFor="new_email">Email</Label>
-                <Input
-                  id="new_email"
-                  type="email"
-                  value={newUserData.email}
-                  onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="usuario@exemplo.com"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="new_password">Senha</Label>
-                <Input
-                  id="new_password"
-                  type="password"
-                  value={newUserData.password}
-                  onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Senha do usuário"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="new_display_name">Nome de Exibição</Label>
-                <Input
-                  id="new_display_name"
-                  value={newUserData.display_name}
-                  onChange={(e) => setNewUserData(prev => ({ ...prev, display_name: e.target.value }))}
-                  placeholder="Ex: João Silva"
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">Criar Usuário</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {permissions.isAdmin && (
+          <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Criar Usuário
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Criar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  Crie um novo usuário subordinado no sistema
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div>
+                  <Label htmlFor="new_email">Email</Label>
+                  <Input
+                    id="new_email"
+                    type="email"
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="usuario@exemplo.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_password">Senha</Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Senha do usuário"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new_display_name">Nome de Exibição</Label>
+                  <Input
+                    id="new_display_name"
+                    value={newUserData.display_name}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, display_name: e.target.value }))}
+                    placeholder="Ex: João Silva"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Criar Usuário</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="grid gap-4">
@@ -292,33 +304,33 @@ export default function PerfilUsuarios() {
           return (
             <Card key={profile.id}>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 text-primary" />
                     </div>
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        {profile.display_name}
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{profile.display_name}</span>
                         {profile.is_admin && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
+                          <Badge variant="secondary" className="flex items-center gap-1 shrink-0">
                             <Shield className="w-3 h-3" />
                             Admin
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        {profile.email}
+                      <CardDescription className="flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{profile.email}</span>
                         {assignedProfile && (
-                          <Badge variant="outline" className="ml-2">
+                          <Badge variant="outline" className="shrink-0">
                             {assignedProfile.nome_perfil}
                           </Badge>
                         )}
                       </CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {permissions.isAdmin && (
+                  <div className="flex items-center gap-3 shrink-0">
+                    {permissions.isAdmin && profile.user_id !== user?.id && (
                       <div className="w-48">
                         <Select
                           value={profile.permission_profile_id || "none"}
