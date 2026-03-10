@@ -13,11 +13,11 @@ import Empresas from "./pages/Empresas";
 import Equipes from "./pages/Equipes";
 import TiposManutencao from "./pages/TiposManutencao";
 import CofreSenhas from "./pages/CofreSenhas";
-import ComingSoon from "./pages/ComingSoon";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import PerfilUsuarios from "./pages/PerfilUsuarios";
 import PermissionProfiles from "./pages/PermissionProfiles";
+import SuperAdminPanel from "./pages/SuperAdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +44,7 @@ const App = () => (
                     <Route path="/cofre" element={<CofreSenhas />} />
                     <Route path="/perfil-usuarios" element={<PerfilUsuarios />} />
                     <Route path="/permissoes" element={<PermissionProfiles />} />
+                    <Route path="/super-admin" element={<SuperAdminPanel />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>

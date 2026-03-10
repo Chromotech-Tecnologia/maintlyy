@@ -1,10 +1,9 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Menu, X, ChevronDown
+  KeyRound, Calendar, Crown
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
-import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 import {
@@ -41,7 +40,7 @@ export function AppSidebar() {
   const location = useLocation()
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
-  const { isAdmin, canViewSystem } = usePermissions()
+  const { isAdmin, isSuperAdmin, canViewSystem } = usePermissions()
   
   const menuResourceMap: Record<string, string> = {
     "Dashboard": "dashboard",
@@ -137,6 +136,11 @@ export function AppSidebar() {
         {renderSection("Principal", filteredMainItems)}
         {renderSection("Segurança", filteredSecurityItems)}
         {renderSection("Sistema", filteredSystemItems)}
+        
+        {/* Super Admin */}
+        {isSuperAdmin && renderSection("Administração", [
+          { title: "Painel Admin", url: "/super-admin", icon: Crown },
+        ])}
       </SidebarContent>
     </Sidebar>
   )
