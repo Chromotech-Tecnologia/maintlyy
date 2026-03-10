@@ -32,6 +32,7 @@ export default function TiposManutencao() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewingTipo, setViewingTipo] = useState<TipoManutencao | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const form = useForm<TipoManutencaoFormData>({
     resolver: zodResolver(tipoManutencaoSchema),
