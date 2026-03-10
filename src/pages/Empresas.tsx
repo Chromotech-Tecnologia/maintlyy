@@ -113,23 +113,28 @@ export default function Empresas() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+      </div>
+    )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header">
         <div>
-         <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
-          <p className="text-muted-foreground">Gerencie as empresas para as quais você presta serviços</p>
+          <h1 className="page-title font-display">Empresas</h1>
+          <p className="page-subtitle">Gerencie as empresas para as quais você presta serviços</p>
         </div>
         
         {(isAdmin || canCreateSystem('empresas_terceiras')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Empresa
+                <span className="hidden sm:inline">Nova Empresa</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -187,57 +192,45 @@ export default function Empresas() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Lista de Empresas
-          </CardTitle>
-          <CardDescription>
-            {empresas.length} empresas registradas
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome da empresa..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      {/* Search */}
+      <div className="search-bar">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+        <Input
+          placeholder="Buscar por nome da empresa..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
+        />
+      </div>
+
+      {/* Desktop Table */}
+      <Card className="glass-card border-0 hidden md:block">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nome da Empresa</TableHead>
-                <TableHead>Data de Criação</TableHead>
-                <TableHead className="w-24">Ações</TableHead>
+              <TableRow className="border-border/50">
+                <TableHead className="font-semibold">Nome da Empresa</TableHead>
+                <TableHead className="font-semibold">Data de Criação</TableHead>
+                <TableHead className="w-24 font-semibold">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
-                <TableRow key={empresa.id}>
+                <TableRow key={empresa.id} className="border-border/30 hover:bg-muted/40">
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
-                  <TableCell>
-                    {new Date(empresa.created_at).toLocaleDateString()}
+                  <TableCell className="text-muted-foreground text-sm">
+                    {new Date(empresa.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       {(isAdmin || canViewDetailsSystem('empresas_terceiras')) && (
-                        <Button size="sm" variant="ghost" onClick={() => handleView(empresa)} title="Ver detalhes">
-                          <Eye className="h-3 w-3" />
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleView(empresa)} className="h-8 w-8 p-0 rounded-lg"><Eye className="h-3.5 w-3.5" /></Button>
                       )}
                       {(isAdmin || canEditSystem('empresas_terceiras')) && (
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(empresa)} title="Editar">
-                          <Edit className="h-3 w-3" />
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(empresa)} className="h-8 w-8 p-0 rounded-lg"><Edit className="h-3.5 w-3.5" /></Button>
                       )}
                       {(isAdmin || canDeleteSystem('empresas_terceiras')) && (
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(empresa.id)} title="Excluir">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(empresa.id)} className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                       )}
                     </div>
                   </TableCell>
@@ -245,14 +238,44 @@ export default function Empresas() {
               ))}
             </TableBody>
           </Table>
-          
-          {empresas.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhuma empresa encontrada
-            </div>
-          )}
         </CardContent>
       </Card>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
+          <div key={empresa.id} className="mobile-card">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{empresa.nome_empresa}</p>
+                <p className="text-xs text-muted-foreground">{new Date(empresa.created_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              {(isAdmin || canViewDetailsSystem('empresas_terceiras')) && (
+                <Button size="sm" variant="outline" onClick={() => handleView(empresa)} className="flex-1 h-9 rounded-lg text-xs"><Eye className="h-3.5 w-3.5 mr-1" />Ver</Button>
+              )}
+              {(isAdmin || canEditSystem('empresas_terceiras')) && (
+                <Button size="sm" variant="outline" onClick={() => handleEdit(empresa)} className="flex-1 h-9 rounded-lg text-xs"><Edit className="h-3.5 w-3.5 mr-1" />Editar</Button>
+              )}
+              {(isAdmin || canDeleteSystem('empresas_terceiras')) && (
+                <Button size="sm" variant="outline" onClick={() => handleDelete(empresa.id)} className="h-9 w-9 p-0 rounded-lg text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {empresas.length === 0 && (
+        <div className="glass-card text-center py-12">
+          <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <h3 className="font-display font-semibold mb-1">Nenhuma empresa encontrada</h3>
+          <p className="text-sm text-muted-foreground">Comece adicionando sua primeira empresa.</p>
+        </div>
+      )}
     </div>
   )
 }

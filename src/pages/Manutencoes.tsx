@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Clock, Calendar, Eye, Search, Filter, X } from "lucide-react"
+import { Plus, Edit, Trash2, Clock, Calendar, Eye, Search, Filter, X, Wrench } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
@@ -286,25 +286,30 @@ export default function Manutencoes() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+      </div>
+    )
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4 animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manutenções</h1>
-          <p className="text-muted-foreground text-sm">Gerencie todas as manutenções</p>
+          <h1 className="page-title font-display">Manutenções</h1>
+          <p className="page-subtitle">Gerencie todas as manutenções</p>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <ExcelImport onImportComplete={fetchData} />
           {(isAdmin || canCreateSystem('manutencoes')) && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="flex-1 sm:flex-none">
+                <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                   <Plus className="mr-2 h-4 w-4" />
-                  Nova Manutenção
+                  <span className="hidden sm:inline">Nova Manutenção</span>
+                  <span className="sm:hidden">Novo</span>
                 </Button>
               </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -502,123 +507,100 @@ export default function Manutencoes() {
 
       {/* Search & Filters */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex gap-2">
+          <div className="search-bar flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
             <Input
-              placeholder="Buscar por cliente, empresa, tipo, descrição..."
+              placeholder="Buscar por cliente, empresa, tipo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
             />
           </div>
           <Button
             variant={showFilters ? "default" : "outline"}
             onClick={() => setShowFilters(!showFilters)}
-            className="sm:w-auto"
+            className="h-11 rounded-xl shrink-0"
           >
-            <Filter className="mr-2 h-4 w-4" />
-            Filtros
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtros</span>
             {hasActiveFilters && (
-              <span className="ml-2 bg-primary-foreground text-primary rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                !
-              </span>
+              <span className="ml-1 bg-primary-foreground text-primary rounded-full h-4 w-4 flex items-center justify-center text-[10px] font-bold">!</span>
             )}
           </Button>
         </div>
 
         {showFilters && (
-          <Card className="border-0 shadow-elegant">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Cliente</Label>
-                  <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {clientes.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Empresa</Label>
-                  <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {empresas.map((e: any) => (
-                        <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Tipo</Label>
-                  <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {tipos.map((t: any) => (
-                        <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Equipe</Label>
-                  <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {equipes.map((eq: any) => (
-                        <SelectItem key={eq.id} value={eq.id}>{eq.nome_equipe}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
-                  <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="Em andamento">Em andamento</SelectItem>
-                      <SelectItem value="Finalizado">Finalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Data Início (de)</Label>
-                  <Input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} className="h-9" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Data Início (até)</Label>
-                  <Input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} className="h-9" />
-                </div>
-                {hasActiveFilters && (
-                  <div className="flex items-end">
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
-                      <X className="mr-1 h-4 w-4" />
-                      Limpar filtros
-                    </Button>
-                  </div>
-                )}
+          <div className="glass-card p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</Label>
+                <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {clientes.map((c: any) => (<SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</Label>
+                <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    {empresas.map((e: any) => (<SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tipo</Label>
+                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {tipos.map((t: any) => (<SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equipe</Label>
+                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    {equipes.map((eq: any) => (<SelectItem key={eq.id} value={eq.id}>{eq.nome_equipe}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="Em andamento">Em andamento</SelectItem>
+                    <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Data de</Label>
+                <Input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} className="h-9 rounded-lg text-xs" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Data até</Label>
+                <Input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} className="h-9 rounded-lg text-xs" />
+              </div>
+              {hasActiveFilters && (
+                <div className="flex items-end">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive h-9 rounded-lg text-xs">
+                    <X className="mr-1 h-3.5 w-3.5" /> Limpar
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -693,150 +675,126 @@ export default function Manutencoes() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Lista de Manutenções</CardTitle>
-          <CardDescription>
-            {manutencoesFiltradas.length} de {manutencoes.length} manutenções
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {/* Desktop Table */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Tempo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Equipe</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {manutencoesFiltradas.map((manutencao) => (
-                  <TableRow key={manutencao.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{manutencao.clientes?.nome_cliente || "Sem nome"}</div>
-                        <div className="text-sm text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{manutencao.tipos_manutencao?.nome_tipo_manutencao}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(manutencao.data_inicio).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {manutencao.hora_inicio}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatTempo(manutencao.tempo_total)}</TableCell>
-                    <TableCell>
-                      <Badge variant={manutencao.status === "Finalizado" ? "default" : "secondary"}>
-                        {manutencao.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{manutencao.equipes?.nome_equipe || "-"}</TableCell>
-                    <TableCell>
-                      <div className="max-w-40 truncate" title={manutencao.descricao || ""}>
-                        {manutencao.descricao || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {(isAdmin || canViewDetailsSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleView(manutencao)} title="Ver detalhes">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {(isAdmin || canEditSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)} title="Editar">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {(isAdmin || canDeleteSystem('manutencoes')) && (
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)} title="Excluir">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+      {/* Results count */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {manutencoesFiltradas.length} de {manutencoes.length} manutenções
+        </p>
+      </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
+      {/* Desktop Table */}
+      <div className="glass-card border-0 hidden md:block overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 bg-muted/30">
+              <TableHead className="font-semibold text-xs">Cliente</TableHead>
+              <TableHead className="font-semibold text-xs">Tipo</TableHead>
+              <TableHead className="font-semibold text-xs">Data/Hora</TableHead>
+              <TableHead className="font-semibold text-xs">Tempo</TableHead>
+              <TableHead className="font-semibold text-xs">Status</TableHead>
+              <TableHead className="font-semibold text-xs">Equipe</TableHead>
+              <TableHead className="font-semibold text-xs w-24">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {manutencoesFiltradas.map((manutencao) => (
-              <Card key={manutencao.id} className="border shadow-sm">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{manutencao.clientes?.nome_cliente || "Sem nome"}</p>
-                      <p className="text-xs text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</p>
-                    </div>
-                    <Badge variant={manutencao.status === "Finalizado" ? "default" : "secondary"} className="text-xs">
-                      {manutencao.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground text-xs">Tipo:</span>
-                      <p className="text-xs">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Equipe:</span>
-                      <p className="text-xs">{manutencao.equipes?.nome_equipe || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Data:</span>
-                      <p className="text-xs">{new Date(manutencao.data_inicio).toLocaleDateString()} {manutencao.hora_inicio}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Tempo:</span>
-                      <p className="text-xs">{formatTempo(manutencao.tempo_total)}</p>
-                    </div>
-                  </div>
-                  {manutencao.descricao && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{manutencao.descricao}</p>
-                  )}
-                  <div className="flex gap-1 pt-1">
+              <TableRow key={manutencao.id} className="border-border/30 hover:bg-muted/30 transition-colors">
+                <TableCell>
+                  <div className="font-medium text-sm">{manutencao.clientes?.nome_cliente || "N/A"}</div>
+                  <div className="text-xs text-muted-foreground">{manutencao.empresas_terceiras?.nome_empresa}</div>
+                </TableCell>
+                <TableCell className="text-sm">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</TableCell>
+                <TableCell>
+                  <div className="text-sm">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-xs text-muted-foreground">{manutencao.hora_inicio}</div>
+                </TableCell>
+                <TableCell className="text-sm">{formatTempo(manutencao.tempo_total)}</TableCell>
+                <TableCell>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    manutencao.status === "Finalizado" 
+                      ? "bg-success/15 text-success border border-success/20" 
+                      : "bg-warning/15 text-warning border border-warning/20"
+                  }`}>
+                    {manutencao.status}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm">{manutencao.equipes?.nome_equipe || "-"}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
                     {(isAdmin || canViewDetailsSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => handleView(manutencao)}>
-                        <Eye className="h-3 w-3 mr-1" /> Ver
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleView(manutencao)} className="h-8 w-8 p-0 rounded-lg"><Eye className="h-3.5 w-3.5" /></Button>
                     )}
                     {(isAdmin || canEditSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => handleEdit(manutencao)}>
-                        <Edit className="h-3 w-3 mr-1" /> Editar
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(manutencao)} className="h-8 w-8 p-0 rounded-lg"><Edit className="h-3.5 w-3.5" /></Button>
                     )}
                     {(isAdmin || canDeleteSystem('manutencoes')) && (
-                      <Button size="sm" variant="outline" className="h-8 text-xs text-destructive" onClick={() => handleDelete(manutencao.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(manutencao.id)} className="h-8 w-8 p-0 rounded-lg text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-          
-          {manutencoesFiltradas.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhuma manutenção encontrada
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {manutencoesFiltradas.map((manutencao) => (
+          <div key={manutencao.id} className="mobile-card">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate">{manutencao.clientes?.nome_cliente || "N/A"}</p>
+                <p className="text-xs text-muted-foreground truncate">{manutencao.empresas_terceiras?.nome_empresa}</p>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ml-2 ${
+                manutencao.status === "Finalizado" 
+                  ? "bg-success/15 text-success border border-success/20" 
+                  : "bg-warning/15 text-warning border border-warning/20"
+              }`}>
+                {manutencao.status}
+              </span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="mobile-card-label">Tipo</p>
+                <p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Equipe</p>
+                <p className="text-xs font-medium">{manutencao.equipes?.nome_equipe || "-"}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Data</p>
+                <p className="text-xs font-medium">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')} {manutencao.hora_inicio}</p>
+              </div>
+              <div>
+                <p className="mobile-card-label">Tempo</p>
+                <p className="text-xs font-medium">{formatTempo(manutencao.tempo_total)}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              {(isAdmin || canViewDetailsSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleView(manutencao)}><Eye className="h-3 w-3 mr-1" />Ver</Button>
+              )}
+              {(isAdmin || canEditSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => handleEdit(manutencao)}><Edit className="h-3 w-3 mr-1" />Editar</Button>
+              )}
+              {(isAdmin || canDeleteSystem('manutencoes')) && (
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg text-destructive" onClick={() => handleDelete(manutencao.id)}><Trash2 className="h-3 w-3" /></Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {manutencoesFiltradas.length === 0 && (
+        <div className="glass-card text-center py-12">
+          <Wrench className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <h3 className="font-display font-semibold mb-1">Nenhuma manutenção encontrada</h3>
+          <p className="text-sm text-muted-foreground">Tente ajustar os filtros ou adicione uma nova manutenção.</p>
+        </div>
+      )}
     </div>
   )
 }

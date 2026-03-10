@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "./AppSidebar"
-import { LogOut, User } from "lucide-react"
+import { MobileNav } from "./MobileNav"
+import { LogOut, User, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
@@ -26,31 +27,46 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="h-16 border-b bg-card flex items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <div className="text-sm text-muted-foreground">
+          <header className="sticky top-0 z-40 h-16 border-b border-border/50 bg-card/80 backdrop-blur-xl flex items-center justify-between px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="hidden md:flex" />
+              <div className="flex md:hidden items-center gap-2">
+                <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                  <img 
+                    src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
+                    alt="Maintly" 
+                    className="w-5 h-5"
+                  />
+                </div>
+                <span className="font-display font-bold text-base">Maintly</span>
+              </div>
+              <div className="hidden md:block text-sm text-muted-foreground font-medium">
                 Sistema de Gestão de Manutenções
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                {user?.email}
+            <div className="flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mr-2">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="hidden lg:inline text-xs font-medium">{user?.email}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>
           
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
             {children}
           </main>
+
+          {/* Mobile Bottom Nav */}
+          <MobileNav />
         </div>
       </div>
     </SidebarProvider>
