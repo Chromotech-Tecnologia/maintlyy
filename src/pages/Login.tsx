@@ -59,13 +59,15 @@ export default function Login() {
   const handleSignUp = async (data: SignupFormData) => {
     console.log('handleSignUp called with:', data)
     
-    const { error } = await signUp(data.email, data.password)
+    const result = await signUp(data.email, data.password)
     
-    console.log('signUp response:', { error })
+    console.log('signUp response:', result)
     
-    if (error) {
-      console.error('Sign up error:', error)
-      toast.error(error.message || "Erro ao criar conta")
+    if (result.error) {
+      console.error('Sign up error:', result.error)
+      toast.error(result.error.message || "Erro ao criar conta")
+    } else if (result.needsConfirmation) {
+      toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
       toast.success("Cadastro realizado com sucesso!")
     }
