@@ -623,9 +623,10 @@ export default function CofreSenhas() {
           {/* Botão de Exportação */}
           <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar Senhas
+              <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
+                <Download className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Exportar Senhas</span>
+                <span className="sm:hidden">Exportar</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
