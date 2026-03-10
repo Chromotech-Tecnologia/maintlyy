@@ -232,7 +232,7 @@ export default function Clientes() {
                   name="empresa_terceira_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Empresa Terceira</FormLabel>
+                      <FormLabel>Empresa *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
