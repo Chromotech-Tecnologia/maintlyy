@@ -305,7 +305,7 @@ export default function CofreSenhas() {
         .eq('id', id)
 
       // Non-admin users can only delete their own passwords
-      if (!isAdmin) {
+      if (!permissions.isAdmin) {
         query = query.eq('user_id', user.id)
       }
 
