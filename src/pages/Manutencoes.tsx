@@ -286,25 +286,30 @@ export default function Manutencoes() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+      </div>
+    )
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-4 animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manutenções</h1>
-          <p className="text-muted-foreground text-sm">Gerencie todas as manutenções</p>
+          <h1 className="page-title font-display">Manutenções</h1>
+          <p className="page-subtitle">Gerencie todas as manutenções</p>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <ExcelImport onImportComplete={fetchData} />
           {(isAdmin || canCreateSystem('manutencoes')) && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="flex-1 sm:flex-none">
+                <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                   <Plus className="mr-2 h-4 w-4" />
-                  Nova Manutenção
+                  <span className="hidden sm:inline">Nova Manutenção</span>
+                  <span className="sm:hidden">Novo</span>
                 </Button>
               </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
