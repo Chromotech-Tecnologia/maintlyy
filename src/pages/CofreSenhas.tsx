@@ -619,13 +619,14 @@ export default function CofreSenhas() {
             Gerencie suas senhas de forma segura
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* Botão de Exportação */}
           <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar Senhas
+              <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
+                <Download className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Exportar Senhas</span>
+                <span className="sm:hidden">Exportar</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
@@ -730,9 +731,10 @@ export default function CofreSenhas() {
 
           <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Senha
+              <Button onClick={openNewDialog} size="sm" className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Nova Senha</span>
+                <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
@@ -1062,11 +1064,11 @@ export default function CofreSenhas() {
       </div>
 
       {/* Senhas agrupadas por cliente - Layout resumido */}
-      <div className="space-y-6">
+       <div className="space-y-6 min-w-0 overflow-hidden">
         {Object.entries(senhasAgrupadasPorCliente).map(([nomeCliente, dadosCliente]) => (
-          <div key={nomeCliente} className="space-y-4">
+          <div key={nomeCliente} className="space-y-4 min-w-0">
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary"
+              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary min-w-0 overflow-hidden"
               onClick={async () => {
                 const novoExpandido = clienteExpandido === nomeCliente ? null : nomeCliente
                 setClienteExpandido(novoExpandido)
@@ -1268,17 +1270,17 @@ export default function CofreSenhas() {
                     {manutencoesPorCliente[dadosCliente.clienteId]?.length > 0 ? (
                       <div className="space-y-3">
                         {manutencoesPorCliente[dadosCliente.clienteId].map((manutencao) => (
-                          <Card key={manutencao.id} className="border-l-4 border-l-blue-500">
-                            <CardContent className="p-4">
-                              <div className="grid gap-3 md:grid-cols-2">
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium">
+                          <Card key={manutencao.id} className="border-l-4 border-l-blue-500 min-w-0 overflow-hidden">
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="grid gap-3 grid-cols-1 md:grid-cols-2 min-w-0">
+                                <div className="space-y-2 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="text-xs sm:text-sm font-medium">
                                       {new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}
                                     </span>
-                                    <Clock className="h-4 w-4 text-muted-foreground ml-2" />
-                                    <span className="text-sm">
+                                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="text-xs sm:text-sm">
                                       {manutencao.hora_inicio}
                                       {manutencao.data_fim && manutencao.hora_fim && (
                                         ` - ${manutencao.hora_fim}`
