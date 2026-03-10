@@ -1,108 +1,52 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+# Plan: Fix Account Creation, Rename "Empresa Terceira", and Prepare Redesign
 
-### Problemas Identificados e Corrigidos
+## Issues Identified
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
+### 1. Account creation error (ZodError)
+The project uses **zod v4** (`^4.0.9`) but `@hookform/resolvers` v3 does **not** support zod v4. The ZodError in the screenshot shows the validation throwing an uncaught error with zod v4's new error format. The fix is to wrap the signup validation to handle errors gracefully, or more correctly, **use zod v4's compatibility layer** (`zod/v4/mini`) or downgrade validation to manual handling that catches errors properly.
 
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
+**Root cause**: `zodResolver` from `@hookform/resolvers` v3 expects zod v3 error shapes. Zod v4 throws `ZodError` with a different structure, causing uncaught promise rejections.
 
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
+**Fix**: Replace `zodResolver(signupSchema)` with a custom resolver that uses zod v4's `safeParse` correctly, or simplify signup validation to avoid the incompatibility. The simplest reliable fix is to bypass zodResolver for signup and validate manually in the submit handler with a try/catch around `signupSchema.parse()`.
 
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
+### 2. Rename "Empresa Terceira" → "Empresa"
+All UI labels across ~9 files need updating. The internal field names (`empresa_terceira_id`, table `empresas_terceiras`) stay the same — only visible text changes.
 
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
+**Files to update**:
+- `src/components/layout/AppSidebar.tsx` — sidebar menu title + resource map
+- `src/pages/Empresas.tsx` — page title, dialog title, empty state
+- `src/pages/Clientes.tsx` — form labels, view dialog
+- `src/pages/Manutencoes.tsx` — form label
+- `src/pages/CofreSenhas.tsx` — form label, comments
+- `src/pages/PermissionProfiles.tsx` — SYSTEM_RESOURCES label
+- `src/components/permissions/EmpresaPermissionsTab.tsx` — empty state text, admin text
+- `src/components/permissions/ProfileAccessEditor.tsx` — empty state text
+- `src/components/permissions/ProfileAccessDialog.tsx` — (internal, no visible label change needed)
+- `src/components/ExcelImport.tsx` — template column name
+- `src/pages/Dashboard.tsx` — any references
 
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+### 3. Tipos de Manutenção visibility
+Currently `tipos_manutencao` RLS requires `user_id = auth.uid()` or admin or system permission. The user wants all authenticated users to see all tipos. This requires a **new RLS policy** on `tipos_manutencao`:
+```sql
+CREATE POLICY "All authenticated users can view tipos"
+ON tipos_manutencao FOR SELECT TO authenticated
+USING (true);
+```
 
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
-
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+### 4. Redesign (mobile app-like + desktop modern) + Dashboard analítico
+This is a massive scope item. Will be planned separately after the above fixes are implemented.
 
 ---
 
-## Arquivos Modificados
+## Implementation Steps
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+1. **Fix signup ZodError** — Remove `zodResolver` from signup form. Validate manually in `handleSignUp` with try/catch around `signupSchema.safeParse()`, showing field errors via `signupForm.setError()`.
 
----
+2. **Rename "Empresa Terceira" → "Empresa"** — Update all UI-facing labels in the 9+ files listed above. Keep internal field/table names unchanged.
 
-## Fluxo de Permissões Implementado
+3. **Add RLS policy for tipos_manutencao** — Run SQL migration to allow all authenticated users to SELECT from `tipos_manutencao`.
 
-```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
+4. **Redesign + Dashboard** — Deferred to a follow-up implementation after these fixes are confirmed working.
 
-## Mapeamento Resource x Menu
-
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
-
-## Estrutura de Permissões Atualizada
-
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
-
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
-
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
-
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
