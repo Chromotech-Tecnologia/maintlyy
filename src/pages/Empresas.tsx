@@ -216,7 +216,7 @@ export default function Empresas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
+              {empresas.filter(e => !searchTerm || searchMatch(e.nome_empresa, searchTerm)).map((empresa) => (
                 <TableRow key={empresa.id} className="border-border/30 hover:bg-muted/40">
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
