@@ -1270,17 +1270,17 @@ export default function CofreSenhas() {
                     {manutencoesPorCliente[dadosCliente.clienteId]?.length > 0 ? (
                       <div className="space-y-3">
                         {manutencoesPorCliente[dadosCliente.clienteId].map((manutencao) => (
-                          <Card key={manutencao.id} className="border-l-4 border-l-blue-500">
-                            <CardContent className="p-4">
-                              <div className="grid gap-3 md:grid-cols-2">
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium">
+                          <Card key={manutencao.id} className="border-l-4 border-l-blue-500 min-w-0 overflow-hidden">
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="grid gap-3 grid-cols-1 md:grid-cols-2 min-w-0">
+                                <div className="space-y-2 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="text-xs sm:text-sm font-medium">
                                       {new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}
                                     </span>
-                                    <Clock className="h-4 w-4 text-muted-foreground ml-2" />
-                                    <span className="text-sm">
+                                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="text-xs sm:text-sm">
                                       {manutencao.hora_inicio}
                                       {manutencao.data_fim && manutencao.hora_fim && (
                                         ` - ${manutencao.hora_fim}`
