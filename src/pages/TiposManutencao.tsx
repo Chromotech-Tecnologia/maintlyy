@@ -142,24 +142,29 @@ export default function TiposManutencao() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1,2,3].map(i => <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />)}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Tipos de Manutenção</h1>
-          <p className="text-muted-foreground">
-            Gerencie os tipos de manutenção disponíveis
-          </p>
+          <h1 className="page-title font-display">Tipos de Manutenção</h1>
+          <p className="page-subtitle">Gerencie os tipos de manutenção disponíveis</p>
         </div>
         {(isAdmin || canCreateSystem('tipos_manutencao')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
+              <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                 <Plus className="mr-2 h-4 w-4" />
-                Novo Tipo
+                <span className="hidden sm:inline">Novo Tipo</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
