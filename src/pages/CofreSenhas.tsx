@@ -744,7 +744,7 @@ export default function CofreSenhas() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 {/* Cliente e Empresa Terceira no topo com busca */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="cliente_id"
