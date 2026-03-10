@@ -63,11 +63,13 @@ export default function PerfilUsuarios() {
       
       const allProfiles = (data as any[]) || []
       
-      // If admin, show only own profile + subordinates (non-admin users)
+      // If admin, show own profile + subordinates linked via permission profiles owned by this admin
       // If not admin, show only own profile
       if (permissions.isAdmin && user) {
+        const myProfileIds = permissionProfiles.map(p => p.id)
         const filtered = allProfiles.filter(p => 
-          p.user_id === user.id || (!p.is_admin && !p.is_super_admin)
+          p.user_id === user.id || 
+          (myProfileIds.includes(p.permission_profile_id) && !p.is_admin && !p.is_super_admin)
         )
         setProfiles(filtered)
       } else if (user) {

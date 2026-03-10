@@ -27,19 +27,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabase = createClient(
+    // Use service role client for auth validation to avoid RLS issues
+    const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false, autoRefreshToken: false } }
     )
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
     if (authError || !user) {
+      console.error('Auth error:', authError?.message)
       return new Response(JSON.stringify({ error: 'Invalid authorization' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Check admin or super admin
-    const { data: profile, error: profileError } = await supabase
+    // Check admin or super admin using service role
+    const { data: profile, error: profileError } = await supabaseAuth
       .from('user_profiles')
       .select('is_admin, is_super_admin')
       .eq('user_id', user.id)

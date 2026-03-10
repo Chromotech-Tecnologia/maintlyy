@@ -1218,40 +1218,39 @@ export default function CofreSenhas() {
                          </div>
                        )}
 
-                       <div className="flex gap-2 pt-2 mt-auto">
-                         {/* Botão Visualizar: apenas view, sem edit */}
+                       <div className="flex gap-2 pt-3 mt-auto border-t border-border/50">
                          {!permissions.isAdmin && !permissions.canEditClient(senha.cliente_id || '') && permissions.canViewClient(senha.cliente_id || '') && (
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             className="flex-1"
-                             onClick={() => setViewingPassword(senha)}
-                           >
-                             <Eye className="h-4 w-4 mr-1" />
-                             Visualizar
-                           </Button>
-                         )}
-                         {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
-                           <Button 
-                             variant="outline" 
-                             size="sm" 
-                             className="flex-1"
-                             onClick={() => handleEdit(senha)}
-                           >
-                             <Edit className="h-4 w-4 mr-1" />
-                             Editar
-                           </Button>
-                         )}
-                         {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
-                           <Button 
-                             variant="outline" 
-                             size="sm" 
-                             className="text-destructive hover:text-destructive"
-                             onClick={() => handleDelete(senha.id)}
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => setViewingPassword(senha)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Visualizar
+                            </Button>
+                          )}
+                          {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleEdit(senha)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                          )}
+                          {(permissions.isAdmin || permissions.canEditClient(senha.cliente_id || '')) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(senha.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                        </div>
                     </CardContent>
                   </Card>
