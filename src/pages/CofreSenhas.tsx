@@ -1121,36 +1121,34 @@ export default function CofreSenhas() {
                     <KeyRound className="h-5 w-5 text-primary" />
                     Senhas ({dadosCliente.senhas.length})
                   </h4>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch auto-rows-fr">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-stretch auto-rows-fr">
                     {dadosCliente.senhas.map((senha) => (
-                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300 flex flex-col h-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <KeyRound className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{senha.nome_acesso}</CardTitle>
-                            {senha.grupo && (
-                              <p className="text-sm text-muted-foreground">{senha.grupo}</p>
-                            )}
-                          </div>
+                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300 flex flex-col h-full min-w-0 overflow-hidden">
+                    <CardHeader className="pb-3 px-3 sm:px-6">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
+                          <KeyRound className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-base sm:text-lg truncate">{senha.nome_acesso}</CardTitle>
+                          {senha.grupo && (
+                            <p className="text-xs sm:text-sm text-muted-foreground truncate">{senha.grupo}</p>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
                     
-                     <CardContent className="space-y-3 flex-1 flex flex-col">
+                     <CardContent className="space-y-2 sm:space-y-3 flex-1 flex flex-col px-3 sm:px-6 min-w-0">
                        {senha.login && (
-                         <div className="space-y-1">
+                         <div className="space-y-1 min-w-0">
                            <span className="text-xs font-medium text-muted-foreground">Login:</span>
-                           <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
-                             <span className="text-sm flex-1 truncate">{senha.login}</span>
+                           <div className="flex items-center gap-1 p-2 bg-muted/30 rounded min-w-0">
+                             <span className="text-xs sm:text-sm flex-1 truncate min-w-0">{senha.login}</span>
                              <Button
                                size="sm"
                                variant="ghost"
                                onClick={() => copyToClipboard(senha.login!)}
-                               className="h-6 w-6 p-0"
+                               className="h-6 w-6 p-0 shrink-0"
                              >
                                <Copy className="h-3 w-3" />
                              </Button>
@@ -1158,17 +1156,17 @@ export default function CofreSenhas() {
                          </div>
                        )}
 
-                       <div className="space-y-1">
+                       <div className="space-y-1 min-w-0">
                          <span className="text-xs font-medium text-muted-foreground">Senha:</span>
-                         <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
-                           <span className="text-sm font-mono flex-1 truncate">
+                         <div className="flex items-center gap-1 p-2 bg-muted/30 rounded min-w-0">
+                           <span className="text-xs sm:text-sm font-mono flex-1 truncate min-w-0">
                              {visiblePasswords.has(senha.id) ? getDecryptedPassword(senha.id) : "••••••••"}
                            </span>
                            <Button
                              size="sm"
                              variant="ghost"
                              onClick={() => togglePasswordVisibility(senha.id)}
-                             className="h-6 w-6 p-0"
+                             className="h-6 w-6 p-0 shrink-0"
                            >
                              {visiblePasswords.has(senha.id) ? (
                                <EyeOff className="h-3 w-3" />
@@ -1180,7 +1178,7 @@ export default function CofreSenhas() {
                              size="sm"
                              variant="ghost"
                              onClick={() => copyToClipboard(getDecryptedPassword(senha.id))}
-                             className="h-6 w-6 p-0"
+                             className="h-6 w-6 p-0 shrink-0"
                            >
                              <Copy className="h-3 w-3" />
                            </Button>
@@ -1188,15 +1186,15 @@ export default function CofreSenhas() {
                        </div>
 
                        {senha.url_acesso && (
-                         <div className="space-y-1">
+                         <div className="space-y-1 min-w-0">
                            <span className="text-xs font-medium text-muted-foreground">URL:</span>
-                           <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
-                             <span className="text-sm flex-1 truncate">{senha.url_acesso}</span>
+                           <div className="flex items-center gap-1 p-2 bg-muted/30 rounded min-w-0">
+                             <span className="text-xs sm:text-sm flex-1 truncate min-w-0">{senha.url_acesso}</span>
                              <Button
                                size="sm"
                                variant="ghost"
                                onClick={() => window.open(senha.url_acesso!, '_blank')}
-                               className="h-6 w-6 p-0"
+                               className="h-6 w-6 p-0 shrink-0"
                              >
                                <ExternalLink className="h-3 w-3" />
                              </Button>
@@ -1204,7 +1202,7 @@ export default function CofreSenhas() {
                                size="sm"
                                variant="ghost"
                                onClick={() => copyToClipboard(senha.url_acesso!)}
-                               className="h-6 w-6 p-0"
+                               className="h-6 w-6 p-0 shrink-0"
                              >
                                <Copy className="h-3 w-3" />
                              </Button>
@@ -1213,10 +1211,10 @@ export default function CofreSenhas() {
                        )}
 
                        {senha.descricao && (
-                         <div className="space-y-1">
+                         <div className="space-y-1 min-w-0">
                            <span className="text-xs font-medium text-muted-foreground">Descrição:</span>
                            <div className="p-2 bg-muted/30 rounded">
-                             <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                             <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap break-words">
                                {senha.descricao}
                              </p>
                            </div>
