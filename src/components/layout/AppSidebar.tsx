@@ -83,10 +83,10 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+      "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
       isActive 
-        ? "bg-primary/20 text-sidebar-primary-foreground shadow-md shadow-primary/20 border border-primary/30" 
-        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        ? "bg-primary/8 text-primary font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-[3px] before:rounded-r-full before:bg-primary" 
+        : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
     )
 
   const renderSection = (label: string, items: typeof mainItems) => (
@@ -101,7 +101,7 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild>
                   <NavLink to={item.url} end={item.url === "/"} className={getNavCls}>
-                    <item.icon className="h-4.5 w-4.5 shrink-0" />
+                    <item.icon className="h-[18px] w-[18px] shrink-0" />
                     {!isCollapsed && <span>{item.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
