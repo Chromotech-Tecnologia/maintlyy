@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { searchMatch } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
