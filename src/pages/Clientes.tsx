@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
@@ -46,6 +46,7 @@ export default function Clientes() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewingCliente, setViewingCliente] = useState<Cliente | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -329,6 +330,17 @@ export default function Clientes() {
         )}
       </div>
 
+      {/* Busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome, email, CNPJ, telefone, endereço, empresa..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
       {/* Dialog de Visualização */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent>
@@ -381,7 +393,16 @@ export default function Clientes() {
       </Dialog>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {clientes.map((cliente) => (
+        {clientes.filter(c => {
+          if (!searchTerm) return true
+          const s = searchTerm.toLowerCase()
+          return c.nome_cliente?.toLowerCase().includes(s) ||
+            c.email?.toLowerCase().includes(s) ||
+            c.cnpj?.toLowerCase().includes(s) ||
+            c.telefone?.toLowerCase().includes(s) ||
+            c.endereco?.toLowerCase().includes(s) ||
+            c.empresas_terceiras?.nome_empresa?.toLowerCase().includes(s)
+        }).map((cliente) => (
           <Card key={cliente.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">

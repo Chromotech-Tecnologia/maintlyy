@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Building2, Eye } from "lucide-react"
+import { Plus, Edit, Trash2, Building2, Eye, Search } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
@@ -27,6 +27,7 @@ export default function Empresas() {
   const [viewingEmpresa, setViewingEmpresa] = useState<EmpresaTerceira | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nomeEmpresa, setNomeEmpresa] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
 
   const fetchEmpresas = async () => {
     if (!user) return
@@ -196,7 +197,16 @@ export default function Empresas() {
             {empresas.length} empresas registradas
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome da empresa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,7 +216,7 @@ export default function Empresas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {empresas.map((empresa) => (
+              {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
                 <TableRow key={empresa.id}>
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
                   <TableCell>

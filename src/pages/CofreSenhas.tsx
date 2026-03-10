@@ -87,6 +87,7 @@ export default function CofreSenhas() {
   const [filtroGrupo, setFiltroGrupo] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroEmpresa, setFiltroEmpresa] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
   const [clienteExpandido, setClienteExpandido] = useState<string | null>(null)
   const [manutencoesPorCliente, setManutencoesPorCliente] = useState<Record<string, Manutencao[]>>({})
   
@@ -535,6 +536,17 @@ export default function CofreSenhas() {
       }
     }
     
+    // Busca geral por texto
+    const searchLower = searchTerm.toLowerCase()
+    const searchMatch = !searchTerm || 
+      senha.nome_acesso?.toLowerCase().includes(searchLower) ||
+      senha.login?.toLowerCase().includes(searchLower) ||
+      senha.url_acesso?.toLowerCase().includes(searchLower) ||
+      senha.descricao?.toLowerCase().includes(searchLower) ||
+      senha.grupo?.toLowerCase().includes(searchLower) ||
+      senha.clientes?.nome_cliente?.toLowerCase().includes(searchLower) ||
+      senha.empresas_terceiras?.nome_empresa?.toLowerCase().includes(searchLower)
+    
     // Filtro por grupo
     const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
     
@@ -544,7 +556,7 @@ export default function CofreSenhas() {
     // Filtro por empresa
     const empresaMatch = !filtroEmpresa || filtroEmpresa === "todos" || senha.empresa_terceira_id === filtroEmpresa
     
-    return grupoMatch && clienteMatch && empresaMatch
+    return searchMatch && grupoMatch && clienteMatch && empresaMatch
   })
 
   // Interface para agrupamento de senhas
@@ -738,7 +750,7 @@ export default function CofreSenhas() {
                     name="cliente_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cliente (Opcional)</FormLabel>
+                        <FormLabel>Cliente</FormLabel>
                         <FormControl>
                           <Combobox
                             value={field.value || ""}
@@ -783,7 +795,7 @@ export default function CofreSenhas() {
                       
                       return (
                         <FormItem>
-                          <FormLabel>Empresa Terceira (Opcional)</FormLabel>
+                          <FormLabel>Empresa Terceira *</FormLabel>
                           <FormControl>
                             {isDisabled ? (
                               <Input
@@ -951,6 +963,19 @@ export default function CofreSenhas() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
+      </div>
+
+      {/* Busca geral + Filtros */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, login, URL, descrição, grupo, cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 

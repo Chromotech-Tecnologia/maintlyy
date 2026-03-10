@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error?: any }>
-  signUp: (email: string, password: string) => Promise<{ error?: any }>
+  signUp: (email: string, password: string) => Promise<{ error?: any; needsConfirmation?: boolean }>
   signOut: () => Promise<void>
 }
 
@@ -65,8 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log('signUp result:', { data, error })
     
-    // Se não houve erro e o usuário foi criado, criar o perfil
-    if (!error && data.user) {
+    if (error) {
+      return { error }
+    }
+    
+    // Verificar se o email já está cadastrado (Supabase retorna user com identities vazio)
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      return { error: { message: 'Este email já está cadastrado. Tente fazer login.' } }
+    }
+    
+    // Se há sessão (autoconfirm habilitado), criar perfil
+    if (data.session && data.user) {
       try {
         const { error: profileError } = await supabase
           .from('user_profiles')
@@ -86,7 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    return { error }
+    // Retornar info sobre confirmação de email
+    const needsConfirmation = !data.session
+    return { error: null, needsConfirmation }
   }
 
   const signOut = async () => {
