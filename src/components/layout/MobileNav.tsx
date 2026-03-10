@@ -92,8 +92,8 @@ export function MobileNav() {
                   <div className="w-10 h-1 rounded-full bg-border" />
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
-                    <img src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" alt="Maintly" className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
+                    <img src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" alt="Maintly" className="w-8 h-8" />
                   </div>
                   <div>
                     <h2 className="font-display font-bold text-lg">Maintly</h2>
