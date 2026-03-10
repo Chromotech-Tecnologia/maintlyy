@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error?: any }>
-  signUp: (email: string, password: string) => Promise<{ error?: any; needsConfirmation?: boolean }>
+  signUp: (email: string, password: string, displayName: string, phone: string) => Promise<{ error?: any; needsConfirmation?: boolean }>
   signOut: () => Promise<void>
 }
 
@@ -19,7 +19,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session)
@@ -28,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -39,63 +37,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    console.log('signIn called with:', { email })
-    
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
-    console.log('signIn result:', { data, error })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }
 
-  const signUp = async (email: string, password: string) => {
-    console.log('signUp called with:', { email })
-    
+  const signUp = async (email: string, password: string, displayName: string, phone: string) => {
     const redirectUrl = `${window.location.origin}/`
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
+      options: { emailRedirectTo: redirectUrl }
     })
-    
-    console.log('signUp result:', { data, error })
-    
-    if (error) {
-      return { error }
-    }
-    
-    // Verificar se o email já está cadastrado (Supabase retorna user com identities vazio)
+
+    if (error) return { error }
+
+    // Email already registered
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       return { error: { message: 'Este email já está cadastrado. Tente fazer login.' } }
     }
-    
-    // Se há sessão (autoconfirm habilitado), criar perfil
+
+    // If session exists (autoconfirm), create profile as tenant admin
     if (data.session && data.user) {
       try {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert([
-            {
-              user_id: data.user.id,
-              email: email,
-              display_name: email.split('@')[0]
-            }
-          ])
-        
-        if (profileError) {
-          console.error('Erro ao criar perfil:', profileError)
-        }
+        await supabase.from('user_profiles').insert([{
+          user_id: data.user.id,
+          email: email,
+          display_name: displayName,
+          phone: phone,
+          is_admin: true,
+          account_status: 'pending',
+        }])
       } catch (profileError) {
         console.error('Erro ao criar perfil:', profileError)
       }
     }
-    
-    // Retornar info sobre confirmação de email
+
     const needsConfirmation = !data.session
     return { error: null, needsConfirmation }
   }
@@ -106,14 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-    }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )
