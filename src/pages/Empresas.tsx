@@ -244,7 +244,7 @@ export default function Empresas() {
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
-        {empresas.filter(e => !searchTerm || e.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase())).map((empresa) => (
+        {empresas.filter(e => !searchTerm || searchMatch(e.nome_empresa, searchTerm)).map((empresa) => (
           <div key={empresa.id} className="mobile-card">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

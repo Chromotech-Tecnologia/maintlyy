@@ -251,16 +251,15 @@ export default function Manutencoes() {
 
   // Filtered data
   const manutencoesFiltradas = manutencoes.filter(m => {
-    const searchLower = searchTerm.toLowerCase()
     const matchSearch = !searchTerm || 
-      m.clientes?.nome_cliente?.toLowerCase().includes(searchLower) ||
-      m.empresas_terceiras?.nome_empresa?.toLowerCase().includes(searchLower) ||
-      m.tipos_manutencao?.nome_tipo_manutencao?.toLowerCase().includes(searchLower) ||
-      m.equipes?.nome_equipe?.toLowerCase().includes(searchLower) ||
-      m.descricao?.toLowerCase().includes(searchLower) ||
-      m.solicitante?.toLowerCase().includes(searchLower) ||
-      m.responsavel?.toLowerCase().includes(searchLower) ||
-      m.status?.toLowerCase().includes(searchLower)
+      searchMatch(m.clientes?.nome_cliente, searchTerm) ||
+      searchMatch(m.empresas_terceiras?.nome_empresa, searchTerm) ||
+      searchMatch(m.tipos_manutencao?.nome_tipo_manutencao, searchTerm) ||
+      searchMatch(m.equipes?.nome_equipe, searchTerm) ||
+      searchMatch(m.descricao, searchTerm) ||
+      searchMatch(m.solicitante, searchTerm) ||
+      searchMatch(m.responsavel, searchTerm) ||
+      searchMatch(m.status, searchTerm)
     
     const matchCliente = !filtroCliente || m.cliente_id === filtroCliente
     const matchEmpresa = !filtroEmpresa || m.empresa_terceira_id === filtroEmpresa

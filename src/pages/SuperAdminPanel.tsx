@@ -228,11 +228,7 @@ export default function SuperAdminPanel() {
 
   const filtered = admins.filter(a => {
     if (!search) return true
-    const s = search.toLowerCase()
-    return (
-      (a.display_name || '').toLowerCase().includes(s) ||
-      (a.email || '').toLowerCase().includes(s)
-    )
+    return searchMatch(a.display_name, search) || searchMatch(a.email, search)
   })
 
   const totalAdmins = admins.length

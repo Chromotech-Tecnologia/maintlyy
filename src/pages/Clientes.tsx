@@ -401,13 +401,12 @@ export default function Clientes() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {clientes.filter(c => {
           if (!searchTerm) return true
-          const s = searchTerm.toLowerCase()
-          return c.nome_cliente?.toLowerCase().includes(s) ||
-            c.email?.toLowerCase().includes(s) ||
-            c.cnpj?.toLowerCase().includes(s) ||
-            c.telefone?.toLowerCase().includes(s) ||
-            c.endereco?.toLowerCase().includes(s) ||
-            c.empresas_terceiras?.nome_empresa?.toLowerCase().includes(s)
+          return searchMatch(c.nome_cliente, searchTerm) ||
+            searchMatch(c.email, searchTerm) ||
+            searchMatch(c.cnpj, searchTerm) ||
+            searchMatch(c.telefone, searchTerm) ||
+            searchMatch(c.endereco, searchTerm) ||
+            searchMatch(c.empresas_terceiras?.nome_empresa, searchTerm)
         }).map((cliente) => (
           <div key={cliente.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
             <div className="flex items-start justify-between">

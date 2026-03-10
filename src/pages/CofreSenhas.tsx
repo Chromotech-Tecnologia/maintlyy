@@ -557,7 +557,7 @@ export default function CofreSenhas() {
     // Filtro por empresa
     const empresaMatch = !filtroEmpresa || filtroEmpresa === "todos" || senha.empresa_terceira_id === filtroEmpresa
     
-    return searchMatch && grupoMatch && clienteMatch && empresaMatch
+    return searchMatchResult && grupoMatch && clienteMatch && empresaMatch
   })
 
   // Interface para agrupamento de senhas

@@ -268,8 +268,7 @@ export default function Equipes() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {equipes.filter(eq => {
           if (!searchTerm) return true
-          const s = searchTerm.toLowerCase()
-          return eq.nome_equipe.toLowerCase().includes(s) || eq.membros?.toLowerCase().includes(s)
+          return searchMatch(eq.nome_equipe, searchTerm) || searchMatch(eq.membros, searchTerm)
         }).map((equipe) => (
           <div key={equipe.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
             <div className="flex items-center gap-3">
