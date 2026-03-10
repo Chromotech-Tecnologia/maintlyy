@@ -1114,7 +1114,7 @@ export default function CofreSenhas() {
             </Card>
 
             {clienteExpandido === nomeCliente && (
-              <div className="ml-6 space-y-6">
+              <div className="ml-0 sm:ml-6 space-y-6">
                 {/* Seção de Senhas */}
                 <div>
                   <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
