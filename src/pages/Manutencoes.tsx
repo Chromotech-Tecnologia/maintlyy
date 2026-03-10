@@ -344,7 +344,7 @@ export default function Manutencoes() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Empresa Terceira *</Label>
+                  <Label>Empresa *</Label>
                   <Select 
                     value={formData.empresa_terceira_id} 
                     onValueChange={(value) => setFormData({...formData, empresa_terceira_id: value})}

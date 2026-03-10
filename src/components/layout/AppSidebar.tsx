@@ -29,7 +29,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench },
   { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Empresas Terceiras", url: "/empresas", icon: Building2 },
+  { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Equipes", url: "/equipes", icon: UserCog },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar },
 ]
@@ -61,7 +61,7 @@ export function AppSidebar() {
     "Dashboard": "dashboard",
     "Manutenções": "manutencoes",
     "Clientes": "clientes",
-    "Empresas Terceiras": "empresas_terceiras",
+    "Empresas": "empresas_terceiras",
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",

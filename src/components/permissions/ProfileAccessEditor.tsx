@@ -352,7 +352,7 @@ export function ProfileAccessEditor({
 
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {!hasEmpresas ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma empresa terceira cadastrada.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma empresa cadastrada.</p>
           ) : (
             empresas.map((empresa) => {
               const perm = getEmpresaPerm(empresa.id)

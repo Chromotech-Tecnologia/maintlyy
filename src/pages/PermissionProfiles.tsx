@@ -36,7 +36,7 @@ interface PermissionProfile {
 const SYSTEM_RESOURCES = [
   { key: 'manutencoes', label: 'Manutenções' },
   { key: 'dashboard', label: 'Dashboard' },
-  { key: 'empresas_terceiras', label: 'Empresas Terceiras' },
+  { key: 'empresas_terceiras', label: 'Empresas' },
   { key: 'equipes', label: 'Equipes' },
   { key: 'tipos_manutencao', label: 'Tipos de Manutenção' },
   { key: 'clientes', label: 'Clientes' },
