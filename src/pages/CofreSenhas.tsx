@@ -731,9 +731,10 @@ export default function CofreSenhas() {
 
           <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Senha
+              <Button onClick={openNewDialog} size="sm" className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Nova Senha</span>
+                <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
