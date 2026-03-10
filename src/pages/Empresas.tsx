@@ -120,7 +120,7 @@ export default function Empresas() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Empresas Terceiras</h1>
+         <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
           <p className="text-muted-foreground">Gerencie as empresas para as quais você presta serviços</p>
         </div>
         
