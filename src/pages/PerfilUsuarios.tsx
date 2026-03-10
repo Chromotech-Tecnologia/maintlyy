@@ -234,7 +234,7 @@ export default function PerfilUsuarios() {
               Criar Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Criar Novo Usuário</DialogTitle>
               <DialogDescription>
