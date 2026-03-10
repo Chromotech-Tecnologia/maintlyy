@@ -535,6 +535,17 @@ export default function CofreSenhas() {
       }
     }
     
+    // Busca geral por texto
+    const searchLower = searchTerm.toLowerCase()
+    const searchMatch = !searchTerm || 
+      senha.nome_acesso?.toLowerCase().includes(searchLower) ||
+      senha.login?.toLowerCase().includes(searchLower) ||
+      senha.url_acesso?.toLowerCase().includes(searchLower) ||
+      senha.descricao?.toLowerCase().includes(searchLower) ||
+      senha.grupo?.toLowerCase().includes(searchLower) ||
+      senha.clientes?.nome_cliente?.toLowerCase().includes(searchLower) ||
+      senha.empresas_terceiras?.nome_empresa?.toLowerCase().includes(searchLower)
+    
     // Filtro por grupo
     const grupoMatch = !filtroGrupo || filtroGrupo === "todos" || senha.grupo?.toLowerCase().includes(filtroGrupo.toLowerCase())
     
@@ -544,7 +555,7 @@ export default function CofreSenhas() {
     // Filtro por empresa
     const empresaMatch = !filtroEmpresa || filtroEmpresa === "todos" || senha.empresa_terceira_id === filtroEmpresa
     
-    return grupoMatch && clienteMatch && empresaMatch
+    return searchMatch && grupoMatch && clienteMatch && empresaMatch
   })
 
   // Interface para agrupamento de senhas
