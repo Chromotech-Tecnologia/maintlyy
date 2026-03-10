@@ -113,23 +113,28 @@ export default function Empresas() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {[1,2,3].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+      </div>
+    )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header">
         <div>
-         <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
-          <p className="text-muted-foreground">Gerencie as empresas para as quais você presta serviços</p>
+          <h1 className="page-title font-display">Empresas</h1>
+          <p className="page-subtitle">Gerencie as empresas para as quais você presta serviços</p>
         </div>
         
         {(isAdmin || canCreateSystem('empresas_terceiras')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Empresa
+                <span className="hidden sm:inline">Nova Empresa</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
