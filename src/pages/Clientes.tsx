@@ -379,7 +379,7 @@ export default function Clientes() {
               )}
               {viewingCliente.empresas_terceiras && (
                 <div>
-                  <Label className="text-muted-foreground">Empresa Terceira</Label>
+                  <Label className="text-muted-foreground">Empresa</Label>
                   <p>{viewingCliente.empresas_terceiras.nome_empresa}</p>
                 </div>
               )}
