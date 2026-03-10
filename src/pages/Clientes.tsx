@@ -46,6 +46,7 @@ export default function Clientes() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewingCliente, setViewingCliente] = useState<Cliente | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
