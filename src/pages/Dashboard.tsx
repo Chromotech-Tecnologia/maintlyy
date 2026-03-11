@@ -420,6 +420,30 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <DashboardReportExport
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        data={{ chartData, tipoData, statusData, teamData, weeklyData, stats }}
+        filters={{
+          clientes,
+          equipes,
+          tipos,
+          filterCliente,
+          filterEquipe,
+          filterTipo,
+          filterDataInicio: reportFilterDataInicio,
+          filterDataFim: reportFilterDataFim,
+          onFilterChange: (key, value) => {
+            if (key === 'cliente') setFilterCliente(value)
+            else if (key === 'equipe') setFilterEquipe(value)
+            else if (key === 'tipo') setFilterTipo(value)
+            else if (key === 'dataInicio') setReportFilterDataInicio(value)
+            else if (key === 'dataFim') setReportFilterDataFim(value)
+          }
+        }}
+        currentYear={currentYear}
+      />
     </div>
   )
 }
