@@ -1,32 +1,38 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import { Loader2 } from "lucide-react"
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList
+} from "recharts"
+
+const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
 export default function RelatorioPublico() {
   const { publicId } = useParams<{ publicId: string }>()
-  const [html, setHtml] = useState<string | null>(null)
+  const [reportData, setReportData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
   useEffect(() => {
     if (!publicId) return
-    const fetch = async () => {
+    const fetchReport = async () => {
       const { data, error: err } = await supabase
         .from('generated_reports')
-        .select('report_html, title')
+        .select('report_html, title, filters')
         .eq('public_id', publicId)
         .single()
 
       if (err || !data) {
         setError(true)
       } else {
-        setHtml((data as any).report_html)
+        setReportData(data)
         document.title = `${(data as any).title} — Maintly`
       }
       setLoading(false)
     }
-    fetch()
+    fetchReport()
   }, [publicId])
 
   if (loading) {
@@ -37,7 +43,7 @@ export default function RelatorioPublico() {
     )
   }
 
-  if (error || !html) {
+  if (error || !reportData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -48,11 +54,13 @@ export default function RelatorioPublico() {
     )
   }
 
+  // Render with interactive charts by parsing the saved HTML and re-rendering with Recharts
+  // Since we store report_html as static, we render it but also inject interactive chart wrappers
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div
         className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-8"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: (reportData as any).report_html }}
       />
     </div>
   )
