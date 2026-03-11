@@ -335,10 +335,14 @@ export default function PerfilUsuarios() {
                     id="new_email"
                     type="email"
                     value={newUserData.email}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      setNewUserData(prev => ({ ...prev, email: e.target.value }))
+                      setEmailError("")
+                    }}
                     placeholder="usuario@exemplo.com"
                     required
                   />
+                  {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
                 </div>
                 <div>
                   <Label htmlFor="new_password">Senha</Label>
@@ -350,6 +354,19 @@ export default function PerfilUsuarios() {
                     placeholder="Senha do usuário"
                     required
                   />
+                  <PasswordRequirements password={newUserData.password} />
+                </div>
+                <div>
+                  <Label htmlFor="new_confirm_password">Confirmar Senha</Label>
+                  <Input
+                    id="new_confirm_password"
+                    type="password"
+                    value={newUserData.confirmPassword}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    placeholder="Repita a senha"
+                    required
+                  />
+                  <PasswordMatchIndicator password={newUserData.password} confirmPassword={newUserData.confirmPassword} />
                 </div>
                 <div>
                   <Label htmlFor="new_display_name">Nome de Exibição</Label>
@@ -383,7 +400,9 @@ export default function PerfilUsuarios() {
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!newUserData.permission_profile_id}>Criar Usuário</Button>
+                  <Button type="submit" disabled={!newUserData.permission_profile_id || !isPasswordValid(newUserData.password) || newUserData.password !== newUserData.confirmPassword}>
+                    Criar Usuário
+                  </Button>
                 </div>
               </form>
             </DialogContent>
