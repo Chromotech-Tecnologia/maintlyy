@@ -16,6 +16,7 @@ import TiposManutencao from "./pages/TiposManutencao";
 import CofreSenhas from "./pages/CofreSenhas";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
+import SetupPassword from "./pages/SetupPassword";
 import PerfilUsuarios from "./pages/PerfilUsuarios";
 import PermissionProfiles from "./pages/PermissionProfiles";
 import SuperAdminPanel from "./pages/SuperAdminPanel";
