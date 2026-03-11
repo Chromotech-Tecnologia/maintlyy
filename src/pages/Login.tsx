@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
 import { Eye, EyeOff, Phone, User, Mail, Lock } from "lucide-react"
-import { PasswordRequirements, isPasswordValid } from "@/components/ui/password-requirements"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 
 const formatPhone = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -60,6 +60,20 @@ export default function Login() {
           signupForm.setError(field, { message: issue.message })
         }
       }
+      return
+    }
+
+    // Check if email already exists as a tenant (admin user)
+    const { data: existingProfiles } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', data.email)
+      .eq('is_admin', true)
+      .limit(1)
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      toast.error("Este email já está cadastrado no sistema.")
+      signupForm.setError("email", { message: "Email já cadastrado" })
       return
     }
 
@@ -248,6 +262,7 @@ export default function Login() {
                           </button>
                         </div>
                       </FormControl>
+                      <PasswordMatchIndicator password={signupForm.watch("password")} confirmPassword={field.value} />
                       <FormMessage />
                     </FormItem>
                   )} />

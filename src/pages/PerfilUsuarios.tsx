@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Users, Shield, UserPlus } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 
 interface UserProfile {
   id: string
@@ -44,10 +45,12 @@ export default function PerfilUsuarios() {
   const [newUserData, setNewUserData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     display_name: "",
     is_admin: false,
     permission_profile_id: ""
   })
+  const [emailError, setEmailError] = useState("")
 
   const fetchAll = useCallback(async () => {
     if (!user) return
@@ -174,6 +177,22 @@ export default function PerfilUsuarios() {
     e.preventDefault()
     
     try {
+      // Validate email uniqueness within tenant
+      const existingUser = profiles.find(p => p.email === newUserData.email)
+      if (existingUser) {
+        toast.error('Este email já está cadastrado neste tenant.')
+        setEmailError('Email já cadastrado')
+        return
+      }
+
+      if (!isPasswordValid(newUserData.password)) {
+        toast.error('A senha não atende aos requisitos mínimos')
+        return
+      }
+      if (newUserData.password !== newUserData.confirmPassword) {
+        toast.error('As senhas não coincidem')
+        return
+      }
       const { data, error: authError } = await supabase.auth.signUp({
         email: newUserData.email,
         password: newUserData.password,
@@ -247,7 +266,7 @@ export default function PerfilUsuarios() {
 
       toast.success('Usuário criado com sucesso!')
       setCreateUserDialogOpen(false)
-      setNewUserData({ email: "", password: "", display_name: "", is_admin: false, permission_profile_id: "" })
+      setNewUserData({ email: "", password: "", confirmPassword: "", display_name: "", is_admin: false, permission_profile_id: "" })
       fetchAll()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
@@ -316,10 +335,14 @@ export default function PerfilUsuarios() {
                     id="new_email"
                     type="email"
                     value={newUserData.email}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      setNewUserData(prev => ({ ...prev, email: e.target.value }))
+                      setEmailError("")
+                    }}
                     placeholder="usuario@exemplo.com"
                     required
                   />
+                  {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
                 </div>
                 <div>
                   <Label htmlFor="new_password">Senha</Label>
@@ -331,6 +354,19 @@ export default function PerfilUsuarios() {
                     placeholder="Senha do usuário"
                     required
                   />
+                  <PasswordRequirements password={newUserData.password} />
+                </div>
+                <div>
+                  <Label htmlFor="new_confirm_password">Confirmar Senha</Label>
+                  <Input
+                    id="new_confirm_password"
+                    type="password"
+                    value={newUserData.confirmPassword}
+                    onChange={(e) => setNewUserData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    placeholder="Repita a senha"
+                    required
+                  />
+                  <PasswordMatchIndicator password={newUserData.password} confirmPassword={newUserData.confirmPassword} />
                 </div>
                 <div>
                   <Label htmlFor="new_display_name">Nome de Exibição</Label>
@@ -364,7 +400,9 @@ export default function PerfilUsuarios() {
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!newUserData.permission_profile_id}>Criar Usuário</Button>
+                  <Button type="submit" disabled={!newUserData.permission_profile_id || !isPasswordValid(newUserData.password) || newUserData.password !== newUserData.confirmPassword}>
+                    Criar Usuário
+                  </Button>
                 </div>
               </form>
             </DialogContent>

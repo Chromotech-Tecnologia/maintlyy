@@ -11,6 +11,7 @@ import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff, ChevronDown, ChevronRight, Lock } from "lucide-react"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 
 interface EditProfileDialogProps {
   open: boolean
@@ -99,8 +100,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       // Validate password if changing
       if (showPasswordSection && newPassword) {
-        if (newPassword.length < 6) {
-          toast.error('A senha deve ter pelo menos 6 caracteres')
+        if (!isPasswordValid(newPassword)) {
+          toast.error('A senha não atende aos requisitos mínimos')
           return
         }
         if (newPassword !== confirmPassword) {
@@ -276,6 +277,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordRequirements password={newPassword} />
                   </div>
                   <div>
                     <Label htmlFor="confirm_password">Confirmar Senha</Label>
@@ -296,6 +298,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordMatchIndicator password={newPassword} confirmPassword={confirmPassword} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -305,7 +308,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit" disabled={showPasswordSection && newPassword ? (!isPasswordValid(newPassword) || newPassword !== confirmPassword) : false}>Salvar Alterações</Button>
             </div>
           </form>
         )}

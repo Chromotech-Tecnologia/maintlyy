@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
-import { PasswordRequirements, isPasswordValid } from "@/components/ui/password-requirements"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -117,6 +117,7 @@ export default function ResetPassword() {
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <PasswordMatchIndicator password={password} confirmPassword={confirmPassword} />
             </div>
             <Button type="submit" className="w-full" disabled={loading || !isPasswordValid(password) || password !== confirmPassword}>
               {loading ? "Redefinindo..." : "Redefinir Senha"}

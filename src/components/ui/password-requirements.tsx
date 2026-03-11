@@ -39,3 +39,27 @@ export function PasswordRequirements({ password }: PasswordRequirementsProps) {
 export function isPasswordValid(password: string): boolean {
   return requirements.every((r) => r.test(password))
 }
+
+interface PasswordMatchIndicatorProps {
+  password: string
+  confirmPassword: string
+}
+
+export function PasswordMatchIndicator({ password, confirmPassword }: PasswordMatchIndicatorProps) {
+  if (!confirmPassword) return null
+
+  const match = password === confirmPassword
+
+  return (
+    <div className="flex items-center gap-2 text-xs mt-1">
+      {match ? (
+        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+      ) : (
+        <X className="h-3.5 w-3.5 text-destructive shrink-0" />
+      )}
+      <span className={cn(match ? "text-emerald-500" : "text-destructive")}>
+        {match ? "Senhas conferem" : "Senhas não conferem"}
+      </span>
+    </div>
+  )
+}
