@@ -45,7 +45,8 @@ export default function PerfilUsuarios() {
     email: "",
     password: "",
     display_name: "",
-    is_admin: false
+    is_admin: false,
+    permission_profile_id: ""
   })
 
   const fetchAll = useCallback(async () => {
