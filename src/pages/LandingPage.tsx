@@ -82,7 +82,9 @@ export default function LandingPage() {
   const paidPlans = plans.filter(p => p.categoria === "pago")
 
   const handlePlanClick = (plan: LandingPlan) => {
-    if (plan.whatsapp_numero) {
+    if (plan.offer_free_signup) {
+      window.location.href = "/login"
+    } else if (plan.whatsapp_numero) {
       const msg = plan.whatsapp_mensagem || `Olá! Tenho interesse no plano ${plan.nome} do Maintly.`
       window.open(`https://wa.me/${plan.whatsapp_numero}?text=${encodeURIComponent(msg)}`, "_blank")
     } else {
