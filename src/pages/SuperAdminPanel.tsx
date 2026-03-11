@@ -567,23 +567,17 @@ export default function SuperAdminPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Change Password Dialog */}
+      {/* Password Reset Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(open) => setPasswordDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Alterar Senha</DialogTitle>
-            <DialogDescription>Alterar a senha do usuário {passwordDialog.email}</DialogDescription>
+            <DialogTitle>Solicitar Troca de Senha</DialogTitle>
+            <DialogDescription>Um email será enviado para <strong>{passwordDialog.email}</strong> com um link para redefinir a senha.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nova Senha</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
-            </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPasswordDialog({ open: false, userId: "", email: "" })}>Cancelar</Button>
-            <Button onClick={handleChangePassword} disabled={actionLoading}>
-              {actionLoading ? "Salvando..." : "Salvar"}
+            <Button onClick={handleSendPasswordReset} disabled={actionLoading}>
+              {actionLoading ? "Enviando..." : "Enviar email de troca"}
             </Button>
           </DialogFooter>
         </DialogContent>
