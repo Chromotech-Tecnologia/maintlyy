@@ -329,8 +329,6 @@ export default function PerfilUsuarios() {
                   </Button>
                   <Button type="submit" disabled={
                     !newUserData.permission_profile_id || 
-                    !isPasswordValid(newUserData.password) || 
-                    newUserData.password !== newUserData.confirmPassword ||
                     !newUserData.email || 
                     !isEmailValid(newUserData.email) ||
                     !newUserData.display_name ||
