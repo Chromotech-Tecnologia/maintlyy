@@ -69,6 +69,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
   const [format, setFormat] = useState<'pdf' | 'png' | 'link'>('pdf')
   const [copiedLink, setCopiedLink] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
 
   // Separate date filters for analytical
   const [analyticDataInicio, setAnalyticDataInicio] = useState("")
