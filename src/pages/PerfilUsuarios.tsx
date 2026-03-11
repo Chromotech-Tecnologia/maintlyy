@@ -358,6 +358,7 @@ export default function PerfilUsuarios() {
                     required
                   />
                   {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
+                  {!emailError && <EmailValidation email={newUserData.email} />}
                 </div>
                 <div>
                   <Label htmlFor="new_password">Senha</Label>
