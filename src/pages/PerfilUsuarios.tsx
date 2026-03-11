@@ -76,11 +76,22 @@ export default function PerfilUsuarios() {
       
       const allProfiles = (data as any[]) || []
       
+      // Fetch profile data (phone, department) for all users
+      const { data: profileDataList } = await supabase
+        .from('user_profile_data')
+        .select('user_id, phone, department')
+      
+      const profileDataMap = new Map((profileDataList || []).map(pd => [pd.user_id, pd]))
+      
+      // Enrich profiles with phone/department
+      const enrichedProfiles = allProfiles.map(p => {
+        const pd = profileDataMap.get(p.user_id)
+        return { ...p, phone: pd?.phone || null, department: pd?.department || null }
+      })
+      
       if (permissions.isAdmin) {
         const myProfileIds = myPermProfiles.map(p => p.id)
-        // Show: own profile + non-admin non-superadmin users linked to my permission profiles
-        // Also include users with NO permission_profile_id who are not admin/super_admin (orphan subordinates)
-        const filtered = allProfiles.filter(p => 
+        const filtered = enrichedProfiles.filter(p => 
           p.user_id === user.id || 
           (!p.is_admin && !p.is_super_admin && (
             myProfileIds.includes(p.permission_profile_id) || 
@@ -89,7 +100,7 @@ export default function PerfilUsuarios() {
         )
         setProfiles(filtered)
       } else {
-        setProfiles(allProfiles.filter(p => p.user_id === user.id))
+        setProfiles(enrichedProfiles.filter(p => p.user_id === user.id))
       }
     } catch (error) {
       console.error('Erro ao buscar perfis:', error)
