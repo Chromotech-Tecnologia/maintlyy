@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Navigate, Link } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -6,7 +6,9 @@ import { AppFooter } from "@/components/layout/AppFooter"
 import { Button } from "@/components/ui/button"
 import {
   Wrench, Shield, Users, FileBarChart, KeyRound, Building2,
-  CheckCircle2, ArrowRight, Sparkles, Zap, Star
+  CheckCircle2, ArrowRight, Sparkles, Zap, Star, Lock,
+  Clock, BarChart3, UserPlus, Settings, MonitorSmartphone,
+  ShieldCheck, Database, Headphones, ChevronRight
 } from "lucide-react"
 
 interface LandingPlan {
@@ -26,12 +28,31 @@ interface LandingPlan {
 }
 
 const features = [
-  { icon: Wrench, title: "Gestão de Manutenções", desc: "Controle completo de manutenções preventivas e corretivas com rastreamento de tempo." },
-  { icon: KeyRound, title: "Cofre de Senhas", desc: "Armazene credenciais com criptografia e controle de acesso granular." },
-  { icon: Users, title: "Equipes & Permissões", desc: "Gerencie equipes com perfis de permissão personalizados por recurso." },
-  { icon: FileBarChart, title: "Relatórios Avançados", desc: "Gere relatórios detalhados com filtros, exportação PDF e links públicos." },
-  { icon: Building2, title: "Multi-Empresa", desc: "Gerencie múltiplas empresas e clientes em uma única plataforma." },
-  { icon: Shield, title: "Segurança Total", desc: "Verificação por email, tokens OTP e controle de acesso por perfil." },
+  { icon: Wrench, title: "Gestão de Manutenções", desc: "Controle completo de manutenções preventivas e corretivas com rastreamento de tempo real.", tag: "Produtividade" },
+  { icon: KeyRound, title: "Cofre de Senhas", desc: "Armazene credenciais com criptografia AES-256 e controle de acesso granular por usuário.", tag: "Segurança" },
+  { icon: Users, title: "Equipes & Permissões", desc: "Gerencie equipes com perfis de permissão personalizados por recurso e por empresa.", tag: "Colaboração" },
+  { icon: FileBarChart, title: "Relatórios Avançados", desc: "Gere relatórios detalhados com filtros, exportação PDF e links públicos compartilháveis.", tag: "Análise" },
+  { icon: Building2, title: "Multi-Empresa", desc: "Gerencie múltiplas empresas e clientes em uma única plataforma centralizada.", tag: "Escalabilidade" },
+  { icon: Shield, title: "Segurança Total", desc: "Verificação por email, tokens OTP e controle de acesso por perfil de permissão.", tag: "Confiança" },
+]
+
+const steps = [
+  { icon: UserPlus, number: "01", title: "Crie sua conta", desc: "Cadastro rápido e gratuito. Sem cartão de crédito." },
+  { icon: Settings, number: "02", title: "Configure sua empresa", desc: "Adicione equipes, clientes e tipos de manutenção." },
+  { icon: MonitorSmartphone, number: "03", title: "Gerencie tudo", desc: "Controle manutenções, senhas e relatórios em um só lugar." },
+]
+
+const stats = [
+  { value: "10x", label: "mais rápido", desc: "que planilhas manuais" },
+  { value: "100%", label: "seguro", desc: "criptografia de ponta" },
+  { value: "24/7", label: "disponível", desc: "acesso em qualquer lugar" },
+  { value: "0", label: "instalação", desc: "100% na nuvem" },
+]
+
+const trustBadges = [
+  { icon: ShieldCheck, title: "Dados Criptografados", desc: "AES-256 em todas as senhas" },
+  { icon: Database, title: "Backup Automático", desc: "Seus dados sempre seguros" },
+  { icon: Headphones, title: "Suporte Dedicado", desc: "Ajuda quando precisar" },
 ]
 
 export default function LandingPage() {
@@ -72,10 +93,15 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center shadow-md border border-border/50">
               <img src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" alt="Maintly" className="w-7 h-7" />
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">Maintly</span>
+            <span className="font-display font-bold text-xl tracking-tight text-foreground">Maintly</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-6">
+            <a href="#funcionalidades" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
+            <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
+            <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planos</a>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login">
@@ -83,7 +109,7 @@ export default function LandingPage() {
             </Link>
             <Link to="/login">
               <Button size="sm" className="gradient-primary text-primary-foreground shadow-md">
-                Teste Grátis
+                Começar Grátis
               </Button>
             </Link>
           </div>
@@ -91,119 +117,318 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 relative overflow-hidden">
-        {/* Background decorations */}
+      <section className="pt-28 sm:pt-36 pb-16 sm:pb-24 px-4 sm:px-6 relative overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-1/4 w-72 h-72 rounded-full opacity-20 blur-3xl" style={{ background: "hsl(221 83% 53% / 0.3)" }} />
-          <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl" style={{ background: "hsl(250 83% 63% / 0.3)" }} />
+          <div className="absolute top-10 left-1/4 w-[500px] h-[500px] rounded-full animate-pulse-glow blur-[120px]" style={{ background: "hsl(var(--primary) / 0.15)" }} />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full animate-pulse-glow blur-[100px]" style={{ background: "hsl(250 83% 63% / 0.1)", animationDelay: "1.5s" }} />
         </div>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Sparkles className="h-4 w-4" />
-            Novas funcionalidades toda semana
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6 text-foreground">
-            Gestão de Manutenções
-            <span className="block mt-2 bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-primary)" }}>
-              Simples e Profissional
-            </span>
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Controle manutenções, equipes, senhas e relatórios em um só lugar.
-            Segurança de nível empresarial com interface intuitiva.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/login">
-              <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-12 px-8 text-base">
-                Começar {trialDays} dias grátis
-                <ArrowRight className="h-5 w-5 ml-1" />
-              </Button>
-            </Link>
-            <a href="#planos">
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                Ver Planos
-              </Button>
-            </a>
-          </div>
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left: Text */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 border border-primary/20">
+                <Sparkles className="h-4 w-4" />
+                Novas funcionalidades toda semana
+              </div>
 
-          {/* 3D Hero Card */}
-          <div className="mt-16 relative mx-auto max-w-3xl">
-            <div
-              className="rounded-2xl border border-border/50 bg-card/90 backdrop-blur-xl p-1 shadow-3d"
-              style={{ transform: "perspective(1200px) rotateX(4deg) rotateY(-2deg)" }}
-            >
-              <div className="rounded-xl bg-gradient-to-br from-card to-muted/50 p-6 sm:p-8">
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { label: "Manutenções", value: "247", color: "hsl(221 83% 53%)" },
-                    { label: "Clientes", value: "38", color: "hsl(142 76% 36%)" },
-                    { label: "Equipes", value: "12", color: "hsl(38 92% 50%)" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center p-4 rounded-xl bg-background/60 border border-border/30">
-                      <p className="text-2xl sm:text-3xl font-bold font-display" style={{ color: stat.color }}>{stat.value}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">{stat.label}</p>
+              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
+                Gestão de
+                <br />
+                Manutenções
+                <span className="block mt-1 bg-clip-text text-transparent animate-gradient-text" style={{
+                  backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(250 83% 63%), hsl(var(--primary)))",
+                  backgroundSize: "200% 200%"
+                }}>
+                  Inteligente e Segura
+                </span>
+              </h1>
+
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
+                Controle manutenções, equipes, senhas e relatórios em uma plataforma
+                <strong className="text-foreground"> profissional, segura</strong> e fácil de usar.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
+                <Link to="/login">
+                  <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-13 px-8 text-base font-semibold">
+                    Começar {trialDays} dias grátis
+                    <ArrowRight className="h-5 w-5 ml-1" />
+                  </Button>
+                </Link>
+                <a href="#funcionalidades">
+                  <Button variant="outline" size="lg" className="h-13 px-8 text-base">
+                    Conhecer recursos
+                  </Button>
+                </a>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-4">
+                ✓ Sem cartão de crédito &nbsp;&nbsp; ✓ Configuração em 2 minutos &nbsp;&nbsp; ✓ Cancele quando quiser
+              </p>
+            </div>
+
+            {/* Right: Floating mockup cards */}
+            <div className="relative hidden lg:block h-[420px]">
+              {/* Main card */}
+              <div className="absolute top-6 left-8 right-4 animate-float">
+                <div className="glass-card rounded-2xl p-5 border border-border/60 shadow-3d">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-primary-foreground" />
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Dashboard</p>
+                      <p className="text-xs text-muted-foreground">Visão geral do mês</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: "Manutenções", value: "247", color: "hsl(var(--primary))" },
+                      { label: "Concluídas", value: "189", color: "hsl(var(--success))" },
+                      { label: "Em andamento", value: "58", color: "hsl(var(--warning))" },
+                    ].map((s) => (
+                      <div key={s.label} className="text-center p-3 rounded-xl bg-background/70 border border-border/30">
+                        <p className="text-xl font-bold font-display" style={{ color: s.color }}>{s.value}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
+
+              {/* Small floating card - password vault */}
+              <div className="absolute bottom-16 left-0 animate-float-delayed">
+                <div className="glass-card rounded-xl p-4 border border-border/60 shadow-lg w-52">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-semibold text-foreground">Cofre de Senhas</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    {["Servidor AWS", "Painel Admin", "VPN Corp"].map((item) => (
+                      <div key={item} className="flex items-center gap-2 text-[11px]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                        <span className="text-muted-foreground">{item}</span>
+                        <span className="ml-auto text-muted-foreground">••••••</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Small floating card - team */}
+              <div className="absolute bottom-4 right-0 animate-float" style={{ animationDelay: "1s" }}>
+                <div className="glass-card rounded-xl p-4 border border-border/60 shadow-lg w-48">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-semibold text-foreground">Equipe TI</p>
+                  </div>
+                  <div className="flex -space-x-2">
+                    {["bg-primary", "bg-success", "bg-warning", "bg-destructive"].map((bg, i) => (
+                      <div key={i} className={`w-7 h-7 rounded-full ${bg} border-2 border-card flex items-center justify-center`}>
+                        <span className="text-[9px] text-primary-foreground font-bold">{["JP", "MR", "AS", "LC"][i]}</span>
+                      </div>
+                    ))}
+                    <div className="w-7 h-7 rounded-full bg-muted border-2 border-card flex items-center justify-center">
+                      <span className="text-[9px] text-muted-foreground font-medium">+3</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Glow */}
+              <div className="absolute inset-8 rounded-3xl opacity-15 blur-3xl -z-10" style={{ background: "var(--gradient-primary)" }} />
             </div>
-            {/* Glow effect */}
-            <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl -z-10" style={{ background: "var(--gradient-primary)" }} />
           </div>
         </div>
       </section>
 
+      {/* Social Proof Bar */}
+      <section className="py-8 px-4 sm:px-6 border-y border-border/50 bg-muted/30">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-8 sm:gap-14">
+          {[
+            { icon: Clock, text: "Economia de 10h/semana" },
+            { icon: ShieldCheck, text: "Criptografia AES-256" },
+            { icon: Zap, text: "99.9% de disponibilidade" },
+            { icon: Users, text: "Equipes de todos os tamanhos" },
+          ].map((item) => (
+            <div key={item.text} className="flex items-center gap-2 text-muted-foreground">
+              <item.icon className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Features */}
-      <section className="py-20 px-4 sm:px-6 bg-muted/30">
+      <section id="funcionalidades" className="py-20 sm:py-28 px-4 sm:px-6 scroll-mt-20">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
+              <Zap className="h-4 w-4" />
+              Funcionalidades
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-foreground">
               Tudo que você precisa
+              <span className="block text-primary mt-1">em um só lugar</span>
             </h2>
-            <p className="text-muted-foreground mt-3 text-lg max-w-xl mx-auto">
-              Uma plataforma completa para gestão de manutenções e segurança da informação.
+            <p className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto">
+              Uma plataforma completa para gestão de manutenções, segurança da informação e colaboração da equipe.
             </p>
           </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f) => (
+            {features.map((f, i) => (
               <div
                 key={f.title}
-                className="group glass-card p-6 rounded-2xl hover:shadow-lg transition-all duration-300"
+                className="group relative glass-card p-6 rounded-2xl hover:shadow-lg transition-all duration-500 hover:-translate-y-1"
+                style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mb-4 shadow-md shadow-primary/20 group-hover:scale-110 transition-transform">
+                <div className="absolute top-4 right-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                    {f.tag}
+                  </span>
+                </div>
+                <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mb-4 shadow-md shadow-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                   <f.icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-lg font-display font-semibold text-foreground mb-2">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Saiba mais <ChevronRight className="h-4 w-4" />
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Always improving */}
-      <section className="py-16 px-4 sm:px-6">
+      {/* How it Works */}
+      <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
+              Comece em <span className="text-primary">3 passos simples</span>
+            </h2>
+            <p className="text-muted-foreground mt-3 text-lg">
+              De zero a produtivo em menos de 5 minutos.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-8 relative">
+            {/* Connecting line */}
+            <div className="hidden sm:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
+
+            {steps.map((step, i) => (
+              <div key={step.number} className="relative text-center group">
+                <div className="relative z-10 mx-auto w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <step.icon className="h-7 w-7 text-primary-foreground" />
+                </div>
+                <div className="absolute top-0 right-0 sm:right-auto sm:-top-2 sm:left-1/2 sm:translate-x-4 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  PASSO {step.number}
+                </div>
+                <h3 className="text-lg font-display font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Statistics */}
+      <section className="py-20 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-primary)", opacity: 0.04 }} />
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center group">
+                <div className="glass-card rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <p className="text-4xl sm:text-5xl font-display font-bold text-primary mb-1">{stat.value}</p>
+                  <p className="text-sm font-semibold text-foreground">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
+              Segurança que você pode <span className="text-primary">confiar</span>
+            </h2>
+            <p className="text-muted-foreground mt-3 text-lg max-w-2xl mx-auto">
+              Seus dados estão protegidos com as mesmas tecnologias usadas por grandes empresas.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-6">
+            {trustBadges.map((badge) => (
+              <div key={badge.title} className="glass-card rounded-2xl p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                  <badge.icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-base font-display font-semibold text-foreground mb-1">{badge.title}</h3>
+                <p className="text-sm text-muted-foreground">{badge.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Quote */}
+          <div className="mt-14 text-center">
+            <div className="glass-card rounded-2xl p-8 sm:p-10 max-w-3xl mx-auto border border-primary/10">
+              <Sparkles className="h-8 w-8 text-primary mx-auto mb-4" />
+              <blockquote className="text-xl sm:text-2xl font-display font-semibold text-foreground leading-snug">
+                "A plataforma que sua equipe de manutenção precisava para
+                <span className="text-primary"> ser mais produtiva e segura.</span>"
+              </blockquote>
+              <p className="text-sm text-muted-foreground mt-4">
+                Desenvolvido para profissionais que valorizam organização e segurança.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Always Evolving */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/10 text-success text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-success/10 text-success text-sm font-medium mb-4 border border-success/20">
             <Zap className="h-4 w-4" />
             Evolução Contínua
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">
             Estamos sempre criando novas funcionalidades
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
             Nossa equipe trabalha continuamente para trazer novas ferramentas e melhorias.
-            Você sempre terá acesso às últimas inovações sem custo adicional no seu plano.
+            Você sempre terá acesso às últimas inovações.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {["Relatórios PDF", "Cofre Avançado", "Multi-Empresa", "Perfis de Permissão", "Importação Excel", "Links Públicos"].map((feat) => (
+              <span key={feat} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary border border-primary/15">
+                <CheckCircle2 className="h-3 w-3" />
+                {feat}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Plans */}
-      <section id="planos" className="py-20 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+      <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
+              <Star className="h-4 w-4" />
+              Planos
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-foreground">
               Planos & Preços
             </h2>
             <p className="text-muted-foreground mt-3 text-lg">
@@ -214,7 +439,7 @@ export default function LandingPage() {
           {/* Free plans */}
           {freePlans.length > 0 && (
             <div className="mb-12">
-              <h3 className="text-xl font-display font-semibold text-foreground mb-6 text-center">Planos Gratuitos</h3>
+              <h3 className="text-lg font-display font-semibold text-muted-foreground mb-6 text-center uppercase tracking-wider">Planos Gratuitos</h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {freePlans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} onClick={() => handlePlanClick(plan)} trialDays={trialDays} />
@@ -226,7 +451,7 @@ export default function LandingPage() {
           {/* Paid plans */}
           {paidPlans.length > 0 && (
             <div>
-              <h3 className="text-xl font-display font-semibold text-foreground mb-6 text-center">Planos Profissionais</h3>
+              <h3 className="text-lg font-display font-semibold text-muted-foreground mb-6 text-center uppercase tracking-wider">Planos Profissionais</h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {paidPlans.map((plan) => (
                   <PlanCard key={plan.id} plan={plan} onClick={() => handlePlanClick(plan)} trialDays={trialDays} />
@@ -256,20 +481,33 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
-            Pronto para começar?
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Crie sua conta gratuita e explore todas as funcionalidades por {trialDays} dias.
-          </p>
-          <Link to="/login">
-            <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-12 px-10 text-base">
-              Criar conta grátis <ArrowRight className="h-5 w-5 ml-1" />
-            </Button>
-          </Link>
+      {/* Final CTA */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-primary)", opacity: 0.06 }} />
+        <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
+
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <div className="glass-card rounded-3xl p-10 sm:p-14 border border-primary/10 shadow-3d">
+            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/25">
+              <Sparkles className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
+              Pronto para transformar
+              <span className="block text-primary">sua gestão de manutenções?</span>
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
+              Junte-se a profissionais que já otimizaram sua rotina.
+              Comece seus <strong className="text-foreground">{trialDays} dias grátis</strong> agora.
+            </p>
+            <Link to="/login">
+              <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-14 px-10 text-lg font-semibold">
+                Criar conta grátis <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground mt-4">
+              ✓ Sem cartão de crédito &nbsp;&nbsp; ✓ Cancele quando quiser
+            </p>
+          </div>
         </div>
       </section>
 
@@ -284,13 +522,13 @@ export default function LandingPage() {
 function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
   return (
     <div
-      className={`relative glass-card rounded-2xl p-6 flex flex-col transition-all duration-300 ${
+      className={`relative glass-card rounded-2xl p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
         plan.destaque ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""
       }`}
     >
       {plan.destaque && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full gradient-primary text-primary-foreground text-xs font-semibold shadow-md">
-          Mais popular
+          ⭐ Mais popular
         </div>
       )}
       <div className="mb-4">

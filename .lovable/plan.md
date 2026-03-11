@@ -1,68 +1,108 @@
 
+# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-# Plan: Redesign Landing Page + Add Home Link to Login
+## ✅ CONCLUÍDO
 
-## Changes
+### Problemas Identificados e Corrigidos
 
-### 1. `src/pages/Login.tsx`
-- Add a "Voltar para Home" link (with arrow-left icon) above the card, linking to `/`
+#### 1. ✅ Senhas exibidas incorretamente
+- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
 
-### 2. `src/pages/LandingPage.tsx` -- Full Redesign
-Complete rewrite for a commercially persuasive, visually stunning landing page:
+#### 2. ✅ Permissões não refletem nos menus
+- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
 
-**Navbar**: Smooth scroll links (Funcionalidades, Planos) + login/CTA buttons
+#### 3. ✅ Botões de ação não respeitam permissões
+- Adicionado botão "Ver" (ícone Eye) em todas as páginas
+- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
 
-**Hero Section**:
-- Larger, more impactful headline with animated gradient text
-- Social proof counter strip ("Gerencie manutenções como profissional")
-- Animated floating UI mockup cards (not just a static stats box) -- multiple layered cards with perspective transforms creating depth
-- Subtle animated background grid/dots pattern
+#### 4. ✅ Estrutura de permissões expandida
+Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
+- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
+- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
+- `can_edit` = **Editar**
+- `can_create` = **Criar**
+- `can_delete` = **Excluir**
 
-**"Trusted by" / Social Proof Bar**:
-- Metrics strip: "500+ manutenções gerenciadas", "99.9% uptime", "Criptografia AES-256"
-- Creates credibility immediately
+#### 5. ✅ Criação e edição de usuários
+- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
+  - `Admins can insert any profile` (INSERT)
+  - `Admins can update any profile` (UPDATE)
 
-**Features Section -- Redesigned**:
-- Two-column layout alternating: large illustration/mockup on one side, feature details on the other
-- Each feature has icon, title, description, and a subtle benefit tag
-- Hover animations with 3D tilt effect on cards
+#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
+- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
+- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
+- Campo Empresa Terceira fica desabilitado quando cliente selecionado
 
-**"How it Works" Section** (NEW):
-- 3-step visual flow: "1. Cadastre-se grátis → 2. Configure sua empresa → 3. Gerencie tudo"
-- Connected with animated line/dots between steps
-- Simple, persuasive, reduces friction
+#### 7. ✅ Permissões de Empresas Terceiras
+- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
+- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
+- Adicionada nova aba "Empresas" no dialog de permissões
+- Usuários com permissão de criar clientes podem ver lista de empresas
 
-**Statistics/Impact Section** (NEW):
-- Large animated counters: "247+ Manutenções", "38+ Clientes", "99.9% Disponibilidade"
-- Gradient background with glassmorphism cards
+#### 8. ✅ Permissões Granulares de Senhas por Cliente
+- Criado componente `PasswordPermissionsTab` com interface expandida
+- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
+- Usa tabela `user_password_permissions` para controle granular
+- Interface colapsível por cliente com carregamento sob demanda
 
-**Testimonial/Trust Section** (NEW):
-- Quote-style block: "A plataforma que sua equipe de manutenção precisava"
-- Shield + lock icons showing security certifications
-- Trust badges: "Dados criptografados", "Backup automático", "Suporte dedicado"
+---
 
-**"Always Evolving" Section -- Enhanced**:
-- Timeline-style layout showing recent features
-- Animated sparkle effects
+## Arquivos Modificados
 
-**Plans Section -- Redesigned**:
-- Toggle between "Mensal" view (future-proof even if only one period now)
-- Cards with gradient borders for highlighted plan
-- Hover lift + glow effect on plan cards
-- Better visual hierarchy: free plans subtle, paid plans prominent
+1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
+2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
+3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
+4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
+5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
+6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
+7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
+8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
+9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
+10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
+11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
+13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
 
-**Final CTA Section -- Enhanced**:
-- Full-width gradient background
-- Larger text, countdown urgency ("Comece seus {trialDays} dias grátis agora")
-- Floating decorative elements
+---
 
-**Footer**: Existing AppFooter with enhanced styling
+## Fluxo de Permissões Implementado
 
-All sections use staggered fade-in animations via CSS classes already in the system. The page remains fully responsive (mobile-first grid layouts).
+```
+1. Usuário sem "Ver Menu" -> Menu NÃO aparece
+2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
+3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
+4. Usuário com "Editar" -> Botão Editar aparece
+5. Usuário com "Criar" -> Botão Criar/Novo aparece  
+6. Usuário com "Excluir" -> Botão Excluir aparece
+```
 
-### 3. `src/index.css`
-- Add a few utility classes: animated gradient text keyframe, floating animation keyframe, grid background pattern
+## Mapeamento Resource x Menu
 
-## No Database or Backend Changes
-This is purely a frontend visual redesign.
+| Menu                  | resource_type       |
+|-----------------------|---------------------|
+| Dashboard             | dashboard           |
+| Manutenções           | manutencoes         |
+| Clientes              | clientes            |
+| Empresas Terceiras    | empresas_terceiras  |
+| Equipes               | equipes             |
+| Tipos de Manutenção   | tipos_manutencao    |
+| Cofre de Senhas       | cofre_senhas        |
+| Perfis de Usuários    | perfis_usuarios     |
+| Permissões            | permissoes          |
 
+## Estrutura de Permissões Atualizada
+
+```
+Módulo Sistema (user_system_permissions):
+  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
+
+Clientes (user_client_permissions):
+  - Por cliente: Ver, Editar, Criar, Excluir
+
+Empresas Terceiras (user_empresa_permissions):
+  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
+
+Senhas (user_password_permissions):
+  - Por senha individual: Ver, Editar
+  - Agrupadas por cliente na interface
+```
