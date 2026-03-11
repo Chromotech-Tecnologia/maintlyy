@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { equipeSchema, type EquipeFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface Equipe {
   id: string
