@@ -757,7 +757,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
           {plan.max_manutencoes === 0 && plan.categoria === "pago" && <span>🔧 Ilimitadas</span>}
         </div>
       </div>
-      <ul className="space-y-2.5 mb-6 flex-1">
+      <ul className="space-y-2.5 flex-1">
         {plan.recursos.map((r, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-foreground">
             <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -765,13 +765,18 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
           </li>
         ))}
       </ul>
-      <Button
-        onClick={onClick}
-        className={`w-full ${plan.destaque ? "gradient-primary text-primary-foreground shadow-md" : ""}`}
-        variant={plan.destaque ? "default" : "outline"}
-      >
-        {plan.texto_botao}
-      </Button>
+      <div className="mt-6 pt-4 border-t border-border/30">
+        <Button
+          onClick={onClick}
+          className={`w-full font-semibold ${
+            plan.destaque 
+              ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
+              : "bg-foreground text-background hover:bg-foreground/90"
+          }`}
+        >
+          {plan.texto_botao}
+        </Button>
+      </div>
     </div>
   )
 }
