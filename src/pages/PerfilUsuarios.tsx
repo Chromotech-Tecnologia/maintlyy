@@ -289,7 +289,12 @@ export default function PerfilUsuarios() {
             {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie seus usuários subordinados"}
           </p>
         </div>
-        {permissions.isAdmin && (
+        {permissions.isAdmin && !hasProfiles && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+            Você precisa criar um <strong>Perfil de Permissão</strong> antes de criar usuários.
+          </div>
+        )}
+        {permissions.isAdmin && hasProfiles && (
           <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">
@@ -337,11 +342,29 @@ export default function PerfilUsuarios() {
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="new_profile">Perfil de Permissão <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={newUserData.permission_profile_id}
+                    onValueChange={(value) => setNewUserData(prev => ({ ...prev, permission_profile_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {permissionProfiles.map((pp) => (
+                        <SelectItem key={pp.id} value={pp.id}>
+                          {pp.nome_perfil}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit">Criar Usuário</Button>
+                  <Button type="submit" disabled={!newUserData.permission_profile_id}>Criar Usuário</Button>
                 </div>
               </form>
             </DialogContent>
