@@ -302,7 +302,7 @@ export default function LandingPage() {
                   <f.icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-lg font-display font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                <p className="text-sm text-foreground/60 leading-relaxed">{f.desc}</p>
                 <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                   Saiba mais <ChevronRight className="h-4 w-4" />
                 </div>
