@@ -124,44 +124,10 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
         dataFim: filters.filterDataFim,
       }
 
-      if (format === 'link') {
-        // Save to DB and generate public link
-        const { data: report, error } = await supabase
-          .from('generated_reports')
-          .insert({
-            user_id: user.id,
-            title: selectedCliente ? selectedCliente.nome_cliente : 'Relatório Geral',
-            filters: filtersJson,
-            report_html: reportHtml,
-            format: 'link',
-          } as any)
-          .select('public_id')
-          .single()
-
-        if (error) throw error
-
-        const publicUrl = `${window.location.origin}/relatorio-publico/${(report as any).public_id}`
-        await navigator.clipboard.writeText(publicUrl)
-        setCopiedLink(true)
-        setTimeout(() => setCopiedLink(false), 3000)
-        toast({ title: "Link copiado!", description: "O link público foi copiado para a área de transferência." })
-      } else if (format === 'png') {
-        // Save history
-        await supabase.from('generated_reports').insert({
-          user_id: user.id,
-          title: selectedCliente ? selectedCliente.nome_cliente : 'Relatório Geral',
-          filters: filtersJson,
-          report_html: reportHtml,
-          format: 'png',
-        } as any)
-
-        const link = document.createElement('a')
-        link.download = `relatorio_dashboard_${new Date().toISOString().split('T')[0]}.png`
-        link.href = canvas.toDataURL('image/png')
-        link.click()
-      } else {
-        // Save history
-        await supabase.from('generated_reports').insert({
+      // Always save to DB and download as PDF
+      const { error } = await supabase
+        .from('generated_reports')
+        .insert({
           user_id: user.id,
           title: selectedCliente ? selectedCliente.nome_cliente : 'Relatório Geral',
           filters: filtersJson,
@@ -169,32 +135,34 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
           format: 'pdf',
         } as any)
 
-        const imgData = canvas.toDataURL('image/png')
-        const pdf = new jsPDF('p', 'mm', 'a4')
-        const pdfWidth = pdf.internal.pageSize.getWidth()
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-        
-        if (pdfHeight <= pdf.internal.pageSize.getHeight()) {
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-        } else {
-          let position = 0
-          const pageHeight = pdf.internal.pageSize.getHeight()
-          while (position < pdfHeight) {
-            if (position > 0) pdf.addPage()
-            pdf.addImage(imgData, 'PNG', 0, -position, pdfWidth, pdfHeight)
-            position += pageHeight
-          }
+      if (error) throw error
+
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      
+      if (pdfHeight <= pdf.internal.pageSize.getHeight()) {
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      } else {
+        let position = 0
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        while (position < pdfHeight) {
+          if (position > 0) pdf.addPage()
+          pdf.addImage(imgData, 'PNG', 0, -position, pdfWidth, pdfHeight)
+          position += pageHeight
         }
-        
-        pdf.save(`relatorio_dashboard_${new Date().toISOString().split('T')[0]}.pdf`)
       }
+      
+      pdf.save(`relatorio_dashboard_${new Date().toISOString().split('T')[0]}.pdf`)
+      toast({ title: "Relatório exportado!", description: "O PDF foi baixado e salvo no histórico." })
     } catch (error) {
       console.error('Erro ao exportar:', error)
       toast({ title: "Erro", description: "Falha ao exportar relatório.", variant: "destructive" })
     } finally {
       setExporting(false)
     }
-  }, [format, user, filters, selectedCliente, toast])
+  }, [user, filters, selectedCliente, toast])
 
   const periodoLabel = () => {
     if (filters.filterDataInicio && filters.filterDataFim) {
