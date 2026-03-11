@@ -109,7 +109,7 @@ export function MobileNav() {
                           <NavLink
                             key={item.url}
                             to={item.url}
-                            end={item.url === "/"}
+                            end={item.url === "/dashboard"}
                             onClick={() => setDrawerOpen(false)}
                             className={() => cn(
                               "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
