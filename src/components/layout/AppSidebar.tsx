@@ -83,11 +83,16 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 no-underline",
       isActive 
-        ? "!gradient-primary !text-white !shadow-md [background:var(--gradient-primary)!important]" 
-        : "!text-sidebar-foreground hover:!bg-sidebar-accent"
+        ? "text-white shadow-md" 
+        : "text-sidebar-foreground hover:bg-sidebar-accent"
     )
+
+  const getNavStyle = (path: string): React.CSSProperties => {
+    const active = path === "/" ? currentPath === "/" : currentPath.startsWith(path)
+    return active ? { background: 'var(--gradient-primary)' } : {}
+  }
 
   const renderSection = (label: string, items: typeof mainItems) => (
     items.length > 0 && (
@@ -96,18 +101,20 @@ export function AppSidebar() {
           {label}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu className="space-y-0.5">
+          <div className="space-y-0.5">
             {items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <NavLink to={item.url} end={item.url === "/"} className={getNavCls}>
-                    <item.icon className="h-[18px] w-[18px] shrink-0" />
-                    {!isCollapsed && <span>{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <NavLink 
+                key={item.title} 
+                to={item.url} 
+                end={item.url === "/"} 
+                className={getNavCls}
+                style={() => getNavStyle(item.url)}
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                {!isCollapsed && <span>{item.title}</span>}
+              </NavLink>
             ))}
-          </SidebarMenu>
+          </div>
         </SidebarGroupContent>
       </SidebarGroup>
     )
