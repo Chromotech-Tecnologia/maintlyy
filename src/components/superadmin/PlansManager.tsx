@@ -108,6 +108,8 @@ export function PlansManager() {
       preco: form.preco || null,
       max_usuarios: form.max_usuarios,
       max_equipes: form.max_equipes,
+      max_manutencoes: form.max_manutencoes,
+      max_empresas: form.max_empresas,
       descricao: form.descricao || null,
       recursos,
       whatsapp_numero: form.whatsapp_numero || null,
@@ -116,6 +118,7 @@ export function PlansManager() {
       destaque: form.destaque,
       ordem: form.ordem,
       ativo: form.ativo,
+      offer_free_signup: form.offer_free_signup,
     }
 
     let error
