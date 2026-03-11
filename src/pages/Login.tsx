@@ -69,7 +69,7 @@ export default function Login() {
     return () => { if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current) }
   }, [watchedEmail])
 
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to="/dashboard" replace />
 
   const handleSignIn = async (data: LoginFormData) => {
     const { error } = await signIn(data.email, data.password)
