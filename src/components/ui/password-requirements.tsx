@@ -64,3 +64,30 @@ export function PasswordMatchIndicator({ password, confirmPassword }: PasswordMa
     </div>
   )
 }
+
+interface EmailValidationProps {
+  email: string
+}
+
+export function EmailValidation({ email }: EmailValidationProps) {
+  if (!email) return null
+
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+  return (
+    <div className="flex items-center gap-2 text-xs mt-1">
+      {isValid ? (
+        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+      ) : (
+        <X className="h-3.5 w-3.5 text-destructive shrink-0" />
+      )}
+      <span className={cn(isValid ? "text-emerald-500" : "text-destructive")}>
+        {isValid ? "Email válido" : "Email inválido"}
+      </span>
+    </div>
+  )
+}
+
+export function isEmailValid(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
