@@ -77,7 +77,7 @@ export function AppSidebar() {
   })
 
   const isActiveRoute = (path: string) => {
-    if (path === "/") return currentPath === "/"
+    if (path === "/dashboard") return currentPath === "/dashboard"
     return currentPath.startsWith(path)
   }
 
