@@ -531,6 +531,14 @@ function TestimonialsSection() {
   const [activeIndex, setActiveIndex] = useState(0)
   const featured = testimonials[activeIndex]
 
+  // Auto-rotate testimonials
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % testimonials.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-primary)", opacity: 0.04 }} />
@@ -550,8 +558,8 @@ function TestimonialsSection() {
         </div>
 
         {/* Featured testimonial */}
-        <div className="glass-card rounded-3xl p-8 sm:p-10 border border-primary/10 shadow-3d max-w-4xl mx-auto mb-10 transition-all duration-500">
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start">
+        <div className="glass-card rounded-3xl p-8 sm:p-10 border border-primary/10 shadow-3d max-w-4xl mx-auto mb-10 transition-all duration-700 ease-in-out" key={activeIndex}>
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start animate-fade-in">
             <div className="shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-primary/20 shadow-lg">
                 <img src={featured.photo} alt={featured.name} className="w-full h-full object-cover" />
@@ -576,13 +584,13 @@ function TestimonialsSection() {
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 ${
                 i === activeIndex
                   ? "glass-card ring-2 ring-primary shadow-lg scale-105"
                   : "hover:bg-muted/50 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all ${
+              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
                 i === activeIndex ? "ring-primary" : "ring-border group-hover:ring-primary/50"
               }`}>
                 <img src={t.photo} alt={t.name} className="w-full h-full object-cover" />
