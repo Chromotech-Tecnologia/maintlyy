@@ -23,6 +23,7 @@ import PermissionProfiles from "./pages/PermissionProfiles";
 import SuperAdminPanel from "./pages/SuperAdminPanel";
 import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
+import Assinaturas from "./pages/Assinaturas";
 
 const queryClient = new QueryClient();
 
