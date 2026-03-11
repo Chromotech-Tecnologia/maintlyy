@@ -89,14 +89,26 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // Account disabled or expired
-  if (accountStatus === 'disabled' || accountStatus === 'expired') {
-    // Allow access to /assinaturas even when expired
-    if (accountStatus === 'expired' && location.pathname === '/assinaturas') {
+  // Account disabled, expired, or cancelled
+  if (accountStatus === 'disabled' || accountStatus === 'expired' || accountStatus === 'cancelled') {
+    // Allow access to /assinaturas when expired or cancelled
+    if ((accountStatus === 'expired' || accountStatus === 'cancelled') && location.pathname === '/assinaturas') {
       return <>{children}</>
     }
 
     const handleSignOut = async () => { try { await signOut() } catch { toast.error("Erro ao sair") } }
+
+    const titleMap: Record<string, string> = {
+      disabled: 'Conta desabilitada',
+      expired: 'Período de teste expirado',
+      cancelled: 'Plano cancelado',
+    }
+    const descriptionMap: Record<string, string> = {
+      disabled: 'Sua conta foi desabilitada pelo administrador. Entre em contato para mais informações.',
+      expired: 'Seu período de teste expirou. Escolha um plano para continuar utilizando o Maintly.',
+      cancelled: 'Seu plano foi cancelado. Escolha um novo plano para continuar utilizando o Maintly.',
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="max-w-md w-full text-center space-y-6">
@@ -107,19 +119,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-foreground">
-              {accountStatus === 'disabled' ? 'Conta desabilitada' : 'Período de teste expirado'}
+              {titleMap[accountStatus]}
             </h1>
             <p className="text-muted-foreground">
-              {accountStatus === 'disabled'
-                ? 'Sua conta foi desabilitada pelo administrador. Entre em contato para mais informações.'
-                : 'Seu período de teste expirou. Escolha um plano para continuar utilizando o Maintly.'}
+              {descriptionMap[accountStatus]}
             </p>
           </div>
           <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">Conta conectada:</p>
             <p>{user.email}</p>
           </div>
-          {accountStatus === 'expired' && (
+          {(accountStatus === 'expired' || accountStatus === 'cancelled') && (
             <Button asChild className="w-full">
               <a href="/assinaturas">
                 <CreditCard className="h-4 w-4 mr-2" />
