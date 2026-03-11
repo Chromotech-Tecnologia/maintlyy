@@ -285,6 +285,7 @@ export default function Login() {
           </Tabs>
         </CardContent>
       </Card>
+      <AppFooter className="mt-6" />
     </div>
   )
 }
