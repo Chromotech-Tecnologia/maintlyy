@@ -270,7 +270,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="funcionalidades" className="py-20 sm:py-28 px-4 sm:px-6 scroll-mt-20">
+      <section id="funcionalidades" className="py-20 sm:py-28 px-4 sm:px-6 scroll-mt-24">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
@@ -313,7 +313,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it Works */}
-      <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+      <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-24">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
@@ -531,6 +531,14 @@ function TestimonialsSection() {
   const [activeIndex, setActiveIndex] = useState(0)
   const featured = testimonials[activeIndex]
 
+  // Auto-rotate testimonials
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % testimonials.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-primary)", opacity: 0.04 }} />
@@ -550,8 +558,8 @@ function TestimonialsSection() {
         </div>
 
         {/* Featured testimonial */}
-        <div className="glass-card rounded-3xl p-8 sm:p-10 border border-primary/10 shadow-3d max-w-4xl mx-auto mb-10 transition-all duration-500">
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start">
+        <div className="glass-card rounded-3xl p-8 sm:p-10 border border-primary/10 shadow-3d max-w-4xl mx-auto mb-10 transition-all duration-700 ease-in-out" key={activeIndex}>
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start animate-fade-in">
             <div className="shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-primary/20 shadow-lg">
                 <img src={featured.photo} alt={featured.name} className="w-full h-full object-cover" />
@@ -576,13 +584,13 @@ function TestimonialsSection() {
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 ${
                 i === activeIndex
                   ? "glass-card ring-2 ring-primary shadow-lg scale-105"
                   : "hover:bg-muted/50 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all ${
+              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
                 i === activeIndex ? "ring-primary" : "ring-border group-hover:ring-primary/50"
               }`}>
                 <img src={t.photo} alt={t.name} className="w-full h-full object-cover" />
@@ -624,7 +632,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
   const visiblePlans = plans.slice(startIndex, startIndex + maxVisible)
 
   return (
-    <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+    <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-24 pt-28">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
@@ -715,7 +723,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
 function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
   return (
     <div
-      className={`relative glass-card rounded-2xl p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+      className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
         plan.destaque ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""
       }`}
     >
