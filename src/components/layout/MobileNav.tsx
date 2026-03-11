@@ -16,7 +16,7 @@ const bottomNavItems = [
 ]
 
 const allNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, section: "Principal" },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, section: "Principal" },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench, section: "Principal" },
   { title: "Clientes", url: "/clientes", icon: Users, section: "Principal" },
   { title: "Empresas", url: "/empresas", icon: Building2, section: "Principal" },
