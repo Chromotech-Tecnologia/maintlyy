@@ -172,7 +172,7 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              <p className="text-xs text-muted-foreground mt-4">
+              <p className="text-xs text-foreground/50 mt-4">
                 ✓ Sem cartão de crédito &nbsp;&nbsp; ✓ Configuração em 2 minutos &nbsp;&nbsp; ✓ Cancele quando quiser
               </p>
             </div>
