@@ -46,6 +46,34 @@ export default function Login() {
     defaultValues: { display_name: "", email: "", phone: "", password: "", confirmPassword: "" },
   })
 
+  const watchedEmail = signupForm.watch("email")
+
+  useEffect(() => {
+    if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current)
+    setEmailExists(false)
+
+    if (!isValidEmail(watchedEmail)) return
+
+    setCheckingEmail(true)
+    emailCheckTimer.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', watchedEmail)
+          .eq('is_admin', true)
+          .limit(1)
+        setEmailExists(!!(data && data.length > 0))
+      } catch {
+        // ignore
+      } finally {
+        setCheckingEmail(false)
+      }
+    }, 500)
+
+    return () => { if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current) }
+  }, [watchedEmail])
+
   if (user) return <Navigate to="/" replace />
 
   const handleSignIn = async (data: LoginFormData) => {
