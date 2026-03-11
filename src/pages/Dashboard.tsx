@@ -76,7 +76,7 @@ export default function Dashboard() {
           supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('manutencoes').select(`id,created_at,status,tempo_total,data_inicio,cliente_id,equipe_id,tipo_manutencao_id,clientes(nome_cliente),tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe)`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
           supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente)`).eq('user_id', user.id),
-          supabase.from('clientes').select('id, nome_cliente').eq('user_id', user.id),
+          supabase.from('clientes').select('id, nome_cliente, logo_url').eq('user_id', user.id),
           supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
           supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id),
         ])
