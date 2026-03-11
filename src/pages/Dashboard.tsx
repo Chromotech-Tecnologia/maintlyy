@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts"
 import { 
-  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search
+  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search, Building2
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -31,11 +31,14 @@ interface ManutencaoRecente {
   clientes?: { nome_cliente: string }
   tipos_manutencao?: { nome_tipo_manutencao: string }
   equipes?: { nome_equipe: string }
+  empresas_terceiras?: { nome_empresa: string }
   tempo_total?: number
   data_inicio: string
   cliente_id: string
   equipe_id: string | null
   tipo_manutencao_id: string
+  empresa_terceira_id: string
+  descricao?: string
 }
 
 export default function Dashboard() {
@@ -54,17 +57,21 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   // Filters
-  const [clientes, setClientes] = useState<{id: string, nome_cliente: string}[]>([])
+  const [clientes, setClientes] = useState<{id: string, nome_cliente: string, logo_url?: string | null}[]>([])
   const [equipes, setEquipes] = useState<{id: string, nome_equipe: string}[]>([])
   const [tipos, setTipos] = useState<{id: string, nome_tipo_manutencao: string}[]>([])
+  const [empresas, setEmpresas] = useState<{id: string, nome_empresa: string}[]>([])
   const [filterCliente, setFilterCliente] = useState("todos")
   const [filterEquipe, setFilterEquipe] = useState("todos")
   const [filterTipo, setFilterTipo] = useState("todos")
+  const [filterEmpresa, setFilterEmpresa] = useState("todos")
+  const [filterStatus, setFilterStatus] = useState("todos")
   const [filterDataInicio, setFilterDataInicio] = useState("")
   const [filterDataFim, setFilterDataFim] = useState("")
   const [searchCliente, setSearchCliente] = useState("")
   const [searchEquipe, setSearchEquipe] = useState("")
   const [searchTipo, setSearchTipo] = useState("")
+  const [searchEmpresa, setSearchEmpresa] = useState("")
   const [reportOpen, setReportOpen] = useState(false)
   const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
@@ -76,16 +83,16 @@ export default function Dashboard() {
     if (!user) return
     const fetchData = async () => {
       try {
-        const [mc, cc, pc, sc, rd, cd, clientesRes, equipesRes, tiposRes] = await Promise.all([
+        const [mc, cc, pc, sc, cd, clientesRes, equipesRes, tiposRes, empresasRes] = await Promise.all([
           supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'Em andamento'),
           supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('manutencoes').select(`id,created_at,status,tempo_total,data_inicio,cliente_id,equipe_id,tipo_manutencao_id,clientes(nome_cliente),tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe)`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente)`).eq('user_id', user.id),
+          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`).eq('user_id', user.id),
           supabase.from('clientes').select('id, nome_cliente, logo_url').eq('user_id', user.id),
           supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
           supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id),
+          supabase.from('empresas_terceiras').select('id, nome_empresa').eq('user_id', user.id),
         ])
 
         const totalHoras = (cd.data || []).reduce((sum, m) => sum + (m.tempo_total || 0), 0)
@@ -97,11 +104,14 @@ export default function Dashboard() {
           totalSenhas: sc.count || 0,
           totalHoras: Math.round(totalHoras / 60),
         })
-        setRecentManutencoes(rd.data || [])
+        setRecentManutencoes(
+          [...(cd.data || [])].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+        )
         setAllManutencoes(cd.data || [])
         setClientes(clientesRes.data || [])
         setEquipes(equipesRes.data || [])
         setTipos(tiposRes.data || [])
+        setEmpresas(empresasRes.data || [])
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       } finally {
@@ -117,14 +127,15 @@ export default function Dashboard() {
       if (filterCliente !== "todos" && m.cliente_id !== filterCliente) return false
       if (filterEquipe !== "todos" && m.equipe_id !== filterEquipe) return false
       if (filterTipo !== "todos" && m.tipo_manutencao_id !== filterTipo) return false
+      if (filterEmpresa !== "todos" && m.empresa_terceira_id !== filterEmpresa) return false
+      if (filterStatus !== "todos" && m.status !== filterStatus) return false
       if (filterDataInicio && m.data_inicio < filterDataInicio) return false
       if (filterDataFim && m.data_inicio > filterDataFim) return false
       return true
     })
 
-    const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim
+    const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
 
-    // Recompute stats from filtered data
     if (hasFilters) {
       const totalHoras = filtered.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
       const uniqueClientes = new Set(filtered.map(m => m.cliente_id))
@@ -137,7 +148,6 @@ export default function Dashboard() {
         totalHoras: Math.round(totalHoras / 60),
       }))
     } else {
-      // Reset to original counts from DB
       const totalHoras = allManutencoes.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
       setStats(prev => ({
         ...prev,
@@ -147,7 +157,6 @@ export default function Dashboard() {
       }))
     }
 
-    // Update recent list from filtered
     setRecentManutencoes(
       [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
     )
@@ -202,7 +211,7 @@ export default function Dashboard() {
       weeks.push({ name: `S${8 - w}`, value: count })
     }
     setWeeklyData(weeks)
-  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterDataInicio, filterDataFim])
+  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -211,6 +220,14 @@ export default function Dashboard() {
       default: return 'bg-muted text-muted-foreground'
     }
   }
+
+  const clearFilters = () => {
+    setFilterCliente("todos"); setFilterEquipe("todos"); setFilterTipo("todos")
+    setFilterEmpresa("todos"); setFilterStatus("todos")
+    setFilterDataInicio(""); setFilterDataFim("")
+  }
+
+  const hasActiveFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
 
   if (loading) {
     return (
@@ -257,20 +274,37 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Filtros</span>
-              {(filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim) && (
+              {hasActiveFilters && (
                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Ativos</span>
               )}
             </div>
-            {(filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim) && (
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
-                setFilterCliente("todos"); setFilterEquipe("todos"); setFilterTipo("todos")
-                setFilterDataInicio(""); setFilterDataFim("")
-              }}>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearFilters}>
                 <X className="h-3 w-3 mr-1" /> Limpar
               </Button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            {/* Empresa */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Empresa</Label>
+              <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Empresa" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEmpresa} onChange={e => setSearchEmpresa(e.target.value)} onClick={e => e.stopPropagation()} />
+                    </div>
+                  </div>
+                  <SelectItem value="todos">Todas as empresas</SelectItem>
+                  {empresas.filter(e => !searchEmpresa || e.nome_empresa?.toLowerCase().includes(searchEmpresa.toLowerCase())).map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Cliente */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Cliente</Label>
               <Select value={filterCliente} onValueChange={setFilterCliente}>
@@ -279,13 +313,7 @@ export default function Dashboard() {
                   <div className="p-2">
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
-                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Buscar..."
-                        value={searchCliente}
-                        onChange={e => setSearchCliente(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                      />
+                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchCliente} onChange={e => setSearchCliente(e.target.value)} onClick={e => e.stopPropagation()} />
                     </div>
                   </div>
                   <SelectItem value="todos">Todos os clientes</SelectItem>
@@ -295,6 +323,7 @@ export default function Dashboard() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Equipe */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Equipe</Label>
               <Select value={filterEquipe} onValueChange={setFilterEquipe}>
@@ -303,13 +332,7 @@ export default function Dashboard() {
                   <div className="p-2">
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
-                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Buscar..."
-                        value={searchEquipe}
-                        onChange={e => setSearchEquipe(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                      />
+                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEquipe} onChange={e => setSearchEquipe(e.target.value)} onClick={e => e.stopPropagation()} />
                     </div>
                   </div>
                   <SelectItem value="todos">Todas as equipes</SelectItem>
@@ -319,6 +342,7 @@ export default function Dashboard() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Tipo */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Tipo</Label>
               <Select value={filterTipo} onValueChange={setFilterTipo}>
@@ -327,13 +351,7 @@ export default function Dashboard() {
                   <div className="p-2">
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
-                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Buscar..."
-                        value={searchTipo}
-                        onChange={e => setSearchTipo(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                      />
+                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchTipo} onChange={e => setSearchTipo(e.target.value)} onClick={e => e.stopPropagation()} />
                     </div>
                   </div>
                   <SelectItem value="todos">Todos os tipos</SelectItem>
@@ -343,6 +361,20 @@ export default function Dashboard() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Status */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="Em andamento">Em andamento</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Datas */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Data Início</Label>
               <Input type="date" className="h-9" value={filterDataInicio} onChange={e => setFilterDataInicio(e.target.value)} />
@@ -403,8 +435,8 @@ export default function Dashboard() {
                 {recentManutencoes.map((m) => (
                   <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">{m.clientes?.nome_cliente || 'N/A'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{m.tipos_manutencao?.nome_tipo_manutencao || 'N/A'}</p>
+                      <p className="font-medium text-sm truncate">{(m as any).clientes?.nome_cliente || 'N/A'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{(m as any).tipos_manutencao?.nome_tipo_manutencao || 'N/A'}</p>
                     </div>
                     <div className="text-right ml-3 shrink-0">
                       <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", getStatusColor(m.status))}>
@@ -429,7 +461,6 @@ export default function Dashboard() {
 
       {/* Second Charts Row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Type Pie */}
         {tipoData.length > 0 && (
           <ChartCard title="Por Tipo" description="Distribuição de manutenções" icon={Wrench}>
             <ResponsiveContainer width="100%" height={220}>
@@ -446,7 +477,6 @@ export default function Dashboard() {
           </ChartCard>
         )}
 
-        {/* Status Donut */}
         {statusData.length > 0 && (
           <ChartCard title="Por Status" description="Status das manutenções" icon={Clock}>
             <ResponsiveContainer width="100%" height={220}>
@@ -463,7 +493,6 @@ export default function Dashboard() {
           </ChartCard>
         )}
 
-        {/* Weekly Trend */}
         <ChartCard title="Tendência Semanal" description="Últimas 8 semanas" icon={TrendingUp}>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={weeklyData}>
@@ -540,19 +569,25 @@ export default function Dashboard() {
           clientes,
           equipes,
           tipos,
+          empresas,
           filterCliente,
           filterEquipe,
           filterTipo,
+          filterEmpresa,
+          filterStatus,
           filterDataInicio: reportFilterDataInicio,
           filterDataFim: reportFilterDataFim,
           onFilterChange: (key, value) => {
             if (key === 'cliente') setFilterCliente(value)
             else if (key === 'equipe') setFilterEquipe(value)
             else if (key === 'tipo') setFilterTipo(value)
+            else if (key === 'empresa') setFilterEmpresa(value)
+            else if (key === 'status') setFilterStatus(value)
             else if (key === 'dataInicio') setReportFilterDataInicio(value)
             else if (key === 'dataFim') setReportFilterDataFim(value)
           }
         }}
+        allManutencoes={allManutencoes}
         currentYear={currentYear}
       />
     </div>

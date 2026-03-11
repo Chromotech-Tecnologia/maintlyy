@@ -1,76 +1,108 @@
 
+# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-# Plan: Enhanced Dashboard Reports with History, Public Links, and Mobile UX
+## ✅ CONCLUÍDO
 
-## Summary
+### Problemas Identificados e Corrigidos
 
-Major overhaul of the dashboard report system: add status/empresa filters, create a report history with public sharing links, improve the exported report content (add values on charts, remove status/team charts from report, add detailed analytical table matching the spreadsheet format), separate date filters for analytics vs charts, and optimize mobile layout.
+#### 1. ✅ Senhas exibidas incorretamente
+- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
 
-## Database Changes
+#### 2. ✅ Permissões não refletem nos menus
+- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
 
-**New table: `generated_reports`** to store report history and public links.
+#### 3. ✅ Botões de ação não respeitam permissões
+- Adicionado botão "Ver" (ícone Eye) em todas as páginas
+- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
 
-```sql
-CREATE TABLE public.generated_reports (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  public_id text UNIQUE NOT NULL DEFAULT encode(gen_random_uuid()::text::bytea, 'hex'),
-  title text NOT NULL,
-  filters jsonb NOT NULL DEFAULT '{}',
-  report_html text NOT NULL,
-  format text NOT NULL DEFAULT 'pdf',
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+#### 4. ✅ Estrutura de permissões expandida
+Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
+- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
+- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
+- `can_edit` = **Editar**
+- `can_create` = **Criar**
+- `can_delete` = **Excluir**
 
-ALTER TABLE public.generated_reports ENABLE ROW LEVEL SECURITY;
+#### 5. ✅ Criação e edição de usuários
+- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
+  - `Admins can insert any profile` (INSERT)
+  - `Admins can update any profile` (UPDATE)
 
--- Owner can CRUD
-CREATE POLICY "Users manage own reports" ON public.generated_reports
-  FOR ALL TO authenticated USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
+- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
+- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
+- Campo Empresa Terceira fica desabilitado quando cliente selecionado
 
--- Public view by public_id (for the public page)
-CREATE POLICY "Anyone can view by public_id" ON public.generated_reports
-  FOR SELECT TO anon, authenticated USING (true);
+#### 7. ✅ Permissões de Empresas Terceiras
+- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
+- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
+- Adicionada nova aba "Empresas" no dialog de permissões
+- Usuários com permissão de criar clientes podem ver lista de empresas
+
+#### 8. ✅ Permissões Granulares de Senhas por Cliente
+- Criado componente `PasswordPermissionsTab` com interface expandida
+- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
+- Usa tabela `user_password_permissions` para controle granular
+- Interface colapsível por cliente com carregamento sob demanda
+
+---
+
+## Arquivos Modificados
+
+1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
+2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
+3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
+4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
+5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
+6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
+7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
+8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
+9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
+10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
+11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
+13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+
+---
+
+## Fluxo de Permissões Implementado
+
+```
+1. Usuário sem "Ver Menu" -> Menu NÃO aparece
+2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
+3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
+4. Usuário com "Editar" -> Botão Editar aparece
+5. Usuário com "Criar" -> Botão Criar/Novo aparece  
+6. Usuário com "Excluir" -> Botão Excluir aparece
 ```
 
-## New Route: Public Report Viewer
+## Mapeamento Resource x Menu
 
-- **`/relatorio-publico/:publicId`** — a standalone page (no auth required) that fetches and renders the saved report HTML from `generated_reports` by `public_id`.
-- Added outside the `ProtectedRoute` wrapper in `App.tsx`.
+| Menu                  | resource_type       |
+|-----------------------|---------------------|
+| Dashboard             | dashboard           |
+| Manutenções           | manutencoes         |
+| Clientes              | clientes            |
+| Empresas Terceiras    | empresas_terceiras  |
+| Equipes               | equipes             |
+| Tipos de Manutenção   | tipos_manutencao    |
+| Cofre de Senhas       | cofre_senhas        |
+| Perfis de Usuários    | perfis_usuarios     |
+| Permissões            | permissoes          |
 
-## File Changes
+## Estrutura de Permissões Atualizada
 
-### 1. `src/pages/Dashboard.tsx`
-- Add **empresa filter** (state `filterEmpresa`, fetch `empresas_terceiras`, add Select in filter bar).
-- Add **status filter** (state `filterStatus` with options: Todos, Em andamento, Finalizado, Cancelado).
-- Pass `empresas` and status data to the report export component.
+```
+Módulo Sistema (user_system_permissions):
+  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
 
-### 2. `src/components/dashboard/DashboardReportExport.tsx` (major rewrite)
-- **Add empresa + status filters** in the controls section.
-- **Remove** "Por Status" pie chart and "Horas por Equipe" bar chart from the exported report (keep only in dashboard).
-- **Add `<LabelList>`** to BarChart and values on Pie charts so exported images/PDFs show numeric values on the graphs.
-- **Separate date filters**: one pair for the chart period (more months), one pair for the analytical table (less data).
-- **Analytical table**: match the uploaded spreadsheet format with columns: Tipo de Manutenção, Mês, Ano, Data, Tempo Dedicado, Descrição (Acesso físico), Status (Finalizada).
-- **Multiple empresas**: when multiple selected or "todos", show all empresa names in the header.
-- **Report history**: after export, save the report HTML + filters to `generated_reports` table and generate a public link. Show a "Copy Link" button.
-- **Export formats**: PDF, PNG, and new "Link Público" option.
-- **Mobile layout**: replace fixed `minWidth: 800` with responsive layout. Use accordion-style sections, stacked charts, scrollable containers. Follow app-like mobile style with `max-w-[calc(100vw-2rem)]` dialog.
+Clientes (user_client_permissions):
+  - Por cliente: Ver, Editar, Criar, Excluir
 
-### 3. `src/pages/RelatorioPublico.tsx` (new)
-- Standalone page that loads report by `public_id` from Supabase.
-- Renders the saved HTML content with proper branding.
-- No authentication required.
+Empresas Terceiras (user_empresa_permissions):
+  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
 
-### 4. `src/App.tsx`
-- Add route `/relatorio-publico/:publicId` outside `ProtectedRoute`.
-- Import `RelatorioPublico` page.
-
-## Technical Details
-
-- **Chart values**: Use Recharts `<LabelList>` component on `<Bar>` and custom label on `<Pie>` to render values directly on the charts for PDF/image exports.
-- **Report saving**: After `html2canvas` captures the report, the HTML of `reportRef.current.innerHTML` is saved to `generated_reports` along with the applied filters as JSON.
-- **Public link format**: `https://{domain}/relatorio-publico/{public_id}`
-- **Mobile report dialog**: `DialogContent` uses `max-w-[calc(100vw-1rem)] sm:max-w-5xl` with the report preview using `overflow-x-auto` and charts stacking vertically on small screens.
-- **Separate date filters**: Two date filter groups in the export dialog — "Período dos Gráficos" and "Período do Analítico" — each with independent start/end dates.
-
+Senhas (user_password_permissions):
+  - Por senha individual: Ver, Editar
+  - Agrupadas por cliente na interface
+```
