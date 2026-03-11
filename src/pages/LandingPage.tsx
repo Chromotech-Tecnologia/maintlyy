@@ -579,18 +579,18 @@ function TestimonialsSection() {
         </div>
 
         {/* Thumbnail selector */}
-        <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
           {testimonials.map((t, i) => (
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 ${
+              className={`group flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-500 ${
                 i === activeIndex
                   ? "glass-card ring-2 ring-primary shadow-lg scale-105"
                   : "hover:bg-muted/50 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
                 i === activeIndex ? "ring-primary" : "ring-border group-hover:ring-primary/50"
               }`}>
                 <img src={t.photo} alt={t.name} className="w-full h-full object-cover" />
