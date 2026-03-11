@@ -28,6 +28,7 @@ interface Cliente {
   endereco: string | null
   empresa_terceira_id: string
   created_at: string
+  logo_url: string | null
   empresas_terceiras?: { nome_empresa: string }
 }
 
