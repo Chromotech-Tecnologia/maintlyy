@@ -336,8 +336,10 @@ export default function PerfilUsuarios() {
                     type="email"
                     value={newUserData.email}
                     onChange={(e) => {
-                      setNewUserData(prev => ({ ...prev, email: e.target.value }))
-                      setEmailError("")
+                      const val = e.target.value
+                      setNewUserData(prev => ({ ...prev, email: val }))
+                      const existing = profiles.find(p => p.email === val)
+                      setEmailError(existing ? "Email já cadastrado neste tenant" : "")
                     }}
                     placeholder="usuario@exemplo.com"
                     required

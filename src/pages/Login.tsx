@@ -269,7 +269,14 @@ export default function Login() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <Button type="submit" className="w-full" disabled={signupForm.formState.isSubmitting || !isPasswordValid(signupForm.watch("password")) || signupForm.watch("password") !== signupForm.watch("confirmPassword")}>
+                  <Button type="submit" className="w-full" disabled={
+                    signupForm.formState.isSubmitting || 
+                    !isPasswordValid(signupForm.watch("password")) || 
+                    signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
+                    !isValidEmail(signupForm.watch("email")) ||
+                    !signupForm.watch("display_name") ||
+                    !signupForm.watch("phone")
+                  }>
                     {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
                   </Button>
                 </form>
