@@ -308,7 +308,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit" disabled={showPasswordSection && newPassword ? (!isPasswordValid(newPassword) || newPassword !== confirmPassword) : false}>Salvar Alterações</Button>
             </div>
           </form>
         )}
