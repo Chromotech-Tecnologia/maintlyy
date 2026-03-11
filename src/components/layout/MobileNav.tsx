@@ -57,7 +57,7 @@ export function MobileNav() {
   const allItems = [...filteredNavItems, ...systemItems]
 
   const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/"
+    if (path === "/dashboard") return currentPath === "/dashboard"
     return currentPath.startsWith(path)
   }
 
