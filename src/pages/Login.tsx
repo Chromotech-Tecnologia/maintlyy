@@ -312,6 +312,8 @@ export default function Login() {
                     !isPasswordValid(signupForm.watch("password")) || 
                     signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
                     !isValidEmail(signupForm.watch("email")) ||
+                    emailExists ||
+                    checkingEmail ||
                     !signupForm.watch("display_name") ||
                     !signupForm.watch("phone")
                   }>
