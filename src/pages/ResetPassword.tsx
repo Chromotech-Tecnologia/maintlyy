@@ -126,6 +126,7 @@ export default function ResetPassword() {
           </form>
         </CardContent>
       </Card>
+      <AppFooter className="mt-6" />
     </div>
   )
 }
