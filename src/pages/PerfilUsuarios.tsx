@@ -10,10 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Users, Shield, UserPlus } from "lucide-react"
+import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2 } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
-import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid, EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
 
 interface UserProfile {
   id: string
@@ -24,6 +24,8 @@ interface UserProfile {
   is_super_admin?: boolean
   created_at: string
   permission_profile_id: string | null
+  phone?: string | null
+  department?: string | null
 }
 
 interface PermissionProfile {
@@ -74,11 +76,22 @@ export default function PerfilUsuarios() {
       
       const allProfiles = (data as any[]) || []
       
+      // Fetch profile data (phone, department) for all users
+      const { data: profileDataList } = await supabase
+        .from('user_profile_data')
+        .select('user_id, phone, department')
+      
+      const profileDataMap = new Map((profileDataList || []).map(pd => [pd.user_id, pd]))
+      
+      // Enrich profiles with phone/department
+      const enrichedProfiles = allProfiles.map(p => {
+        const pd = profileDataMap.get(p.user_id)
+        return { ...p, phone: pd?.phone || null, department: pd?.department || null }
+      })
+      
       if (permissions.isAdmin) {
         const myProfileIds = myPermProfiles.map(p => p.id)
-        // Show: own profile + non-admin non-superadmin users linked to my permission profiles
-        // Also include users with NO permission_profile_id who are not admin/super_admin (orphan subordinates)
-        const filtered = allProfiles.filter(p => 
+        const filtered = enrichedProfiles.filter(p => 
           p.user_id === user.id || 
           (!p.is_admin && !p.is_super_admin && (
             myProfileIds.includes(p.permission_profile_id) || 
@@ -87,7 +100,7 @@ export default function PerfilUsuarios() {
         )
         setProfiles(filtered)
       } else {
-        setProfiles(allProfiles.filter(p => p.user_id === user.id))
+        setProfiles(enrichedProfiles.filter(p => p.user_id === user.id))
       }
     } catch (error) {
       console.error('Erro ao buscar perfis:', error)
@@ -345,6 +358,7 @@ export default function PerfilUsuarios() {
                     required
                   />
                   {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
+                  {!emailError && <EmailValidation email={newUserData.email} />}
                 </div>
                 <div>
                   <Label htmlFor="new_password">Senha</Label>
@@ -407,6 +421,7 @@ export default function PerfilUsuarios() {
                     !isPasswordValid(newUserData.password) || 
                     newUserData.password !== newUserData.confirmPassword ||
                     !newUserData.email || 
+                    !isEmailValid(newUserData.email) ||
                     !newUserData.display_name ||
                     !!emailError
                   }>
@@ -441,12 +456,30 @@ export default function PerfilUsuarios() {
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-2 flex-wrap">
-                        <span className="truncate">{profile.email}</span>
-                        {assignedProfile && (
-                          <Badge variant="outline" className="shrink-0">
-                            {assignedProfile.nome_perfil}
-                          </Badge>
+                      <CardDescription className="flex flex-col gap-1">
+                        <span className="flex items-center gap-2 flex-wrap">
+                          <span className="truncate">{profile.email}</span>
+                          {assignedProfile && (
+                            <Badge variant="outline" className="shrink-0">
+                              {assignedProfile.nome_perfil}
+                            </Badge>
+                          )}
+                        </span>
+                        {(profile.phone || profile.department) && (
+                          <span className="flex items-center gap-3 text-xs">
+                            {profile.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {profile.phone}
+                              </span>
+                            )}
+                            {profile.department && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {profile.department}
+                              </span>
+                            )}
+                          </span>
                         )}
                       </CardDescription>
                     </div>

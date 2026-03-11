@@ -11,7 +11,7 @@ import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff, ChevronDown, ChevronRight, Lock } from "lucide-react"
-import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid, EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
 
 interface EditProfileDialogProps {
   open: boolean
@@ -207,6 +207,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 required
                 disabled={!permissions.isAdmin}
               />
+              {permissions.isAdmin && <EmailValidation email={formData.email} />}
               {!permissions.isAdmin && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Apenas administradores podem alterar o email
@@ -308,7 +309,10 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={showPasswordSection && newPassword ? (!isPasswordValid(newPassword) || newPassword !== confirmPassword) : false}>Salvar Alterações</Button>
+              <Button type="submit" disabled={
+                (showPasswordSection && newPassword ? (!isPasswordValid(newPassword) || newPassword !== confirmPassword) : false) ||
+                (permissions.isAdmin && !isEmailValid(formData.email))
+              }>Salvar Alterações</Button>
             </div>
           </form>
         )}
