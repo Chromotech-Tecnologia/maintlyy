@@ -76,7 +76,7 @@ export function AppSidebar() {
     return resource ? canViewSystem(resource) : false
   })
 
-  const isActive = (path: string) => {
+  const isActiveRoute = (path: string) => {
     if (path === "/") return currentPath === "/"
     return currentPath.startsWith(path)
   }
@@ -85,8 +85,8 @@ export function AppSidebar() {
     cn(
       "group relative flex items-center gap-3 rounded-r-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
       isActive 
-        ? "bg-sidebar-accent/60 text-sidebar-foreground font-semibold border-l-[3px] border-l-primary" 
-        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground border-l-[3px] border-l-transparent"
+        ? "bg-sidebar-accent text-sidebar-foreground font-semibold border-l-[3px] border-l-primary" 
+        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground border-l-[3px] border-l-transparent"
     )
 
   const renderSection = (label: string, items: typeof mainItems) => (
@@ -119,7 +119,7 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border/30">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-lg shadow-primary/30">
+            <div className="w-11 h-11 rounded-xl bg-white dark:bg-sidebar-accent flex items-center justify-center shadow-lg shadow-primary/20">
               <img 
                 src="/lovable-uploads/90637fdc-0828-4765-9f53-c726c82d9dac.png" 
                 alt="Maintly Logo" 

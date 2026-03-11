@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useAdminOperations } from "@/hooks/useAdminOperations"
@@ -20,6 +20,7 @@ interface UserProfile {
   display_name: string | null
   email: string | null
   is_admin: boolean
+  is_super_admin?: boolean
   created_at: string
   permission_profile_id: string | null
 }
@@ -47,35 +48,42 @@ export default function PerfilUsuarios() {
     is_admin: false
   })
 
-  useEffect(() => {
-    fetchProfiles()
-    fetchPermissionProfiles()
-  }, [])
-
-  const fetchProfiles = async () => {
+  const fetchAll = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
     try {
+      // Fetch permission profiles first
+      const { data: ppData, error: ppError } = await supabase
+        .from('permission_profiles')
+        .select('id, nome_perfil, is_admin_profile')
+        .order('nome_perfil')
+      if (ppError) throw ppError
+      const myPermProfiles = ppData || []
+      setPermissionProfiles(myPermProfiles)
+
+      // Then fetch user profiles
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false })
-
       if (error) throw error
       
       const allProfiles = (data as any[]) || []
       
-      // If admin, show own profile + subordinates linked via permission profiles owned by this admin
-      // If not admin, show only own profile
-      if (permissions.isAdmin && user) {
-        const myProfileIds = permissionProfiles.map(p => p.id)
+      if (permissions.isAdmin) {
+        const myProfileIds = myPermProfiles.map(p => p.id)
+        // Show: own profile + non-admin non-superadmin users linked to my permission profiles
+        // Also include users with NO permission_profile_id who are not admin/super_admin (orphan subordinates)
         const filtered = allProfiles.filter(p => 
           p.user_id === user.id || 
-          (myProfileIds.includes(p.permission_profile_id) && !p.is_admin && !p.is_super_admin)
+          (!p.is_admin && !p.is_super_admin && (
+            myProfileIds.includes(p.permission_profile_id) || 
+            !p.permission_profile_id
+          ))
         )
         setProfiles(filtered)
-      } else if (user) {
-        setProfiles(allProfiles.filter(p => p.user_id === user.id))
       } else {
-        setProfiles(allProfiles)
+        setProfiles(allProfiles.filter(p => p.user_id === user.id))
       }
     } catch (error) {
       console.error('Erro ao buscar perfis:', error)
@@ -83,20 +91,11 @@ export default function PerfilUsuarios() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, permissions.isAdmin])
 
-  const fetchPermissionProfiles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('permission_profiles')
-        .select('id, nome_perfil, is_admin_profile')
-        .order('nome_perfil')
-      if (error) throw error
-      setPermissionProfiles(data || [])
-    } catch (error) {
-      console.error('Erro ao buscar perfis de permissão:', error)
-    }
-  }
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
 
   const handleAssignProfile = async (userProfileId: string, userId: string, permissionProfileId: string | null) => {
     try {
@@ -112,7 +111,6 @@ export default function PerfilUsuarios() {
 
       if (error) throw error
 
-      // Sync access permissions from the profile to the user
       if (permissionProfileId) {
         const { data: permProfile } = await supabase
           .from('permission_profiles')
@@ -164,7 +162,7 @@ export default function PerfilUsuarios() {
       }
 
       toast.success('Perfil atribuído com sucesso!')
-      fetchProfiles()
+      fetchAll()
     } catch (error: any) {
       console.error('Erro ao atribuir perfil:', error)
       toast.error('Erro ao atribuir perfil: ' + error.message)
@@ -205,7 +203,7 @@ export default function PerfilUsuarios() {
       toast.success('Usuário criado com sucesso!')
       setCreateUserDialogOpen(false)
       setNewUserData({ email: "", password: "", display_name: "", is_admin: false })
-      fetchProfiles()
+      fetchAll()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
       toast.error('Erro ao criar usuário: ' + error.message)
@@ -379,7 +377,7 @@ export default function PerfilUsuarios() {
         open={editProfileDialogOpen}
         onOpenChange={setEditProfileDialogOpen}
         profile={selectedProfile}
-        onProfileUpdated={fetchProfiles}
+        onProfileUpdated={fetchAll}
       />
     </div>
   )
