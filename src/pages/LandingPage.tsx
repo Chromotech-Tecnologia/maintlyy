@@ -153,7 +153,7 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
+              <p className="text-lg sm:text-xl text-foreground/70 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
                 Controle manutenções, equipes, senhas e relatórios em uma plataforma
                 <strong className="text-foreground"> profissional, segura</strong> e fácil de usar.
               </p>
