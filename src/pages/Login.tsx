@@ -104,7 +104,12 @@ export default function Login() {
     const signUpResult = await signUp(data.email, data.password, data.display_name, data.phone)
 
     if (signUpResult.error) {
-      toast.error(signUpResult.error.message || "Erro ao criar conta")
+      const msg = signUpResult.error.message || ""
+      if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already been registered")) {
+        setEmailExists(true)
+      } else {
+        toast.error(msg || "Erro ao criar conta")
+      }
     } else if (signUpResult.needsConfirmation) {
       toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
