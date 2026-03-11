@@ -418,7 +418,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {["Relatórios PDF", "Cofre Avançado", "Multi-Empresa", "Perfis de Permissão", "Importação Excel", "Links Públicos"].map((feat) => (
-              <span key={feat} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary border border-primary/15">
+              <span key={feat} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                 <CheckCircle2 className="h-3 w-3" />
                 {feat}
               </span>
