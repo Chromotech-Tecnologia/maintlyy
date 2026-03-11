@@ -175,6 +175,39 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_reports: {
+        Row: {
+          created_at: string
+          filters: Json
+          format: string
+          id: string
+          public_id: string
+          report_html: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          format?: string
+          id?: string
+          public_id?: string
+          report_html?: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          format?: string
+          id?: string
+          public_id?: string
+          report_html?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       grupos_cofre: {
         Row: {
           created_at: string
