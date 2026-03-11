@@ -10,10 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2 } from "lucide-react"
+import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2, Mail } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
-import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid, EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
+import { EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
 
 interface UserProfile {
   id: string
@@ -46,8 +46,6 @@ export default function PerfilUsuarios() {
   const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false)
   const [newUserData, setNewUserData] = useState({
     email: "",
-    password: "",
-    confirmPassword: "",
     display_name: "",
     is_admin: false,
     permission_profile_id: ""
@@ -198,92 +196,23 @@ export default function PerfilUsuarios() {
         return
       }
 
-      if (!isPasswordValid(newUserData.password)) {
-        toast.error('A senha não atende aos requisitos mínimos')
-        return
-      }
-      if (newUserData.password !== newUserData.confirmPassword) {
-        toast.error('As senhas não coincidem')
-        return
-      }
-      const { data, error: authError } = await supabase.auth.signUp({
+      const selectedPermProfile = permissionProfiles.find(p => p.id === newUserData.permission_profile_id)
+
+      // Use invite flow via edge function
+      await adminOps.inviteUser({
         email: newUserData.email,
-        password: newUserData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            display_name: newUserData.display_name,
-            is_admin: newUserData.is_admin
-          }
-        }
+        displayName: newUserData.display_name,
+        isAdmin: selectedPermProfile?.is_admin_profile || false,
+        permissionProfileId: newUserData.permission_profile_id || undefined,
       })
 
-      if (authError) throw authError
-
-      if (data.user) {
-        const selectedProfile = permissionProfiles.find(p => p.id === newUserData.permission_profile_id)
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: data.user.id,
-            display_name: newUserData.display_name,
-            email: newUserData.email,
-            is_admin: selectedProfile?.is_admin_profile || false,
-            permission_profile_id: newUserData.permission_profile_id || null
-          })
-
-        if (profileError) throw profileError
-
-        // Sync permissions from profile
-        if (newUserData.permission_profile_id) {
-          const { data: permProfile } = await supabase
-            .from('permission_profiles')
-            .select('client_access, empresa_access, password_access')
-            .eq('id', newUserData.permission_profile_id)
-            .single()
-
-          if (permProfile) {
-            const clientAccess = Array.isArray(permProfile.client_access) ? permProfile.client_access : []
-            const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
-            const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
-
-            if (clientAccess.length > 0) {
-              await supabase.from('user_client_permissions').insert(
-                clientAccess.map((ca: any) => ({
-                  user_id: data.user!.id, cliente_id: ca.cliente_id,
-                  can_view: ca.can_view || false, can_edit: ca.can_edit || false,
-                  can_create: ca.can_create || false, can_delete: ca.can_delete || false
-                }))
-              )
-            }
-            if (empresaAccess.length > 0) {
-              await supabase.from('user_empresa_permissions').insert(
-                empresaAccess.map((ea: any) => ({
-                  user_id: data.user!.id, empresa_terceira_id: ea.empresa_terceira_id,
-                  can_view: ea.can_view || false, can_edit: ea.can_edit || false,
-                  can_delete: ea.can_delete || false, can_create_manutencao: ea.can_create_manutencao || false
-                }))
-              )
-            }
-            if (passwordAccess.length > 0) {
-              await supabase.from('user_password_permissions').insert(
-                passwordAccess.map((pa: any) => ({
-                  user_id: data.user!.id, senha_id: pa.senha_id,
-                  can_view: pa.can_view || false, can_edit: pa.can_edit || false
-                }))
-              )
-            }
-          }
-        }
-      }
-
-      toast.success('Usuário criado com sucesso!')
+      toast.success('Convite enviado com sucesso! O usuário receberá um email para criar sua senha.')
       setCreateUserDialogOpen(false)
-      setNewUserData({ email: "", password: "", confirmPassword: "", display_name: "", is_admin: false, permission_profile_id: "" })
+      setNewUserData({ email: "", display_name: "", is_admin: false, permission_profile_id: "" })
       fetchAll()
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error)
-      toast.error('Erro ao criar usuário: ' + error.message)
+      console.error('Erro ao convidar usuário:', error)
+      toast.error('Erro ao convidar usuário: ' + (error.message || 'Erro desconhecido'))
     }
   }
 
@@ -360,29 +289,11 @@ export default function PerfilUsuarios() {
                   {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
                   {!emailError && <EmailValidation email={newUserData.email} />}
                 </div>
-                <div>
-                  <Label htmlFor="new_password">Senha</Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    value={newUserData.password}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Senha do usuário"
-                    required
-                  />
-                  <PasswordRequirements password={newUserData.password} />
-                </div>
-                <div>
-                  <Label htmlFor="new_confirm_password">Confirmar Senha</Label>
-                  <Input
-                    id="new_confirm_password"
-                    type="password"
-                    value={newUserData.confirmPassword}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="Repita a senha"
-                    required
-                  />
-                  <PasswordMatchIndicator password={newUserData.password} confirmPassword={newUserData.confirmPassword} />
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    Um convite será enviado por email para o usuário criar sua própria senha.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="new_display_name">Nome de Exibição</Label>
@@ -418,8 +329,6 @@ export default function PerfilUsuarios() {
                   </Button>
                   <Button type="submit" disabled={
                     !newUserData.permission_profile_id || 
-                    !isPasswordValid(newUserData.password) || 
-                    newUserData.password !== newUserData.confirmPassword ||
                     !newUserData.email || 
                     !isEmailValid(newUserData.email) ||
                     !newUserData.display_name ||

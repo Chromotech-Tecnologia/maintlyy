@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
+import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface ReportData {
   chartData: any[]
@@ -68,6 +69,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
   const [format, setFormat] = useState<'pdf' | 'png' | 'link'>('pdf')
   const [copiedLink, setCopiedLink] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
 
   // Separate date filters for analytical
   const [analyticDataInicio, setAnalyticDataInicio] = useState("")
@@ -310,10 +312,16 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                 <SelectItem value="link"><span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5" /> Link Público</span></SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleExport} disabled={exporting} className="h-9">
+            <Button onClick={() => setSecurityDialogOpen(true)} disabled={exporting} className="h-9">
               {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : format === 'link' ? <Copy className="h-4 w-4 mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
               {exporting ? "Exportando..." : format === 'link' ? (copiedLink ? "Copiado!" : "Gerar Link") : "Exportar"}
             </Button>
+            <SecurityTokenDialog
+              open={securityDialogOpen}
+              onOpenChange={setSecurityDialogOpen}
+              email={user?.email || ''}
+              onVerified={handleExport}
+            />
             <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={() => setShowHistory(true)}>
               <History className="h-4 w-4 mr-2" /> Histórico
             </Button>

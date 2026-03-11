@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { searchMatch } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
 import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
+import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface CofreSenha {
   id: string
@@ -99,6 +100,8 @@ export default function CofreSenhas() {
   const [selectedPasswordsForExport, setSelectedPasswordsForExport] = useState<Set<string>>(new Set())
   const [selectedClientsForExport, setSelectedClientsForExport] = useState<Set<string>>(new Set())
   const [exportLoading, setExportLoading] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
+  const [pendingExportFormat, setPendingExportFormat] = useState<'txt' | 'csv'>('txt')
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
@@ -713,7 +716,11 @@ export default function CofreSenhas() {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => exportSelectedPasswords('txt')}
+                    onClick={() => {
+                      if (selectedPasswordsForExport.size === 0) return
+                      setPendingExportFormat('txt')
+                      setSecurityDialogOpen(true)
+                    }}
                     disabled={selectedPasswordsForExport.size === 0}
                   >
                     <FileText className="mr-2 h-4 w-4" />
@@ -721,13 +728,24 @@ export default function CofreSenhas() {
                   </Button>
                   <Button
                     className="flex-1"
-                    onClick={() => exportSelectedPasswords('csv')}
+                    onClick={() => {
+                      if (selectedPasswordsForExport.size === 0) return
+                      setPendingExportFormat('csv')
+                      setSecurityDialogOpen(true)
+                    }}
                     disabled={selectedPasswordsForExport.size === 0}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Exportar CSV
                   </Button>
                 </div>
+
+                <SecurityTokenDialog
+                  open={securityDialogOpen}
+                  onOpenChange={setSecurityDialogOpen}
+                  email={user?.email || ''}
+                  onVerified={() => exportSelectedPasswords(pendingExportFormat)}
+                />
               </div>
             </DialogContent>
           </Dialog>
