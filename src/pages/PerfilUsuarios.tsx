@@ -454,12 +454,30 @@ export default function PerfilUsuarios() {
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-2 flex-wrap">
-                        <span className="truncate">{profile.email}</span>
-                        {assignedProfile && (
-                          <Badge variant="outline" className="shrink-0">
-                            {assignedProfile.nome_perfil}
-                          </Badge>
+                      <CardDescription className="flex flex-col gap-1">
+                        <span className="flex items-center gap-2 flex-wrap">
+                          <span className="truncate">{profile.email}</span>
+                          {assignedProfile && (
+                            <Badge variant="outline" className="shrink-0">
+                              {assignedProfile.nome_perfil}
+                            </Badge>
+                          )}
+                        </span>
+                        {(profile.phone || profile.department) && (
+                          <span className="flex items-center gap-3 text-xs">
+                            {profile.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {profile.phone}
+                              </span>
+                            )}
+                            {profile.department && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {profile.department}
+                              </span>
+                            )}
+                          </span>
                         )}
                       </CardDescription>
                     </div>
