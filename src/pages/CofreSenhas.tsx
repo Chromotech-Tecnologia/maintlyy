@@ -982,86 +982,175 @@ export default function CofreSenhas() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted/30 rounded-lg">
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            Filtrar por grupo:
-          </label>
-          <Combobox
-            value={filtroGrupo}
-            onValueChange={setFiltroGrupo}
-            options={[
-              { value: "todos", label: "Todos os grupos" },
-              ...gruposUnicos.map((grupo) => ({
-                value: grupo as string,
-                label: grupo as string
-              }))
-            ]}
-            placeholder="Todos os grupos"
-            searchPlaceholder="Buscar grupo..."
-            emptyText="Nenhum grupo encontrado"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            Filtrar por cliente:
-          </label>
-          <Combobox
-            value={filtroCliente}
-            onValueChange={setFiltroCliente}
-            options={[
-              { value: "todos", label: "Todos os clientes" },
-              ...clientes.map((cliente) => ({
-                value: cliente.id,
-                label: cliente.nome_cliente || ''
-              }))
-            ]}
-            placeholder="Todos os clientes"
-            searchPlaceholder="Buscar cliente..."
-            emptyText="Nenhum cliente encontrado"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            Filtrar por empresa:
-          </label>
-          <Combobox
-            value={filtroEmpresa}
-            onValueChange={setFiltroEmpresa}
-            options={[
-              { value: "todos", label: "Todas as empresas" },
-              ...empresas.map((empresa) => ({
-                value: empresa.id,
-                label: empresa.nome_empresa
-              }))
-            ]}
-            placeholder="Todas as empresas"
-            searchPlaceholder="Buscar empresa..."
-            emptyText="Nenhuma empresa encontrada"
-          />
-        </div>
-
-        {(filtroGrupo !== "todos" || filtroCliente !== "todos" || filtroEmpresa !== "todos") && (
-          <div className="md:col-span-3 flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFiltroGrupo("todos")
-                setFiltroCliente("todos")
-                setFiltroEmpresa("todos")
-              }}
-            >
-              Limpar todos os filtros
-            </Button>
+      {/* Filtros - Accordion no mobile, grid no desktop */}
+      <div className="hidden md:block">
+        <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted/30 rounded-lg">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              Filtrar por grupo:
+            </label>
+            <Combobox
+              value={filtroGrupo}
+              onValueChange={setFiltroGrupo}
+              options={[
+                { value: "todos", label: "Todos os grupos" },
+                ...gruposUnicos.map((grupo) => ({
+                  value: grupo as string,
+                  label: grupo as string
+                }))
+              ]}
+              placeholder="Todos os grupos"
+              searchPlaceholder="Buscar grupo..."
+              emptyText="Nenhum grupo encontrado"
+            />
           </div>
-        )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              Filtrar por cliente:
+            </label>
+            <Combobox
+              value={filtroCliente}
+              onValueChange={setFiltroCliente}
+              options={[
+                { value: "todos", label: "Todos os clientes" },
+                ...clientes.map((cliente) => ({
+                  value: cliente.id,
+                  label: cliente.nome_cliente || ''
+                }))
+              ]}
+              placeholder="Todos os clientes"
+              searchPlaceholder="Buscar cliente..."
+              emptyText="Nenhum cliente encontrado"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              Filtrar por empresa:
+            </label>
+            <Combobox
+              value={filtroEmpresa}
+              onValueChange={setFiltroEmpresa}
+              options={[
+                { value: "todos", label: "Todas as empresas" },
+                ...empresas.map((empresa) => ({
+                  value: empresa.id,
+                  label: empresa.nome_empresa
+                }))
+              ]}
+              placeholder="Todas as empresas"
+              searchPlaceholder="Buscar empresa..."
+              emptyText="Nenhuma empresa encontrada"
+            />
+          </div>
+
+          {(filtroGrupo !== "todos" || filtroCliente !== "todos" || filtroEmpresa !== "todos") && (
+            <div className="md:col-span-3 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFiltroGrupo("todos")
+                  setFiltroCliente("todos")
+                  setFiltroEmpresa("todos")
+                }}
+              >
+                Limpar todos os filtros
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile: Accordion de filtros */}
+      <div className="md:hidden">
+        <Accordion type="single" collapsible>
+          <AccordionItem value="filters" className="border rounded-lg bg-muted/30">
+            <AccordionTrigger className="px-4 py-3 text-sm font-medium hover:no-underline">
+              <span className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros
+                {(filtroGrupo && filtroGrupo !== "todos") || (filtroCliente && filtroCliente !== "todos") || (filtroEmpresa && filtroEmpresa !== "todos") ? (
+                  <Badge variant="secondary" className="ml-1 text-xs">Ativos</Badge>
+                ) : null}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Grupo:</label>
+                <Combobox
+                  value={filtroGrupo}
+                  onValueChange={setFiltroGrupo}
+                  options={[
+                    { value: "todos", label: "Todos os grupos" },
+                    ...gruposUnicos.map((grupo) => ({
+                      value: grupo as string,
+                      label: grupo as string
+                    }))
+                  ]}
+                  placeholder="Todos os grupos"
+                  searchPlaceholder="Buscar grupo..."
+                  emptyText="Nenhum grupo encontrado"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cliente:</label>
+                <Combobox
+                  value={filtroCliente}
+                  onValueChange={setFiltroCliente}
+                  options={[
+                    { value: "todos", label: "Todos os clientes" },
+                    ...clientes.map((cliente) => ({
+                      value: cliente.id,
+                      label: cliente.nome_cliente || ''
+                    }))
+                  ]}
+                  placeholder="Todos os clientes"
+                  searchPlaceholder="Buscar cliente..."
+                  emptyText="Nenhum cliente encontrado"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Empresa:</label>
+                <Combobox
+                  value={filtroEmpresa}
+                  onValueChange={setFiltroEmpresa}
+                  options={[
+                    { value: "todos", label: "Todas as empresas" },
+                    ...empresas.map((empresa) => ({
+                      value: empresa.id,
+                      label: empresa.nome_empresa
+                    }))
+                  ]}
+                  placeholder="Todas as empresas"
+                  searchPlaceholder="Buscar empresa..."
+                  emptyText="Nenhuma empresa encontrada"
+                />
+              </div>
+
+              {(filtroGrupo !== "todos" || filtroCliente !== "todos" || filtroEmpresa !== "todos") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setFiltroGrupo("todos")
+                    setFiltroCliente("todos")
+                    setFiltroEmpresa("todos")
+                  }}
+                >
+                  Limpar todos os filtros
+                </Button>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* Senhas agrupadas por cliente - Layout resumido */}
