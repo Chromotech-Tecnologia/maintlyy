@@ -207,6 +207,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 required
                 disabled={!permissions.isAdmin}
               />
+              {permissions.isAdmin && <EmailValidation email={formData.email} />}
               {!permissions.isAdmin && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Apenas administradores podem alterar o email
