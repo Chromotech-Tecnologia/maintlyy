@@ -214,7 +214,7 @@ export default function SuperAdminPanel() {
     )
   }
 
-  if (!isSuperAdmin) return <Navigate to="/" replace />
+  if (!isSuperAdmin) return <Navigate to="/dashboard" replace />
 
   const getStatusBadge = (admin: AdminWithStats) => {
     const status = admin.account_status || 'active'
