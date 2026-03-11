@@ -471,6 +471,147 @@ export default function LandingPage() {
   )
 }
 
+const testimonials = [
+  {
+    name: "Ricardo Almeida",
+    role: "Gerente de Manutenção",
+    company: "TechServ Soluções",
+    photo: testimonial1,
+    rating: 5,
+    text: "O Maintly transformou completamente a forma como gerenciamos nossas manutenções. Antes usávamos planilhas e WhatsApp, agora temos tudo centralizado. Reduzimos o tempo de resposta em 60% nos primeiros 3 meses.",
+  },
+  {
+    name: "Carla Mendonça",
+    role: "Diretora de Operações",
+    company: "Grupo Facilities Plus",
+    photo: testimonial2,
+    rating: 5,
+    text: "A segurança do cofre de senhas e o controle de permissões por equipe foram decisivos para escolhermos o Maintly. Gerenciamos 3 filiais com total controle e visibilidade de tudo que acontece.",
+  },
+  {
+    name: "Lucas Ferreira",
+    role: "Técnico de TI",
+    company: "InfoMaint Tecnologia",
+    photo: testimonial3,
+    rating: 5,
+    text: "Eu trabalho sozinho e o Maintly me deu a organização que faltava. Os relatórios com link público são perfeitos para enviar ao cliente. Super prático e bonito!",
+  },
+  {
+    name: "Fernanda Costa",
+    role: "Coordenadora de Facilities",
+    company: "MegaCorp Engenharia",
+    photo: testimonial4,
+    rating: 5,
+    text: "Já testei diversas ferramentas e nenhuma tinha a combinação de facilidade e funcionalidades do Maintly. O perfil de permissões é incrível — cada colaborador vê só o que precisa.",
+  },
+  {
+    name: "Marcelo Teixeira",
+    role: "Proprietário",
+    company: "MT Manutenções Elétricas",
+    photo: testimonial5,
+    rating: 5,
+    text: "Comecei no plano gratuito e em 2 semanas já migrei para o Equipe. A produtividade da minha equipe aumentou muito. O suporte também é excelente, sempre rápido e atencioso.",
+  },
+]
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`h-4 w-4 ${i < rating ? "text-amber-400 fill-amber-400" : "text-border"}`}
+        />
+      ))}
+    </div>
+  )
+}
+
+function TestimonialsSection() {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const featured = testimonials[activeIndex]
+
+  return (
+    <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-primary)", opacity: 0.04 }} />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-medium mb-4 border border-amber-500/20">
+            <Star className="h-4 w-4 fill-current" />
+            Avaliações reais
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-foreground">
+            O que nossos clientes <span className="text-primary">dizem</span>
+          </h2>
+          <p className="text-muted-foreground mt-3 text-lg max-w-2xl mx-auto">
+            Profissionais de manutenção que já transformaram sua rotina com o Maintly.
+          </p>
+        </div>
+
+        {/* Featured testimonial */}
+        <div className="glass-card rounded-3xl p-8 sm:p-10 border border-primary/10 shadow-3d max-w-4xl mx-auto mb-10 transition-all duration-500">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start">
+            <div className="shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-primary/20 shadow-lg">
+                <img src={featured.photo} alt={featured.name} className="w-full h-full object-cover" />
+              </div>
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <StarRating rating={featured.rating} />
+              <blockquote className="text-lg sm:text-xl text-foreground leading-relaxed mt-3 font-medium">
+                "{featured.text}"
+              </blockquote>
+              <div className="mt-4">
+                <p className="font-display font-bold text-foreground">{featured.name}</p>
+                <p className="text-sm text-muted-foreground">{featured.role} · {featured.company}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Thumbnail selector */}
+        <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+          {testimonials.map((t, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
+                i === activeIndex
+                  ? "glass-card ring-2 ring-primary shadow-lg scale-105"
+                  : "hover:bg-muted/50 opacity-70 hover:opacity-100"
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all ${
+                i === activeIndex ? "ring-primary" : "ring-border group-hover:ring-primary/50"
+              }`}>
+                <img src={t.photo} alt={t.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="text-left hidden sm:block">
+                <p className="text-xs font-semibold text-foreground leading-tight">{t.name}</p>
+                <p className="text-[10px] text-muted-foreground">{t.company}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Average rating */}
+        <div className="text-center mt-10">
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
+              ))}
+            </div>
+            <span className="text-sm font-semibold text-foreground">5.0</span>
+            <span className="text-sm text-muted-foreground">· Nota média dos clientes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
   const [page, setPage] = useState(0)
   const perPage = 3
