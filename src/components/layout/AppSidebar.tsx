@@ -106,7 +106,7 @@ export function AppSidebar() {
               <NavLink 
                 key={item.title} 
                 to={item.url} 
-                end={item.url === "/"} 
+                end={item.url === "/dashboard"} 
                 className={getNavCls}
                 style={() => getNavStyle(item.url)}
               >
