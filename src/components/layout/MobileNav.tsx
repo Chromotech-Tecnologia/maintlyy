@@ -71,7 +71,7 @@ export function MobileNav() {
             <NavLink
               key={item.url}
               to={item.url}
-              end={item.url === "/"}
+              end={item.url === "/dashboard"}
               className={() => cn("mobile-nav-item", isActive(item.url) && "active")}
             >
               <item.icon className="h-5 w-5" />
