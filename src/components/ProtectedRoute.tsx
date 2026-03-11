@@ -12,6 +12,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading, signOut } = useAuth()
+  const location = useLocation()
   const [profileChecked, setProfileChecked] = useState(false)
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>('active')
