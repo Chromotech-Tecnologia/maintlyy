@@ -379,7 +379,7 @@ export default function PermissionProfiles() {
 
       {/* Create/Edit Profile Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProfile ? 'Editar Perfil' : 'Criar Novo Perfil'}</DialogTitle>
             <DialogDescription>
