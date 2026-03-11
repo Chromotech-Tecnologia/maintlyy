@@ -426,65 +426,7 @@ export default function LandingPage() {
       </section>
 
       {/* Plans */}
-      <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
-              <Star className="h-4 w-4" />
-              Planos
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-foreground">
-              Planos & Preços
-            </h2>
-            <p className="text-muted-foreground mt-3 text-lg">
-              Comece grátis por {trialDays} dias. Escolha o plano ideal para você.
-            </p>
-          </div>
-
-          {/* Free plans */}
-          {freePlans.length > 0 && (
-            <div className="mb-12">
-              <h3 className="text-lg font-display font-semibold text-muted-foreground mb-6 text-center uppercase tracking-wider">Planos Gratuitos</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                {freePlans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} onClick={() => handlePlanClick(plan)} trialDays={trialDays} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Paid plans */}
-          {paidPlans.length > 0 && (
-            <div>
-              <h3 className="text-lg font-display font-semibold text-muted-foreground mb-6 text-center uppercase tracking-wider">Planos Profissionais</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                {paidPlans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} onClick={() => handlePlanClick(plan)} trialDays={trialDays} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {plans.length === 0 && (
-            <div className="text-center">
-              <div className="glass-card max-w-md mx-auto p-8 rounded-2xl">
-                <Star className="h-10 w-10 text-primary mx-auto mb-4" />
-                <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                  Teste grátis por {trialDays} dias
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Acesso completo a todas as funcionalidades sem compromisso.
-                </p>
-                <Link to="/login">
-                  <Button className="gradient-primary text-primary-foreground shadow-md w-full">
-                    Começar agora <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+      <PlansCarousel plans={plans} trialDays={trialDays} onPlanClick={handlePlanClick} />
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
