@@ -313,7 +313,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it Works */}
-      <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+      <section id="como-funciona" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-24">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-display font-bold tracking-tight text-foreground">
