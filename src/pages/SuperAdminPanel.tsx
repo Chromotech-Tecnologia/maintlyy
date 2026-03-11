@@ -300,6 +300,11 @@ export default function SuperAdminPanel() {
         <DropdownMenuItem onClick={() => openActivateDialog(admin.user_id, admin.email || '')}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
         </DropdownMenuItem>
+        {(admin.is_permanent || admin.account_status === 'active') && (
+          <DropdownMenuItem onClick={() => handleCancelPlan(admin.user_id)} className="text-amber-500">
+            <Ban className="h-4 w-4 mr-2" /> Cancelar plano
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {admin.account_status === 'disabled' ? (
           <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
