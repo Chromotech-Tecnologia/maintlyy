@@ -58,6 +58,9 @@ export default function Dashboard() {
   const [filterCliente, setFilterCliente] = useState("todos")
   const [filterEquipe, setFilterEquipe] = useState("todos")
   const [filterTipo, setFilterTipo] = useState("todos")
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
+  const [reportFilterDataFim, setReportFilterDataFim] = useState("")
 
   const currentYear = new Date().getFullYear()
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(280, 67%, 55%)', 'hsl(190, 80%, 45%)']
