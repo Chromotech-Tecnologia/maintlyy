@@ -25,6 +25,7 @@ interface Plan {
   categoria: string
   preco: string | null
   max_usuarios: number
+  max_equipes: number
   descricao: string | null
   recursos: string[]
   whatsapp_numero: string | null
