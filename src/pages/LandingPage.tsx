@@ -769,11 +769,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
         <div className="border-t border-border/30 pt-4">
           <Button
             onClick={onClick}
-            className={`w-full font-semibold h-11 ${
-              plan.destaque 
-                ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
-                : "bg-foreground text-background hover:bg-foreground/90"
-            }`}
+            className="w-full font-semibold h-11 gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40"
           >
             {plan.texto_botao}
           </Button>
