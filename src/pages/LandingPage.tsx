@@ -110,12 +110,12 @@ export default function LandingPage() {
             <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
             <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planos</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="text-white hover:text-white">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-white hover:text-white text-xs sm:text-sm px-2 sm:px-3">Entrar</Button>
             </Link>
             <Link to="/login">
-              <Button size="sm" className="gradient-primary text-white shadow-md">
+              <Button size="sm" className="gradient-primary text-white shadow-md text-xs sm:text-sm px-3 sm:px-4">
                 Começar Grátis
               </Button>
             </Link>
@@ -141,7 +141,7 @@ export default function LandingPage() {
                 Novas funcionalidades toda semana
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
+              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
                 Gestão de
                 <br />
                 Manutenções
@@ -172,8 +172,8 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              <p className="text-xs text-foreground/50 mt-4">
-                ✓ Sem cartão de crédito &nbsp;&nbsp; ✓ Configuração em 2 minutos &nbsp;&nbsp; ✓ Cancele quando quiser
+              <p className="text-[10px] sm:text-xs text-foreground/50 mt-4">
+                ✓ Sem cartão &nbsp; ✓ 2 min para configurar &nbsp; ✓ Cancele quando quiser
               </p>
             </div>
 
@@ -254,16 +254,16 @@ export default function LandingPage() {
 
       {/* Social Proof Bar */}
       <section className="py-8 px-4 sm:px-6 border-y border-border/50 bg-muted/30">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-8 sm:gap-14">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-4 sm:gap-14">
           {[
             { icon: Clock, text: "Economia de 10h/semana" },
             { icon: ShieldCheck, text: "Criptografia AES-256" },
             { icon: Zap, text: "99.9% de disponibilidade" },
             { icon: Users, text: "Equipes de todos os tamanhos" },
           ].map((item) => (
-            <div key={item.text} className="flex items-center gap-2 text-muted-foreground">
-              <item.icon className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{item.text}</span>
+            <div key={item.text} className="flex items-center gap-2 text-muted-foreground justify-center">
+              <item.icon className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs sm:text-sm font-medium">{item.text}</span>
             </div>
           ))}
         </div>
@@ -579,18 +579,18 @@ function TestimonialsSection() {
         </div>
 
         {/* Thumbnail selector */}
-        <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
           {testimonials.map((t, i) => (
             <button
               key={i}
               onClick={() => setActiveIndex(i)}
-              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 ${
+              className={`group flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-500 ${
                 i === activeIndex
                   ? "glass-card ring-2 ring-primary shadow-lg scale-105"
                   : "hover:bg-muted/50 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl overflow-hidden ring-2 transition-all duration-500 ${
                 i === activeIndex ? "ring-primary" : "ring-border group-hover:ring-primary/50"
               }`}>
                 <img src={t.photo} alt={t.name} className="w-full h-full object-cover" />
@@ -622,7 +622,26 @@ function TestimonialsSection() {
 
 function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
   const [startIndex, setStartIndex] = useState(0)
-  const maxVisible = 3
+  const [maxVisible, setMaxVisible] = useState(3)
+
+  // Responsive: 1 on mobile, 2 on sm, 3 on lg
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth
+      setMaxVisible(w < 640 ? 1 : w < 1024 ? 2 : 3)
+    }
+    update()
+    window.addEventListener("resize", update)
+    return () => window.removeEventListener("resize", update)
+  }, [])
+
+  // Reset startIndex if it goes out of bounds
+  useEffect(() => {
+    if (startIndex + maxVisible > plans.length && plans.length > 0) {
+      setStartIndex(Math.max(0, plans.length - maxVisible))
+    }
+  }, [maxVisible, plans.length, startIndex])
+
   const canGoLeft = startIndex > 0
   const canGoRight = startIndex + maxVisible < plans.length
 
@@ -665,7 +684,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
             </div>
           </div>
         ) : (
-          <div className="relative px-8 sm:px-12">
+          <div className="relative px-6 sm:px-12">
             {/* Navigation arrows */}
             {plans.length > maxVisible && (
               <>
