@@ -76,6 +76,10 @@ export default function SuperAdminPanel() {
   const [trialDays, setTrialDays] = useState("30")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [actionLoading, setActionLoading] = useState(false)
+  const [activateDialog, setActivateDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("")
+  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string }[]>([])
+  const [plansLoading, setPlansLoading] = useState(false)
 
   useEffect(() => {
     if (isSuperAdmin) {
