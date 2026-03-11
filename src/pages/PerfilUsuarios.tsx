@@ -45,7 +45,8 @@ export default function PerfilUsuarios() {
     email: "",
     password: "",
     display_name: "",
-    is_admin: false
+    is_admin: false,
+    permission_profile_id: ""
   })
 
   const fetchAll = useCallback(async () => {
@@ -188,21 +189,65 @@ export default function PerfilUsuarios() {
       if (authError) throw authError
 
       if (data.user) {
+        const selectedProfile = permissionProfiles.find(p => p.id === newUserData.permission_profile_id)
         const { error: profileError } = await supabase
           .from('user_profiles')
           .insert({
             user_id: data.user.id,
             display_name: newUserData.display_name,
             email: newUserData.email,
-            is_admin: newUserData.is_admin
+            is_admin: selectedProfile?.is_admin_profile || false,
+            permission_profile_id: newUserData.permission_profile_id || null
           })
 
         if (profileError) throw profileError
+
+        // Sync permissions from profile
+        if (newUserData.permission_profile_id) {
+          const { data: permProfile } = await supabase
+            .from('permission_profiles')
+            .select('client_access, empresa_access, password_access')
+            .eq('id', newUserData.permission_profile_id)
+            .single()
+
+          if (permProfile) {
+            const clientAccess = Array.isArray(permProfile.client_access) ? permProfile.client_access : []
+            const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
+            const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
+
+            if (clientAccess.length > 0) {
+              await supabase.from('user_client_permissions').insert(
+                clientAccess.map((ca: any) => ({
+                  user_id: data.user!.id, cliente_id: ca.cliente_id,
+                  can_view: ca.can_view || false, can_edit: ca.can_edit || false,
+                  can_create: ca.can_create || false, can_delete: ca.can_delete || false
+                }))
+              )
+            }
+            if (empresaAccess.length > 0) {
+              await supabase.from('user_empresa_permissions').insert(
+                empresaAccess.map((ea: any) => ({
+                  user_id: data.user!.id, empresa_terceira_id: ea.empresa_terceira_id,
+                  can_view: ea.can_view || false, can_edit: ea.can_edit || false,
+                  can_delete: ea.can_delete || false, can_create_manutencao: ea.can_create_manutencao || false
+                }))
+              )
+            }
+            if (passwordAccess.length > 0) {
+              await supabase.from('user_password_permissions').insert(
+                passwordAccess.map((pa: any) => ({
+                  user_id: data.user!.id, senha_id: pa.senha_id,
+                  can_view: pa.can_view || false, can_edit: pa.can_edit || false
+                }))
+              )
+            }
+          }
+        }
       }
 
       toast.success('Usuário criado com sucesso!')
       setCreateUserDialogOpen(false)
-      setNewUserData({ email: "", password: "", display_name: "", is_admin: false })
+      setNewUserData({ email: "", password: "", display_name: "", is_admin: false, permission_profile_id: "" })
       fetchAll()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
@@ -226,7 +271,14 @@ export default function PerfilUsuarios() {
     )
   }
 
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    if (a.user_id === user?.id) return -1
+    if (b.user_id === user?.id) return 1
+    return 0
+  })
+
   const isSingleUser = profiles.length === 1 && profiles[0]?.user_id === user?.id
+  const hasProfiles = permissionProfiles.length > 0
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -237,7 +289,12 @@ export default function PerfilUsuarios() {
             {isSingleUser ? "Gerencie suas informações pessoais" : "Gerencie seus usuários subordinados"}
           </p>
         </div>
-        {permissions.isAdmin && (
+        {permissions.isAdmin && !hasProfiles && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+            Você precisa criar um <strong>Perfil de Permissão</strong> antes de criar usuários.
+          </div>
+        )}
+        {permissions.isAdmin && hasProfiles && (
           <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">
@@ -285,11 +342,29 @@ export default function PerfilUsuarios() {
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="new_profile">Perfil de Permissão <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={newUserData.permission_profile_id}
+                    onValueChange={(value) => setNewUserData(prev => ({ ...prev, permission_profile_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {permissionProfiles.map((pp) => (
+                        <SelectItem key={pp.id} value={pp.id}>
+                          {pp.nome_perfil}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit">Criar Usuário</Button>
+                  <Button type="submit" disabled={!newUserData.permission_profile_id}>Criar Usuário</Button>
                 </div>
               </form>
             </DialogContent>
@@ -298,7 +373,7 @@ export default function PerfilUsuarios() {
       </div>
 
       <div className="grid gap-4">
-        {profiles.map((profile) => {
+        {sortedProfiles.map((profile) => {
           const assignedProfile = getProfileName(profile.permission_profile_id)
           
           return (
