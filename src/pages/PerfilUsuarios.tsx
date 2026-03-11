@@ -24,6 +24,8 @@ interface UserProfile {
   is_super_admin?: boolean
   created_at: string
   permission_profile_id: string | null
+  phone?: string | null
+  department?: string | null
 }
 
 interface PermissionProfile {
