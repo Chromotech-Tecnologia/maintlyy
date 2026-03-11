@@ -11,7 +11,7 @@ import { useAdminOperations } from "@/hooks/useAdminOperations"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff, ChevronDown, ChevronRight, Lock } from "lucide-react"
-import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
+import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid, EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
 
 interface EditProfileDialogProps {
   open: boolean
