@@ -147,17 +147,15 @@ export default function SuperAdminPanel() {
     }
   }
 
-  const handleChangePassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres")
-      return
-    }
+  const handleSendPasswordReset = async () => {
     try {
-      await callAdminOp('updateUserById', passwordDialog.userId, { updateData: { password: newPassword } })
-      toast.success("Senha alterada com sucesso!")
+      setActionLoading(true)
+      await callAdminOp('sendPasswordReset', passwordDialog.userId, { redirectTo: `${window.location.origin}/reset-password` })
+      toast.success("Email de troca de senha enviado com sucesso!")
       setPasswordDialog({ open: false, userId: "", email: "" })
-      setNewPassword("")
-    } catch {}
+    } catch {} finally {
+      setActionLoading(false)
+    }
   }
 
   const handleSetTrial = async () => {
