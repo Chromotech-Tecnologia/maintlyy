@@ -232,6 +232,7 @@ export default function Login() {
                           </button>
                         </div>
                       </FormControl>
+                      <PasswordRequirements password={field.value} />
                       <FormMessage />
                     </FormItem>
                   )} />
