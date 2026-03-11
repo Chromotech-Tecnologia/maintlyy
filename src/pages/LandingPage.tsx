@@ -141,7 +141,7 @@ export default function LandingPage() {
                 Novas funcionalidades toda semana
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
+              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
                 Gestão de
                 <br />
                 Manutenções
