@@ -269,50 +269,36 @@ export default function Login() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={signupForm.control} name="password" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showSignupPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" {...field} />
-                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowSignupPassword(!showSignupPassword)}>
-                            {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                  {signupSuccess ? (
+                    <div className="text-center space-y-4 py-4">
+                      <div className="flex justify-center">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                          <CheckCircle2 className="h-8 w-8 text-primary" />
                         </div>
-                      </FormControl>
-                      <PasswordRequirements password={field.value} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={signupForm.control} name="confirmPassword" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" {...field} />
-                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <PasswordMatchIndicator password={signupForm.watch("password")} confirmPassword={field.value} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full" disabled={
-                    signupForm.formState.isSubmitting || 
-                    !isPasswordValid(signupForm.watch("password")) || 
-                    signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
-                    !isValidEmail(signupForm.watch("email")) ||
-                    emailExists ||
-                    checkingEmail ||
-                    !signupForm.watch("display_name") ||
-                    !signupForm.watch("phone")
-                  }>
-                    {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
-                  </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">Cadastro realizado!</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Enviamos um email para <strong>{signupForm.getValues("email")}</strong> com um link para criar sua senha e acessar o sistema.
+                        </p>
+                        <p className="text-xs text-muted-foreground">Verifique também a pasta de spam.</p>
+                      </div>
+                      <Button variant="outline" className="w-full" onClick={() => { setSignupSuccess(false); signupForm.reset() }}>
+                        Voltar
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="submit" className="w-full" disabled={
+                      signupForm.formState.isSubmitting || 
+                      !isValidEmail(signupForm.watch("email")) ||
+                      emailExists ||
+                      checkingEmail ||
+                      !signupForm.watch("display_name") ||
+                      !signupForm.watch("phone")
+                    }>
+                      {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
+                    </Button>
+                  )}
                 </form>
               </Form>
             </TabsContent>

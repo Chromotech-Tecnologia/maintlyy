@@ -72,7 +72,6 @@ export default function SuperAdminPanel() {
   const [expandedAdmin, setExpandedAdmin] = useState<string | null>(null)
 
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
-  const [newPassword, setNewPassword] = useState("")
   const [trialDialog, setTrialDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [trialDays, setTrialDays] = useState("30")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
