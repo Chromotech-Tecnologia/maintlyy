@@ -271,7 +271,14 @@ export default function PerfilUsuarios() {
     )
   }
 
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    if (a.user_id === user?.id) return -1
+    if (b.user_id === user?.id) return 1
+    return 0
+  })
+
   const isSingleUser = profiles.length === 1 && profiles[0]?.user_id === user?.id
+  const hasProfiles = permissionProfiles.length > 0
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
