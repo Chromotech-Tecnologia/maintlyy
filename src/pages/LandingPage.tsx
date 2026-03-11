@@ -78,9 +78,6 @@ export default function LandingPage() {
   if (loading) return null
   if (user) return <Navigate to="/dashboard" replace />
 
-  const freePlans = plans.filter(p => p.categoria === "gratis")
-  const paidPlans = plans.filter(p => p.categoria === "pago")
-
   const handlePlanClick = (plan: LandingPlan) => {
     if (plan.offer_free_signup) {
       window.location.href = "/login"
