@@ -1119,10 +1119,10 @@ export default function CofreSenhas() {
                     <KeyRound className="h-5 w-5 text-primary" />
                     Senhas ({dadosCliente.senhas.length})
                   </h4>
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-stretch auto-rows-fr">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {dadosCliente.senhas.map((senha) => (
-                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300 flex flex-col h-full min-w-0 overflow-hidden">
-                    <CardHeader className="pb-3 px-3 sm:px-6">
+                  <Card key={senha.id} className="border-0 shadow-elegant hover:shadow-glow transition-all duration-300 flex flex-col min-w-0 overflow-hidden">
+                    <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                       <div className="flex items-start gap-2 min-w-0">
                         <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
                           <KeyRound className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -1136,7 +1136,7 @@ export default function CofreSenhas() {
                       </div>
                     </CardHeader>
                     
-                     <CardContent className="space-y-2 sm:space-y-3 flex-1 flex flex-col px-3 sm:px-6 min-w-0">
+                     <CardContent className="space-y-1.5 sm:space-y-3 flex-1 flex flex-col px-3 sm:px-6 pb-3 sm:pb-6 min-w-0">
                        {senha.login && (
                          <div className="space-y-1 min-w-0">
                            <span className="text-xs font-medium text-muted-foreground">Login:</span>
