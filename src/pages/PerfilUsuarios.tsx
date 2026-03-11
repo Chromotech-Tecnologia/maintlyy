@@ -336,8 +336,10 @@ export default function PerfilUsuarios() {
                     type="email"
                     value={newUserData.email}
                     onChange={(e) => {
-                      setNewUserData(prev => ({ ...prev, email: e.target.value }))
-                      setEmailError("")
+                      const val = e.target.value
+                      setNewUserData(prev => ({ ...prev, email: val }))
+                      const existing = profiles.find(p => p.email === val)
+                      setEmailError(existing ? "Email já cadastrado neste tenant" : "")
                     }}
                     placeholder="usuario@exemplo.com"
                     required
@@ -400,7 +402,14 @@ export default function PerfilUsuarios() {
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!newUserData.permission_profile_id || !isPasswordValid(newUserData.password) || newUserData.password !== newUserData.confirmPassword}>
+                  <Button type="submit" disabled={
+                    !newUserData.permission_profile_id || 
+                    !isPasswordValid(newUserData.password) || 
+                    newUserData.password !== newUserData.confirmPassword ||
+                    !newUserData.email || 
+                    !newUserData.display_name ||
+                    !!emailError
+                  }>
                     Criar Usuário
                   </Button>
                 </div>

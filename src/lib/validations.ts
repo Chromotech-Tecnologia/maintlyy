@@ -10,8 +10,8 @@ export const signupSchema = z.object({
   email: z.string().email('Email inválido'),
   phone: z.string().min(8, 'Telefone deve ter pelo menos 8 dígitos').max(20, 'Telefone inválido'),
   password: z.string()
-    .min(8, 'A senha deve ter pelo menos 8 caracteres')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter ao menos uma letra minúscula, uma maiúscula e um número'),
+    .min(6, 'A senha deve ter pelo menos 6 caracteres')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~])/, 'A senha deve conter ao menos uma letra minúscula, uma maiúscula, um número e um caractere especial'),
   confirmPassword: z.string().min(1, 'Confirme sua senha'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',

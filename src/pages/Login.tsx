@@ -17,9 +17,12 @@ import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@
 const formatPhone = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 11)
   if (digits.length <= 2) return digits.length ? `(${digits}` : ''
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
@@ -266,7 +269,14 @@ export default function Login() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <Button type="submit" className="w-full" disabled={signupForm.formState.isSubmitting || !isPasswordValid(signupForm.watch("password")) || signupForm.watch("password") !== signupForm.watch("confirmPassword")}>
+                  <Button type="submit" className="w-full" disabled={
+                    signupForm.formState.isSubmitting || 
+                    !isPasswordValid(signupForm.watch("password")) || 
+                    signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
+                    !isValidEmail(signupForm.watch("email")) ||
+                    !signupForm.watch("display_name") ||
+                    !signupForm.watch("phone")
+                  }>
                     {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
                   </Button>
                 </form>
