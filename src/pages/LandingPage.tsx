@@ -427,6 +427,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <TestimonialsSection />
+
       {/* Plans */}
       <PlansCarousel plans={plans} trialDays={trialDays} onPlanClick={handlePlanClick} />
 
