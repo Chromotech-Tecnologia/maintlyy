@@ -400,7 +400,14 @@ export default function PerfilUsuarios() {
                   <Button type="button" variant="outline" onClick={() => setCreateUserDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!newUserData.permission_profile_id || !isPasswordValid(newUserData.password) || newUserData.password !== newUserData.confirmPassword}>
+                  <Button type="submit" disabled={
+                    !newUserData.permission_profile_id || 
+                    !isPasswordValid(newUserData.password) || 
+                    newUserData.password !== newUserData.confirmPassword ||
+                    !newUserData.email || 
+                    !newUserData.display_name ||
+                    !!emailError
+                  }>
                     Criar Usuário
                   </Button>
                 </div>
