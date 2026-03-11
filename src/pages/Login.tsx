@@ -157,6 +157,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+      <a href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-4 self-center">
+        <ArrowLeft className="h-4 w-4" />
+        Voltar para Home
+      </a>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
