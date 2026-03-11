@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
 import { Eye, EyeOff, Phone, User, Mail, Lock } from "lucide-react"
+import { PasswordRequirements, isPasswordValid } from "@/components/ui/password-requirements"
 
 const formatPhone = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 11)
