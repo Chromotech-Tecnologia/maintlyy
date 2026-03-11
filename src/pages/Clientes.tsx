@@ -179,6 +179,8 @@ export default function Clientes() {
 
   const handleEdit = (cliente: Cliente) => {
     setEditingId(cliente.id)
+    setLogoFile(null)
+    setLogoPreview(cliente.logo_url || null)
     form.reset({
       nome_cliente: cliente.nome_cliente,
       email: cliente.email || "",
