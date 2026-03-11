@@ -1,4 +1,4 @@
-import { Check, X } from "lucide-react"
+import { Check, X, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface PasswordRequirementsProps {
