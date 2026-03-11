@@ -155,10 +155,9 @@ export default function Login() {
               </button>
             </div>
           </CardContent>
-      </Card>
-    </div>
-    <AppFooter />
-    </div>
+        </Card>
+        <AppFooter className="mt-6" />
+      </div>
     )
   }
 
