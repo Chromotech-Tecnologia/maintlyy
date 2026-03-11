@@ -716,7 +716,11 @@ export default function CofreSenhas() {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => exportSelectedPasswords('txt')}
+                    onClick={() => {
+                      if (selectedPasswordsForExport.size === 0) return
+                      setPendingExportFormat('txt')
+                      setSecurityDialogOpen(true)
+                    }}
                     disabled={selectedPasswordsForExport.size === 0}
                   >
                     <FileText className="mr-2 h-4 w-4" />
@@ -724,13 +728,24 @@ export default function CofreSenhas() {
                   </Button>
                   <Button
                     className="flex-1"
-                    onClick={() => exportSelectedPasswords('csv')}
+                    onClick={() => {
+                      if (selectedPasswordsForExport.size === 0) return
+                      setPendingExportFormat('csv')
+                      setSecurityDialogOpen(true)
+                    }}
                     disabled={selectedPasswordsForExport.size === 0}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Exportar CSV
                   </Button>
                 </div>
+
+                <SecurityTokenDialog
+                  open={securityDialogOpen}
+                  onOpenChange={setSecurityDialogOpen}
+                  email={user?.email || ''}
+                  onVerified={() => exportSelectedPasswords(pendingExportFormat)}
+                />
               </div>
             </DialogContent>
           </Dialog>

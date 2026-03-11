@@ -305,15 +305,36 @@ export default function Relatorios() {
 
             {/* Export Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button onClick={() => exportReport('csv')} disabled={exporting || selectedFields.size === 0} className="flex-1 sm:flex-none">
+              <Button onClick={() => {
+                if (selectedReport === 'senhas_inventario') {
+                  setPendingExportFormat('csv')
+                  setSecurityDialogOpen(true)
+                } else {
+                  exportReport('csv')
+                }
+              }} disabled={exporting || selectedFields.size === 0} className="flex-1 sm:flex-none">
                 <Download className="h-4 w-4 mr-2" />
                 {exporting ? "Exportando..." : "Exportar CSV"}
               </Button>
-              <Button onClick={() => exportReport('txt')} variant="outline" disabled={exporting || selectedFields.size === 0} className="flex-1 sm:flex-none">
+              <Button onClick={() => {
+                if (selectedReport === 'senhas_inventario') {
+                  setPendingExportFormat('txt')
+                  setSecurityDialogOpen(true)
+                } else {
+                  exportReport('txt')
+                }
+              }} variant="outline" disabled={exporting || selectedFields.size === 0} className="flex-1 sm:flex-none">
                 <Download className="h-4 w-4 mr-2" />
                 {exporting ? "Exportando..." : "Exportar TXT"}
               </Button>
             </div>
+
+            <SecurityTokenDialog
+              open={securityDialogOpen}
+              onOpenChange={setSecurityDialogOpen}
+              email={user?.email || ''}
+              onVerified={() => exportReport(pendingExportFormat)}
+            />
           </CardContent>
         </Card>
       )}
