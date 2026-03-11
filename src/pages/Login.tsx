@@ -28,13 +28,12 @@ const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [showLoginPassword, setShowLoginPassword] = useState(false)
-  const [showSignupPassword, setShowSignupPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
   const [emailExists, setEmailExists] = useState(false)
   const [checkingEmail, setCheckingEmail] = useState(false)
+  const [signupSuccess, setSignupSuccess] = useState(false)
   const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loginForm = useForm<LoginFormData>({
