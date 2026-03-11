@@ -174,10 +174,24 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
-  const handleActivatePermanent = async (userId: string) => {
+  const openActivateDialog = async (userId: string, email: string) => {
+    setActivateDialog({ open: true, userId, email })
+    setSelectedPlanId("")
+    setPlansLoading(true)
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo').eq('ativo', true).order('ordem')
+    setAvailablePlans((data || []) as any[])
+    setPlansLoading(false)
+  }
+
+  const handleActivatePermanent = async () => {
+    if (!selectedPlanId) {
+      toast.error("Selecione um plano")
+      return
+    }
     try {
-      await callAdminOp('activatePermanent', userId)
+      await callAdminOp('activatePermanent', activateDialog.userId, { planId: selectedPlanId })
       toast.success("Conta ativada permanentemente!")
+      setActivateDialog({ open: false, userId: "", email: "" })
       fetchData()
     } catch {}
   }
