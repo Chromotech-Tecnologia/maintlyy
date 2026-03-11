@@ -85,8 +85,8 @@ export function AppSidebar() {
     cn(
       "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
       isActive 
-        ? "bg-primary text-primary-foreground shadow-sm dark:bg-primary/80" 
-        : "text-foreground hover:bg-muted"
+        ? "gradient-primary text-white shadow-md" 
+        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     )
 
   const renderSection = (label: string, items: typeof mainItems) => (
