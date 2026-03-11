@@ -632,6 +632,39 @@ export default function SuperAdminPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Activate Permanent with Plan Selection */}
+      <Dialog open={activateDialog.open} onOpenChange={(open) => setActivateDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ativar Conta Permanente</DialogTitle>
+            <DialogDescription>Selecione o plano para {activateDialog.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {plansLoading ? (
+              <div className="text-center py-4 text-muted-foreground">Carregando planos...</div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Plano</Label>
+                <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                  <SelectContent>
+                    {availablePlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} ({p.tipo})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActivateDialog({ open: false, userId: "", email: "" })}>Cancelar</Button>
+            <Button onClick={handleActivatePermanent} disabled={actionLoading || !selectedPlanId}>
+              {actionLoading ? "Ativando..." : "Ativar Permanente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

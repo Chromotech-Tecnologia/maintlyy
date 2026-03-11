@@ -41,6 +41,7 @@ const emptyPlan: Omit<Plan, "id"> = {
   categoria: "gratis",
   preco: "",
   max_usuarios: 1,
+  max_equipes: 0,
   descricao: "",
   recursos: [],
   whatsapp_numero: "",
