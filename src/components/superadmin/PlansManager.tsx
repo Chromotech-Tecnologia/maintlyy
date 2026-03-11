@@ -26,8 +26,11 @@ interface Plan {
   preco: string | null
   max_usuarios: number
   max_equipes: number
+  max_manutencoes: number
+  max_empresas: number
   descricao: string | null
   recursos: string[]
+  offer_free_signup: boolean
   whatsapp_numero: string | null
   whatsapp_mensagem: string | null
   texto_botao: string
