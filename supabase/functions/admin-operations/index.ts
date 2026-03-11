@@ -14,6 +14,7 @@ interface AdminOperationRequest {
     password?: string
   }
   trialDays?: number
+  planId?: string
   // inviteUser fields
   email?: string
   displayName?: string
