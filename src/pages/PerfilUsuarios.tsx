@@ -247,7 +247,7 @@ export default function PerfilUsuarios() {
 
       toast.success('Usuário criado com sucesso!')
       setCreateUserDialogOpen(false)
-      setNewUserData({ email: "", password: "", display_name: "", is_admin: false })
+      setNewUserData({ email: "", password: "", display_name: "", is_admin: false, permission_profile_id: "" })
       fetchAll()
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error)
