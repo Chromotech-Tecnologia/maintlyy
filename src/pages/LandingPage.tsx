@@ -622,7 +622,26 @@ function TestimonialsSection() {
 
 function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
   const [startIndex, setStartIndex] = useState(0)
-  const maxVisible = 3
+  const [maxVisible, setMaxVisible] = useState(3)
+
+  // Responsive: 1 on mobile, 2 on sm, 3 on lg
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth
+      setMaxVisible(w < 640 ? 1 : w < 1024 ? 2 : 3)
+    }
+    update()
+    window.addEventListener("resize", update)
+    return () => window.removeEventListener("resize", update)
+  }, [])
+
+  // Reset startIndex if it goes out of bounds
+  useEffect(() => {
+    if (startIndex + maxVisible > plans.length && plans.length > 0) {
+      setStartIndex(Math.max(0, plans.length - maxVisible))
+    }
+  }, [maxVisible, plans.length, startIndex])
+
   const canGoLeft = startIndex > 0
   const canGoRight = startIndex + maxVisible < plans.length
 
