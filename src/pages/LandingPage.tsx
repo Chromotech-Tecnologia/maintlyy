@@ -688,10 +688,10 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
 
             <div className="overflow-hidden">
               <div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out items-stretch"
               >
                 {visiblePlans.map((plan) => (
-                  <div key={plan.id} className="animate-fade-in">
+                  <div key={plan.id} className="animate-fade-in flex">
                     <PlanCard plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
                   </div>
                 ))}
