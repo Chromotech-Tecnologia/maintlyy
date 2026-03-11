@@ -290,7 +290,7 @@ export default function SuperAdminPanel() {
         <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
           <Clock className="h-4 w-4 mr-2" /> Período teste
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
+        <DropdownMenuItem onClick={() => openActivateDialog(admin.user_id, admin.email || '')}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
         </DropdownMenuItem>
         <DropdownMenuSeparator />
