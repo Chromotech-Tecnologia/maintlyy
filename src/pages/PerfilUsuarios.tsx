@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2 } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
-import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid, EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
+import { EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
 
 interface UserProfile {
   id: string
