@@ -249,6 +249,17 @@ export default function Login() {
                           <Input type="email" placeholder="seu@email.com" className="pl-10" {...field} />
                         </div>
                       </FormControl>
+                      {isValidEmail(field.value) && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {checkingEmail ? (
+                            <span className="text-xs text-muted-foreground">Verificando...</span>
+                          ) : emailExists ? (
+                            <span className="text-xs text-destructive flex items-center gap-1">✗ Já existe uma conta com este email</span>
+                          ) : (
+                            <span className="text-xs text-success flex items-center gap-1">✓ Email disponível</span>
+                          )}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )} />
