@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset' | 'cancelPlan'
   userId?: string
   updateData?: {
     email?: string
@@ -61,7 +61,7 @@ serve(async (req) => {
     const body: AdminOperationRequest = await req.json()
     const isSuperAdmin = profile?.is_super_admin === true
 
-    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats']
+    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats', 'cancelPlan']
     if (superAdminOps.includes(body.operation) && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Only super admins can perform this operation' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -253,6 +253,23 @@ serve(async (req) => {
         }
         
         result = { data: { message: 'Password reset email sent' } }
+        break
+      }
+
+      case 'cancelPlan': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const { error: cancelError } = await supabaseAdmin.from('user_profiles').update({
+          account_status: 'cancelled',
+          is_permanent: false,
+          plan_id: null,
+        }).eq('user_id', body.userId)
+        
+        if (cancelError) {
+          console.error('Error cancelling plan:', cancelError)
+          return new Response(JSON.stringify({ error: 'Failed to cancel: ' + cancelError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        result = { data: { message: 'Plan cancelled' } }
         break
       }
 

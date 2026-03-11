@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
   XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
-  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard
+  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard, Ban
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -210,6 +210,14 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
+  const handleCancelPlan = async (userId: string) => {
+    try {
+      await callAdminOp('cancelPlan', userId)
+      toast.success("Plano cancelado! O usuário só terá acesso à tela de assinaturas.")
+      fetchData()
+    } catch {}
+  }
+
   const handleDelete = async () => {
     try {
       await callAdminOp('deleteUser', deleteDialog.userId)
@@ -246,6 +254,7 @@ export default function SuperAdminPanel() {
         }
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Teste</Badge>
       }
+      case 'cancelled': return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Cancelado</Badge>
       case 'disabled': return <Badge variant="destructive">Desabilitado</Badge>
       case 'expired': return <Badge variant="destructive">Expirado</Badge>
       default: return <Badge variant="secondary">{status}</Badge>
@@ -291,6 +300,11 @@ export default function SuperAdminPanel() {
         <DropdownMenuItem onClick={() => openActivateDialog(admin.user_id, admin.email || '')}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
         </DropdownMenuItem>
+        {(admin.is_permanent || admin.account_status === 'active') && (
+          <DropdownMenuItem onClick={() => handleCancelPlan(admin.user_id)} className="text-amber-500">
+            <Ban className="h-4 w-4 mr-2" /> Cancelar plano
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {admin.account_status === 'disabled' ? (
           <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
