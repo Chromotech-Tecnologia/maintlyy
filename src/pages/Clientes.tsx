@@ -49,6 +49,9 @@ export default function Clientes() {
   const [viewingCliente, setViewingCliente] = useState<Cliente | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
