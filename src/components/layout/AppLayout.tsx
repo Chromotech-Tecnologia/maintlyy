@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
+import { AppFooter } from "./AppFooter"
 
 interface AppLayoutProps {
   children: React.ReactNode
