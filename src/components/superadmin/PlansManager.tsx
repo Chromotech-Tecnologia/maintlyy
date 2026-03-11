@@ -286,7 +286,11 @@ export function PlansManager() {
               <Label>Mensagem WhatsApp</Label>
               <Textarea value={form.whatsapp_mensagem || ""} onChange={(e) => setForm(f => ({ ...f, whatsapp_mensagem: e.target.value }))} rows={2} placeholder="Olá! Tenho interesse no plano..." />
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Switch checked={form.offer_free_signup} onCheckedChange={(v) => setForm(f => ({ ...f, offer_free_signup: v }))} />
+                <Label>Oferecer cadastro grátis</Label>
+              </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.destaque} onCheckedChange={(v) => setForm(f => ({ ...f, destaque: v }))} />
                 <Label>Destaque</Label>
@@ -296,6 +300,11 @@ export function PlansManager() {
                 <Label>Ativo</Label>
               </div>
             </div>
+            {!form.offer_free_signup && (
+              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                ⚠️ Ao clicar no botão, o usuário será redirecionado para o WhatsApp com a mensagem configurada.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
