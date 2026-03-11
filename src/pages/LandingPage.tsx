@@ -112,10 +112,10 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-white hover:text-white">Entrar</Button>
             </Link>
             <Link to="/login">
-              <Button size="sm" className="gradient-primary text-primary-foreground shadow-md">
+              <Button size="sm" className="gradient-primary text-white shadow-md">
                 Começar Grátis
               </Button>
             </Link>
