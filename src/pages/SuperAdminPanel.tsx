@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
   XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
-  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp
+  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
