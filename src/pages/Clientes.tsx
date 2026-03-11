@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { searchMatch } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search } from "lucide-react"
+import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search, Upload, Image } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
@@ -28,6 +28,7 @@ interface Cliente {
   endereco: string | null
   empresa_terceira_id: string
   created_at: string
+  logo_url: string | null
   empresas_terceiras?: { nome_empresa: string }
 }
 
@@ -48,6 +49,9 @@ export default function Clientes() {
   const [viewingCliente, setViewingCliente] = useState<Cliente | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
@@ -105,6 +109,24 @@ export default function Clientes() {
     fetchData()
   }, [user])
 
+  const uploadLogo = async (clienteId: string): Promise<string | null> => {
+    if (!logoFile) return null
+    const ext = logoFile.name.split('.').pop()
+    const path = `${user!.id}/${clienteId}.${ext}`
+    const { error } = await supabase.storage.from('client-logos').upload(path, logoFile, { upsert: true })
+    if (error) throw error
+    const { data: { publicUrl } } = supabase.storage.from('client-logos').getPublicUrl(path)
+    return publicUrl
+  }
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      setLogoPreview(URL.createObjectURL(file))
+    }
+  }
+
   const handleSubmit = async (data: ClienteFormData) => {
     if (!user) return
 
@@ -116,25 +138,38 @@ export default function Clientes() {
     try {
       const sanitizedData = sanitizeFormData(data)
       if (editingId) {
+        let logoUrl: string | null = null
+        if (logoFile) logoUrl = await uploadLogo(editingId)
+        const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
         const { error } = await supabase
           .from('clientes')
-          .update(sanitizedData)
+          .update(updateData)
           .eq('id', editingId)
           .eq('user_id', user.id)
 
         if (error) throw error
         toast.success("Cliente atualizado com sucesso!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('clientes')
           .insert([{ ...sanitizedData, user_id: user.id }])
+          .select('id')
+          .single()
 
         if (error) throw error
+        if (logoFile && inserted) {
+          const logoUrl = await uploadLogo(inserted.id)
+          if (logoUrl) {
+            await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
+          }
+        }
         toast.success("Cliente criado com sucesso!")
       }
 
       setOpen(false)
       setEditingId(null)
+      setLogoFile(null)
+      setLogoPreview(null)
       form.reset()
       fetchData()
     } catch (error: any) {
@@ -144,6 +179,8 @@ export default function Clientes() {
 
   const handleEdit = (cliente: Cliente) => {
     setEditingId(cliente.id)
+    setLogoFile(null)
+    setLogoPreview(cliente.logo_url || null)
     form.reset({
       nome_cliente: cliente.nome_cliente,
       email: cliente.email || "",
@@ -181,6 +218,8 @@ export default function Clientes() {
 
   const openNewDialog = () => {
     setEditingId(null)
+    setLogoFile(null)
+    setLogoPreview(null)
     form.reset()
     setOpen(true)
   }
@@ -316,6 +355,28 @@ export default function Clientes() {
                   )}
                 />
 
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Logotipo do Cliente</Label>
+                  <div className="flex items-center gap-4">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo preview" className="w-16 h-16 object-contain rounded-lg border border-border bg-muted" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg border border-dashed border-border bg-muted/50 flex items-center justify-center">
+                        <Image className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                      <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5 mr-1.5" />
+                        {logoPreview ? "Trocar Logo" : "Enviar Logo"}
+                      </Button>
+                      {logoFile && <p className="text-xs text-muted-foreground mt-1">{logoFile.name}</p>}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="button"
@@ -411,9 +472,13 @@ export default function Clientes() {
           <div key={cliente.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
+                {cliente.logo_url ? (
+                  <img src={cliente.logo_url} alt={cliente.nome_cliente} className="w-10 h-10 rounded-xl object-contain border border-border bg-muted" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h3 className="font-semibold text-sm truncate">{cliente.nome_cliente}</h3>
                   {cliente.cnpj && <p className="text-xs text-muted-foreground">{cliente.cnpj}</p>}

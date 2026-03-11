@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
+import { AppFooter } from "./AppFooter"
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -73,6 +74,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Main Content */}
           <main className="flex-1 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
             {children}
+            <AppFooter className="mt-8 pb-2" />
           </main>
 
           {/* Mobile Bottom Nav */}

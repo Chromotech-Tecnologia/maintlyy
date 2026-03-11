@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react"
 import { StatCard } from "@/components/dashboard/StatCard"
 import { ChartCard } from "@/components/dashboard/ChartCard"
+import { DashboardReportExport } from "@/components/dashboard/DashboardReportExport"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts"
 import { 
-  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog
+  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -57,6 +58,9 @@ export default function Dashboard() {
   const [filterCliente, setFilterCliente] = useState("todos")
   const [filterEquipe, setFilterEquipe] = useState("todos")
   const [filterTipo, setFilterTipo] = useState("todos")
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
+  const [reportFilterDataFim, setReportFilterDataFim] = useState("")
 
   const currentYear = new Date().getFullYear()
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(280, 67%, 55%)', 'hsl(190, 80%, 45%)']
@@ -72,7 +76,7 @@ export default function Dashboard() {
           supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           supabase.from('manutencoes').select(`id,created_at,status,tempo_total,data_inicio,cliente_id,equipe_id,tipo_manutencao_id,clientes(nome_cliente),tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe)`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
           supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente)`).eq('user_id', user.id),
-          supabase.from('clientes').select('id, nome_cliente').eq('user_id', user.id),
+          supabase.from('clientes').select('id, nome_cliente, logo_url').eq('user_id', user.id),
           supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
           supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id),
         ])
@@ -187,14 +191,24 @@ export default function Dashboard() {
           <h1 className="page-title font-display">Dashboard</h1>
           <p className="page-subtitle">Visão geral do sistema — {currentYear}</p>
         </div>
-        <Button 
-          className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
-          onClick={() => navigate('/manutencoes')}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Nova Manutenção</span>
-          <span className="sm:hidden">Novo</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            className="rounded-xl h-11 px-4"
+            onClick={() => setReportOpen(true)}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Relatório</span>
+          </Button>
+          <Button 
+            className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+            onClick={() => navigate('/manutencoes')}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Nova Manutenção</span>
+            <span className="sm:hidden">Novo</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -406,6 +420,30 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <DashboardReportExport
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        data={{ chartData, tipoData, statusData, teamData, weeklyData, stats }}
+        filters={{
+          clientes,
+          equipes,
+          tipos,
+          filterCliente,
+          filterEquipe,
+          filterTipo,
+          filterDataInicio: reportFilterDataInicio,
+          filterDataFim: reportFilterDataFim,
+          onFilterChange: (key, value) => {
+            if (key === 'cliente') setFilterCliente(value)
+            else if (key === 'equipe') setFilterEquipe(value)
+            else if (key === 'tipo') setFilterTipo(value)
+            else if (key === 'dataInicio') setReportFilterDataInicio(value)
+            else if (key === 'dataFim') setReportFilterDataFim(value)
+          }
+        }}
+        currentYear={currentYear}
+      />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
 import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
+import { AppFooter } from "@/components/layout/AppFooter"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -69,6 +70,7 @@ export default function ResetPassword() {
             <Button className="w-full" onClick={() => navigate("/login")}>Voltar ao Login</Button>
           </CardContent>
         </Card>
+        <AppFooter className="mt-6" />
       </div>
     )
   }
@@ -125,6 +127,7 @@ export default function ResetPassword() {
           </form>
         </CardContent>
       </Card>
+      <AppFooter className="mt-6" />
     </div>
   )
 }
