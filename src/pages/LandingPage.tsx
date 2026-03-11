@@ -463,6 +463,92 @@ export default function LandingPage() {
   )
 }
 
+function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
+  const [page, setPage] = useState(0)
+  const perPage = 3
+  const totalPages = Math.ceil(plans.length / perPage)
+  const visiblePlans = plans.slice(page * perPage, page * perPage + perPage)
+
+  return (
+    <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
+            <Star className="h-4 w-4" />
+            Planos
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-foreground">
+            Planos & Preços
+          </h2>
+          <p className="text-muted-foreground mt-3 text-lg">
+            Comece grátis por {trialDays} dias. Escolha o plano ideal para você.
+          </p>
+        </div>
+
+        {plans.length === 0 ? (
+          <div className="text-center">
+            <div className="glass-card max-w-md mx-auto p-8 rounded-2xl">
+              <Star className="h-10 w-10 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+                Teste grátis por {trialDays} dias
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Acesso completo a todas as funcionalidades sem compromisso.
+              </p>
+              <Link to="/login">
+                <Button className="gradient-primary text-primary-foreground shadow-md w-full">
+                  Começar agora <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            {/* Navigation arrows */}
+            {totalPages > 1 && (
+              <>
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-md"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page === totalPages - 1}
+                  className="absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-md"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </>
+            )}
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {visiblePlans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
+              ))}
+            </div>
+
+            {/* Page dots */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPage(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${i === page ? "bg-primary w-6" : "bg-border hover:bg-muted-foreground/40"}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
   return (
     <div
@@ -475,7 +561,12 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
           ⭐ Mais popular
         </div>
       )}
-      <div className="mb-4">
+      {plan.categoria === "gratis" && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-success text-success-foreground text-xs font-semibold shadow-md">
+          ✨ Grátis
+        </div>
+      )}
+      <div className="mb-4 mt-1">
         <h4 className="text-lg font-display font-bold text-foreground">{plan.nome}</h4>
         {plan.descricao && <p className="text-sm text-muted-foreground mt-1">{plan.descricao}</p>}
       </div>
@@ -488,12 +579,12 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
             <span className="text-sm text-muted-foreground ml-2">por {trialDays} dias</span>
           </div>
         )}
-        {plan.tipo === "equipe" && (
-          <p className="text-xs text-muted-foreground mt-1">até {plan.max_usuarios} usuários</p>
-        )}
-        {plan.tipo === "personalizado" && (
-          <p className="text-xs text-muted-foreground mt-1">usuários ilimitados</p>
-        )}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+          {plan.max_usuarios > 0 && <span>👤 {plan.max_usuarios === 999 ? "Ilimitados" : `Até ${plan.max_usuarios}`} usuário{plan.max_usuarios > 1 ? "s" : ""}</span>}
+          {plan.max_empresas > 0 && <span>🏢 {plan.max_empresas === 999 ? "Ilimitadas" : `Até ${plan.max_empresas}`} empresa{plan.max_empresas > 1 ? "s" : ""}</span>}
+          {plan.max_manutencoes > 0 && <span>🔧 {plan.max_manutencoes}/mês</span>}
+          {plan.max_manutencoes === 0 && plan.categoria === "pago" && <span>🔧 Ilimitadas</span>}
+        </div>
       </div>
       <ul className="space-y-2.5 mb-6 flex-1">
         {plan.recursos.map((r, i) => (
