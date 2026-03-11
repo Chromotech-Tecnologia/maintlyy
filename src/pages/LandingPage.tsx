@@ -651,7 +651,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
   const visiblePlans = plans.slice(startIndex, startIndex + maxVisible)
 
   return (
-    <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-24 pt-28">
+    <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-24 pt-28 overflow-visible">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
@@ -705,7 +705,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
               </>
             )}
 
-            <div className="overflow-hidden">
+            <div className="overflow-visible py-4">
               <div
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out items-stretch"
               >
