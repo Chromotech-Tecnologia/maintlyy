@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
   XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
-  Users, KeyRound, Building2
+  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog"
 
+interface StatMetric {
+  total: number
+  recent: number
+}
+
 interface AdminWithStats {
   user_id: string
   email: string | null
@@ -43,10 +48,13 @@ interface AdminWithStats {
   trial_start: string | null
   is_permanent: boolean | null
   created_at: string
+  sub_users: { display_name: string | null; email: string | null }[]
   stats: {
-    usuarios: number
-    clientes: number
-    senhas: number
+    usuarios: StatMetric
+    clientes: StatMetric
+    senhas: StatMetric
+    manutencoes: StatMetric
+    empresas: StatMetric
   }
 }
 
@@ -58,8 +66,8 @@ export default function SuperAdminPanel() {
   const [search, setSearch] = useState("")
   const [defaultTrialDays, setDefaultTrialDays] = useState("7")
   const [savingSettings, setSavingSettings] = useState(false)
+  const [expandedAdmin, setExpandedAdmin] = useState<string | null>(null)
 
-  // Dialogs
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [newPassword, setNewPassword] = useState("")
   const [trialDialog, setTrialDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
@@ -226,15 +234,61 @@ export default function SuperAdminPanel() {
     }
   }
 
+  // Search also matches sub-user names/emails
   const filtered = admins.filter(a => {
     if (!search) return true
-    return searchMatch(a.display_name, search) || searchMatch(a.email, search)
+    if (searchMatch(a.display_name, search) || searchMatch(a.email, search)) return true
+    return a.sub_users?.some(su => searchMatch(su.display_name, search) || searchMatch(su.email, search))
   })
 
   const totalAdmins = admins.length
   const activeAdmins = admins.filter(a => a.account_status === 'active' || a.is_permanent).length
   const trialAdmins = admins.filter(a => a.account_status === 'trial').length
   const disabledAdmins = admins.filter(a => a.account_status === 'disabled').length
+
+  const StatCell = ({ metric, icon: Icon }: { metric: StatMetric; icon: any }) => (
+    <div className="flex items-center justify-center gap-1.5">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="font-medium">{metric.total}</span>
+      {metric.recent > 0 && (
+        <span className="text-xs text-emerald-500">+{metric.recent}</span>
+      )}
+    </div>
+  )
+
+  const renderDropdown = (admin: AdminWithStats) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
+          <Key className="h-4 w-4 mr-2" /> Alterar senha
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
+          <Clock className="h-4 w-4 mr-2" /> Período teste
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
+          <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {admin.account_status === 'disabled' ? (
+          <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
+            <Shield className="h-4 w-4 mr-2" /> Reabilitar
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => handleDisable(admin.user_id)} className="text-destructive">
+            <XCircle className="h-4 w-4 mr-2" /> Desabilitar
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: admin.user_id, email: admin.email || '' })} className="text-destructive">
+          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -260,13 +314,7 @@ export default function SuperAdminPanel() {
               <Label className="text-sm font-medium whitespace-nowrap">Dias de teste para novos cadastros:</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                value={defaultTrialDays}
-                onChange={(e) => setDefaultTrialDays(e.target.value)}
-                className="w-20 h-9"
-                min="1"
-              />
+              <Input type="number" value={defaultTrialDays} onChange={(e) => setDefaultTrialDays(e.target.value)} className="w-20 h-9" min="1" />
               <Button size="sm" onClick={saveDefaultTrialDays} disabled={savingSettings}>
                 {savingSettings ? "Salvando..." : "Salvar"}
               </Button>
@@ -307,7 +355,7 @@ export default function SuperAdminPanel() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar administrador..."
+          placeholder="Buscar admin ou sub-usuário..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
@@ -332,71 +380,63 @@ export default function SuperAdminPanel() {
                   <TableHead className="text-center">Usuários</TableHead>
                   <TableHead className="text-center">Clientes</TableHead>
                   <TableHead className="text-center">Senhas</TableHead>
+                  <TableHead className="text-center">Manutenções</TableHead>
+                  <TableHead className="text-center">Empresas</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((admin) => (
-                  <TableRow key={admin.user_id} className="border-border/30 hover:bg-muted/30">
-                    <TableCell className="font-medium">{admin.display_name || '—'}</TableCell>
-                    <TableCell>{admin.email || '—'}</TableCell>
-                    <TableCell>{getStatusBadge(admin)}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">{admin.stats.usuarios}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">{admin.stats.clientes}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">{admin.stats.senhas}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(admin.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
-                            <Key className="h-4 w-4 mr-2" /> Alterar senha
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
-                            <Clock className="h-4 w-4 mr-2" /> Configurar período teste
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
-                            <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {admin.account_status === 'disabled' ? (
-                            <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
-                              <Shield className="h-4 w-4 mr-2" /> Reabilitar conta
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onClick={() => handleDisable(admin.user_id)} className="text-destructive">
-                              <XCircle className="h-4 w-4 mr-2" /> Desabilitar
-                            </DropdownMenuItem>
+                  <>
+                    <TableRow key={admin.user_id} className="border-border/30 hover:bg-muted/30">
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{admin.display_name || '—'}</span>
+                          {admin.sub_users?.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => setExpandedAdmin(expandedAdmin === admin.user_id ? null : admin.user_id)}
+                            >
+                              {expandedAdmin === admin.user_id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                            </Button>
                           )}
-                          <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: admin.user_id, email: admin.email || '' })} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir conta
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                        </div>
+                      </TableCell>
+                      <TableCell>{admin.email || '—'}</TableCell>
+                      <TableCell>{getStatusBadge(admin)}</TableCell>
+                      <TableCell className="text-center"><StatCell metric={admin.stats.usuarios} icon={Users} /></TableCell>
+                      <TableCell className="text-center"><StatCell metric={admin.stats.clientes} icon={Building2} /></TableCell>
+                      <TableCell className="text-center"><StatCell metric={admin.stats.senhas} icon={KeyRound} /></TableCell>
+                      <TableCell className="text-center"><StatCell metric={admin.stats.manutencoes} icon={Wrench} /></TableCell>
+                      <TableCell className="text-center"><StatCell metric={admin.stats.empresas} icon={Building2} /></TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format(new Date(admin.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {renderDropdown(admin)}
+                      </TableCell>
+                    </TableRow>
+                    {expandedAdmin === admin.user_id && admin.sub_users?.length > 0 && (
+                      <TableRow key={`${admin.user_id}-subs`} className="bg-muted/20">
+                        <TableCell colSpan={10}>
+                          <div className="py-2 px-4">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Sub-usuários ({admin.sub_users.length})</p>
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                              {admin.sub_users.map((su, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-background/60">
+                                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  <span className="truncate">{su.display_name || su.email || '—'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 ))}
               </TableBody>
             </Table>
@@ -424,64 +464,57 @@ export default function SuperAdminPanel() {
                         </div>
                       )}
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
-                          <Key className="h-4 w-4 mr-2" /> Alterar senha
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
-                          <Clock className="h-4 w-4 mr-2" /> Período teste
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {admin.account_status === 'disabled' ? (
-                          <DropdownMenuItem onClick={() => handleEnable(admin.user_id)}>
-                            <Shield className="h-4 w-4 mr-2" /> Reabilitar
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem onClick={() => handleDisable(admin.user_id)} className="text-destructive">
-                            <XCircle className="h-4 w-4 mr-2" /> Desabilitar
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, userId: admin.user_id, email: admin.email || '' })} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {renderDropdown(admin)}
                   </div>
 
-                  {/* Stats row */}
+                  {/* Stats grid */}
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
-                      <Users className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium">{admin.stats.usuarios}</span>
-                      <span className="text-xs text-muted-foreground">usuários</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium">{admin.stats.clientes}</span>
-                      <span className="text-xs text-muted-foreground">clientes</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-sm bg-muted/30 rounded-lg px-2.5 py-1.5">
-                      <KeyRound className="h-3.5 w-3.5 text-primary" />
-                      <span className="font-medium">{admin.stats.senhas}</span>
-                      <span className="text-xs text-muted-foreground">senhas</span>
-                    </div>
+                    {[
+                      { label: 'usuários', metric: admin.stats.usuarios, icon: Users },
+                      { label: 'clientes', metric: admin.stats.clientes, icon: Building2 },
+                      { label: 'senhas', metric: admin.stats.senhas, icon: KeyRound },
+                      { label: 'manutenções', metric: admin.stats.manutencoes, icon: Wrench },
+                      { label: 'empresas', metric: admin.stats.empresas, icon: Building2 },
+                    ].map(({ label, metric, icon: Icon }) => (
+                      <div key={label} className="flex items-center gap-1 text-sm bg-muted/30 rounded-lg px-2 py-1.5">
+                        <Icon className="h-3 w-3 text-primary shrink-0" />
+                        <span className="font-medium">{metric.total}</span>
+                        {metric.recent > 0 && <span className="text-[10px] text-emerald-500">+{metric.recent}</span>}
+                        <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {getStatusBadge(admin)}
+                    {admin.sub_users?.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setExpandedAdmin(expandedAdmin === admin.user_id ? null : admin.user_id)}
+                      >
+                        <Users className="h-3 w-3 mr-1" />
+                        {admin.sub_users.length} sub-usuários
+                        {expandedAdmin === admin.user_id ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                      </Button>
+                    )}
                     <span className="text-xs text-muted-foreground ml-auto">
                       {format(new Date(admin.created_at), "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                   </div>
+
+                  {expandedAdmin === admin.user_id && admin.sub_users?.length > 0 && (
+                    <div className="border-t border-border/50 pt-2 space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Sub-usuários</p>
+                      {admin.sub_users.map((su, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
+                          <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="truncate">{su.display_name || su.email || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

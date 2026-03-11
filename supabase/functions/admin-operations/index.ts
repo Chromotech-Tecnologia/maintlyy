@@ -27,7 +27,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Use service role client for auth validation to avoid RLS issues
     const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -41,7 +40,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid authorization' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Check admin or super admin using service role
     const { data: profile, error: profileError } = await supabaseAuth
       .from('user_profiles')
       .select('is_admin, is_super_admin')
@@ -55,7 +53,6 @@ serve(async (req) => {
     const body: AdminOperationRequest = await req.json()
     const isSuperAdmin = profile?.is_super_admin === true
 
-    // Operations that require super admin
     const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats']
     if (superAdminOps.includes(body.operation) && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Only super admins can perform this operation' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -119,7 +116,6 @@ serve(async (req) => {
           return new Response(JSON.stringify({ error: 'Failed to update profile: ' + updateError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
         
-        // Unban if was banned
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
         break
       }
@@ -143,7 +139,6 @@ serve(async (req) => {
       }
 
       case 'getAdminStats': {
-        // Get all admin profiles (is_admin = true, not super_admin)
         const { data: adminProfiles } = await supabaseAdmin
           .from('user_profiles')
           .select('user_id, display_name, email, phone, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent, created_at')
@@ -152,35 +147,62 @@ serve(async (req) => {
 
         const admins = (adminProfiles || []).filter(a => !a.is_super_admin)
         
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        const sevenDaysAgoISO = sevenDaysAgo.toISOString()
+
         const statsPromises = admins.map(async (admin) => {
-          const [usersRes, clientsRes, senhasRes] = await Promise.all([
-            supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }).neq('user_id', admin.user_id).eq('is_admin', false),
-            supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
-            supabaseAdmin.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
-          ])
-          
-          // Count sub-users: profiles that have a permission_profile owned by this admin
+          // Get permission profiles owned by this admin
           const { data: adminPermProfiles } = await supabaseAdmin
             .from('permission_profiles')
             .select('id')
             .eq('user_id', admin.user_id)
           
           const profileIds = (adminPermProfiles || []).map(p => p.id)
+          
+          // Count sub-users
           let subUserCount = 0
+          let subUserRecent = 0
+          const subUsers: { display_name: string | null; email: string | null }[] = []
+          
           if (profileIds.length > 0) {
-            const { count } = await supabaseAdmin
+            const { data: subUserData, count } = await supabaseAdmin
               .from('user_profiles')
-              .select('id', { count: 'exact', head: true })
+              .select('display_name, email, created_at', { count: 'exact' })
               .in('permission_profile_id', profileIds)
-          subUserCount = count || 0
+            subUserCount = count || 0
+            
+            if (subUserData) {
+              subUsers.push(...subUserData.map(u => ({ display_name: u.display_name, email: u.email })))
+              subUserRecent = subUserData.filter(u => u.created_at >= sevenDaysAgoISO).length
+            }
           }
+          
+          // Also count orphan users (no permission_profile_id, not admin, not super_admin)
+          // We can't easily determine which admin created them without a created_by field
+          // So we only count users linked via permission profiles
+
+          // Count other stats with total + recent
+          const [clientsRes, clientsRecentRes, senhasRes, senhasRecentRes, manutRes, manutRecentRes, empresasRes, empresasRecentRes] = await Promise.all([
+            supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+            supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id).gte('created_at', sevenDaysAgoISO),
+            supabaseAdmin.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+            supabaseAdmin.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id).gte('created_at', sevenDaysAgoISO),
+            supabaseAdmin.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+            supabaseAdmin.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id).gte('created_at', sevenDaysAgoISO),
+            supabaseAdmin.from('empresas_terceiras').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
+            supabaseAdmin.from('empresas_terceiras').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id).gte('created_at', sevenDaysAgoISO),
+          ])
 
           return {
             ...admin,
+            sub_users: subUsers,
             stats: {
-              usuarios: subUserCount,
-              clientes: clientsRes.count || 0,
-              senhas: senhasRes.count || 0,
+              usuarios: { total: subUserCount, recent: subUserRecent },
+              clientes: { total: clientsRes.count || 0, recent: clientsRecentRes.count || 0 },
+              senhas: { total: senhasRes.count || 0, recent: senhasRecentRes.count || 0 },
+              manutencoes: { total: manutRes.count || 0, recent: manutRecentRes.count || 0 },
+              empresas: { total: empresasRes.count || 0, recent: empresasRecentRes.count || 0 },
             }
           }
         })
