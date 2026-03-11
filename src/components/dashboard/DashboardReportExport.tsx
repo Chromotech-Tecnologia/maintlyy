@@ -396,20 +396,20 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               )}
             </div>
 
-            {/* Total Horas e Manutenções por Empresa - full width */}
+            {/* Total Horas e Manutenções por Cliente - full width */}
             {(() => {
-              const empresaChartData = filters.empresas.map(emp => {
-                const empManutencoes = allManutencoes.filter(m => m.empresa_terceira_id === emp.id)
-                const totalHoras = Math.round(empManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
-                return { name: emp.nome_empresa, manutenções: empManutencoes.length, horas: totalHoras }
+              const clienteChartData = filters.clientes.map(cli => {
+                const cliManutencoes = allManutencoes.filter(m => m.cliente_id === cli.id)
+                const totalHoras = Math.round(cliManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
+                return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHoras }
               }).filter(e => e.manutenções > 0)
               
-              return empresaChartData.length > 0 ? (
+              return clienteChartData.length > 0 ? (
                 <div className="mb-8">
                   <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4">🏢 Total de Horas e Manutenções por Empresa</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">👤 Total de Horas e Manutenções por Cliente</h3>
                     <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={empresaChartData}>
+                      <BarChart data={clienteChartData}>
                         <defs>
                           <linearGradient id="barGradEmp1" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
