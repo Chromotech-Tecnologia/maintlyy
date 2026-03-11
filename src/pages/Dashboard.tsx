@@ -4,10 +4,12 @@ import { ChartCard } from "@/components/dashboard/ChartCard"
 import { DashboardReportExport } from "@/components/dashboard/DashboardReportExport"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts"
 import { 
-  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown
+  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
@@ -58,6 +60,11 @@ export default function Dashboard() {
   const [filterCliente, setFilterCliente] = useState("todos")
   const [filterEquipe, setFilterEquipe] = useState("todos")
   const [filterTipo, setFilterTipo] = useState("todos")
+  const [filterDataInicio, setFilterDataInicio] = useState("")
+  const [filterDataFim, setFilterDataFim] = useState("")
+  const [searchCliente, setSearchCliente] = useState("")
+  const [searchEquipe, setSearchEquipe] = useState("")
+  const [searchTipo, setSearchTipo] = useState("")
   const [reportOpen, setReportOpen] = useState(false)
   const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
@@ -110,8 +117,40 @@ export default function Dashboard() {
       if (filterCliente !== "todos" && m.cliente_id !== filterCliente) return false
       if (filterEquipe !== "todos" && m.equipe_id !== filterEquipe) return false
       if (filterTipo !== "todos" && m.tipo_manutencao_id !== filterTipo) return false
+      if (filterDataInicio && m.data_inicio < filterDataInicio) return false
+      if (filterDataFim && m.data_inicio > filterDataFim) return false
       return true
     })
+
+    const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim
+
+    // Recompute stats from filtered data
+    if (hasFilters) {
+      const totalHoras = filtered.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      const uniqueClientes = new Set(filtered.map(m => m.cliente_id))
+      const pendentes = filtered.filter(m => m.status === 'Em andamento')
+      setStats(prev => ({
+        ...prev,
+        totalManutencoes: filtered.length,
+        totalClientes: uniqueClientes.size,
+        manutencoesPendentes: pendentes.length,
+        totalHoras: Math.round(totalHoras / 60),
+      }))
+    } else {
+      // Reset to original counts from DB
+      const totalHoras = allManutencoes.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      setStats(prev => ({
+        ...prev,
+        totalManutencoes: allManutencoes.length,
+        manutencoesPendentes: allManutencoes.filter(m => m.status === 'Em andamento').length,
+        totalHoras: Math.round(totalHoras / 60),
+      }))
+    }
+
+    // Update recent list from filtered
+    setRecentManutencoes(
+      [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+    )
 
     // Monthly chart
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
@@ -163,7 +202,7 @@ export default function Dashboard() {
       weeks.push({ name: `S${8 - w}`, value: count })
     }
     setWeeklyData(weeks)
-  }, [allManutencoes, filterCliente, filterEquipe, filterTipo])
+  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -214,32 +253,104 @@ export default function Dashboard() {
       {/* Filters */}
       <Card className="glass-card border-0">
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filtros</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros</span>
+              {(filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim) && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Ativos</span>
+              )}
+            </div>
+            {(filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim) && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
+                setFilterCliente("todos"); setFilterEquipe("todos"); setFilterTipo("todos")
+                setFilterDataInicio(""); setFilterDataFim("")
+              }}>
+                <X className="h-3 w-3 mr-1" /> Limpar
+              </Button>
+            )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select value={filterCliente} onValueChange={setFilterCliente}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Cliente" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os clientes</SelectItem>
-                {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterEquipe} onValueChange={setFilterEquipe}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Equipe" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas as equipes</SelectItem>
-                {equipes.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_equipe}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterTipo} onValueChange={setFilterTipo}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Tipo" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os tipos</SelectItem>
-                {tipos.map(t => <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Cliente</Label>
+              <Select value={filterCliente} onValueChange={setFilterCliente}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Cliente" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Buscar..."
+                        value={searchCliente}
+                        onChange={e => setSearchCliente(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                  <SelectItem value="todos">Todos os clientes</SelectItem>
+                  {clientes.filter(c => !searchCliente || c.nome_cliente?.toLowerCase().includes(searchCliente.toLowerCase())).map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Equipe</Label>
+              <Select value={filterEquipe} onValueChange={setFilterEquipe}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Equipe" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Buscar..."
+                        value={searchEquipe}
+                        onChange={e => setSearchEquipe(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                  <SelectItem value="todos">Todas as equipes</SelectItem>
+                  {equipes.filter(e => !searchEquipe || e.nome_equipe?.toLowerCase().includes(searchEquipe.toLowerCase())).map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.nome_equipe}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Tipo</Label>
+              <Select value={filterTipo} onValueChange={setFilterTipo}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Buscar..."
+                        value={searchTipo}
+                        onChange={e => setSearchTipo(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                  <SelectItem value="todos">Todos os tipos</SelectItem>
+                  {tipos.filter(t => !searchTipo || t.nome_tipo_manutencao?.toLowerCase().includes(searchTipo.toLowerCase())).map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Data Início</Label>
+              <Input type="date" className="h-9" value={filterDataInicio} onChange={e => setFilterDataInicio(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Data Fim</Label>
+              <Input type="date" className="h-9" value={filterDataFim} onChange={e => setFilterDataFim(e.target.value)} />
+            </div>
           </div>
         </CardContent>
       </Card>
