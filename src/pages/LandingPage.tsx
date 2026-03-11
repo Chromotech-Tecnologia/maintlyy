@@ -153,7 +153,7 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
+              <p className="text-lg sm:text-xl text-foreground/70 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed">
                 Controle manutenções, equipes, senhas e relatórios em uma plataforma
                 <strong className="text-foreground"> profissional, segura</strong> e fácil de usar.
               </p>
@@ -172,7 +172,7 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              <p className="text-xs text-muted-foreground mt-4">
+              <p className="text-xs text-foreground/50 mt-4">
                 ✓ Sem cartão de crédito &nbsp;&nbsp; ✓ Configuração em 2 minutos &nbsp;&nbsp; ✓ Cancele quando quiser
               </p>
             </div>
@@ -281,7 +281,7 @@ export default function LandingPage() {
               Tudo que você precisa
               <span className="block text-primary mt-1">em um só lugar</span>
             </h2>
-            <p className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto">
+            <p className="text-foreground/60 mt-4 text-lg max-w-2xl mx-auto">
               Uma plataforma completa para gestão de manutenções, segurança da informação e colaboração da equipe.
             </p>
           </div>
@@ -302,7 +302,7 @@ export default function LandingPage() {
                   <f.icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <h3 className="text-lg font-display font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                <p className="text-sm text-foreground/60 leading-relaxed">{f.desc}</p>
                 <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                   Saiba mais <ChevronRight className="h-4 w-4" />
                 </div>
@@ -412,13 +412,13 @@ export default function LandingPage() {
           <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">
             Estamos sempre criando novas funcionalidades
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
+          <p className="text-foreground/60 text-lg max-w-2xl mx-auto mb-8">
             Nossa equipe trabalha continuamente para trazer novas ferramentas e melhorias.
             Você sempre terá acesso às últimas inovações.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {["Relatórios PDF", "Cofre Avançado", "Multi-Empresa", "Perfis de Permissão", "Importação Excel", "Links Públicos"].map((feat) => (
-              <span key={feat} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary border border-primary/15">
+              <span key={feat} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                 <CheckCircle2 className="h-3 w-3" />
                 {feat}
               </span>
@@ -688,10 +688,10 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
 
             <div className="overflow-hidden">
               <div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out items-stretch"
               >
                 {visiblePlans.map((plan) => (
-                  <div key={plan.id} className="animate-fade-in">
+                  <div key={plan.id} className="animate-fade-in flex">
                     <PlanCard plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
                   </div>
                 ))}
@@ -723,8 +723,8 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
 function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
   return (
     <div
-      className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
-        plan.destaque ? "ring-2 ring-primary shadow-lg scale-[1.02]" : ""
+      className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
+        plan.destaque ? "ring-2 ring-primary shadow-lg" : ""
       }`}
     >
       {plan.destaque && (
@@ -739,7 +739,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
       )}
       <div className="mb-4 mt-1">
         <h4 className="text-lg font-display font-bold text-foreground">{plan.nome}</h4>
-        {plan.descricao && <p className="text-sm text-muted-foreground mt-1">{plan.descricao}</p>}
+        {plan.descricao && <p className="text-sm text-foreground/60 mt-1">{plan.descricao}</p>}
       </div>
       <div className="mb-5">
         {plan.preco ? (
@@ -750,7 +750,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
             <span className="text-sm text-muted-foreground ml-2">por {trialDays} dias</span>
           </div>
         )}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-foreground/50">
           {plan.max_usuarios > 0 && <span>👤 {plan.max_usuarios === 999 ? "Ilimitados" : `Até ${plan.max_usuarios}`} usuário{plan.max_usuarios > 1 ? "s" : ""}</span>}
           {plan.max_empresas > 0 && <span>🏢 {plan.max_empresas === 999 ? "Ilimitadas" : `Até ${plan.max_empresas}`} empresa{plan.max_empresas > 1 ? "s" : ""}</span>}
           {plan.max_manutencoes > 0 && <span>🔧 {plan.max_manutencoes}/mês</span>}
@@ -765,17 +765,19 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
           </li>
         ))}
       </ul>
-      <div className="mt-6 pt-4 border-t border-border/30">
-        <Button
-          onClick={onClick}
-          className={`w-full font-semibold ${
-            plan.destaque 
-              ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
-              : "bg-foreground text-background hover:bg-foreground/90"
-          }`}
-        >
-          {plan.texto_botao}
-        </Button>
+      <div className="mt-auto pt-6">
+        <div className="border-t border-border/30 pt-4">
+          <Button
+            onClick={onClick}
+            className={`w-full font-semibold h-11 ${
+              plan.destaque 
+                ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
+                : "bg-foreground text-background hover:bg-foreground/90"
+            }`}
+          >
+            {plan.texto_botao}
+          </Button>
+        </div>
       </div>
     </div>
   )
