@@ -684,7 +684,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
             </div>
           </div>
         ) : (
-          <div className="relative px-8 sm:px-12">
+          <div className="relative px-6 sm:px-12">
             {/* Navigation arrows */}
             {plans.length > maxVisible && (
               <>
