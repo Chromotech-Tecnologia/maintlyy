@@ -701,6 +701,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_owns_user: {
+        Args: { _admin_id: string; _target_user_id: string }
+        Returns: boolean
+      }
       has_system_permission: {
         Args: { _permission: string; _resource: string; _user_id: string }
         Returns: boolean
