@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { FileDown, Image, FileText, Loader2, Link2, Copy, Check, History } from "lucide-react"
+import { FileDown, Loader2, History } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList
