@@ -33,6 +33,9 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
+  const [emailExists, setEmailExists] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
