@@ -246,6 +246,7 @@ export default function SuperAdminPanel() {
         }
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Teste</Badge>
       }
+      case 'cancelled': return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Cancelado</Badge>
       case 'disabled': return <Badge variant="destructive">Desabilitado</Badge>
       case 'expired': return <Badge variant="destructive">Expirado</Badge>
       default: return <Badge variant="secondary">{status}</Badge>
