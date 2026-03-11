@@ -115,8 +115,40 @@ export default function Dashboard() {
       if (filterCliente !== "todos" && m.cliente_id !== filterCliente) return false
       if (filterEquipe !== "todos" && m.equipe_id !== filterEquipe) return false
       if (filterTipo !== "todos" && m.tipo_manutencao_id !== filterTipo) return false
+      if (filterDataInicio && m.data_inicio < filterDataInicio) return false
+      if (filterDataFim && m.data_inicio > filterDataFim) return false
       return true
     })
+
+    const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterDataInicio || filterDataFim
+
+    // Recompute stats from filtered data
+    if (hasFilters) {
+      const totalHoras = filtered.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      const uniqueClientes = new Set(filtered.map(m => m.cliente_id))
+      const pendentes = filtered.filter(m => m.status === 'Em andamento')
+      setStats(prev => ({
+        ...prev,
+        totalManutencoes: filtered.length,
+        totalClientes: uniqueClientes.size,
+        manutencoesPendentes: pendentes.length,
+        totalHoras: Math.round(totalHoras / 60),
+      }))
+    } else {
+      // Reset to original counts from DB
+      const totalHoras = allManutencoes.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      setStats(prev => ({
+        ...prev,
+        totalManutencoes: allManutencoes.length,
+        manutencoesPendentes: allManutencoes.filter(m => m.status === 'Em andamento').length,
+        totalHoras: Math.round(totalHoras / 60),
+      }))
+    }
+
+    // Update recent list from filtered
+    setRecentManutencoes(
+      [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+    )
 
     // Monthly chart
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
@@ -168,7 +200,7 @@ export default function Dashboard() {
       weeks.push({ name: `S${8 - w}`, value: count })
     }
     setWeeklyData(weeks)
-  }, [allManutencoes, filterCliente, filterEquipe, filterTipo])
+  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
