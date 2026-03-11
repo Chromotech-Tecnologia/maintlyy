@@ -373,7 +373,7 @@ export default function PerfilUsuarios() {
       </div>
 
       <div className="grid gap-4">
-        {profiles.map((profile) => {
+        {sortedProfiles.map((profile) => {
           const assignedProfile = getProfileName(profile.permission_profile_id)
           
           return (
