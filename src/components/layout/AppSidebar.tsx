@@ -29,6 +29,7 @@ const securityItems = [
 const getSystemItems = (isAdmin: boolean) => {
   const items = [
     { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings },
+    { title: "Assinatura", url: "/assinaturas", icon: CreditCard },
   ]
   if (isAdmin) {
     items.push({ title: "Perfil", url: "/permissoes", icon: Shield })

@@ -43,6 +43,7 @@ export function MobileNav() {
 
   const systemItems = [
     { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings, section: "Sistema" },
+    { title: "Assinatura", url: "/assinaturas", icon: CreditCard, section: "Sistema" },
     ...(isAdmin ? [{ title: "Perfil de Permissões", url: "/permissoes", icon: Shield, section: "Sistema" }] : []),
     ...(isSuperAdmin ? [{ title: "Painel Admin", url: "/super-admin", icon: Crown, section: "Administração" }] : []),
   ]
