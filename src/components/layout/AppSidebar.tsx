@@ -83,10 +83,10 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "group relative flex items-center gap-3 rounded-r-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+      "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
       isActive 
-        ? "bg-primary/15 text-primary font-semibold border-l-[3px] border-l-primary dark:bg-primary/20" 
-        : "text-sidebar-foreground hover:bg-sidebar-accent/60 border-l-[3px] border-l-transparent"
+        ? "gradient-primary text-primary-foreground shadow-md" 
+        : "text-foreground hover:bg-muted"
     )
 
   const renderSection = (label: string, items: typeof mainItems) => (
