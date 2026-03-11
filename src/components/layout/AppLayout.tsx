@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { AppFooter } from "./AppFooter"
+import { TrialBanner } from "@/components/TrialBanner"
 
 interface AppLayoutProps {
   children: React.ReactNode
