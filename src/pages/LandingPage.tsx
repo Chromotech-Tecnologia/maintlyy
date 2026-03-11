@@ -765,17 +765,19 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
           </li>
         ))}
       </ul>
-      <div className="mt-6 pt-4 border-t border-border/30">
-        <Button
-          onClick={onClick}
-          className={`w-full font-semibold ${
-            plan.destaque 
-              ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
-              : "bg-foreground text-background hover:bg-foreground/90"
-          }`}
-        >
-          {plan.texto_botao}
-        </Button>
+      <div className="mt-auto pt-6">
+        <div className="border-t border-border/30 pt-4">
+          <Button
+            onClick={onClick}
+            className={`w-full font-semibold h-11 ${
+              plan.destaque 
+                ? "gradient-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/40" 
+                : "bg-foreground text-background hover:bg-foreground/90"
+            }`}
+          >
+            {plan.texto_botao}
+          </Button>
+        </div>
       </div>
     </div>
   )
