@@ -294,11 +294,24 @@ export default function SuperAdminPanel() {
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
+      {/* Tabs */}
+      <Tabs defaultValue="admins" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="admins" className="gap-1.5">
+            <Crown className="h-4 w-4" /> Administradores
+          </TabsTrigger>
+          <TabsTrigger value="planos" className="gap-1.5">
+            <CreditCard className="h-4 w-4" /> Planos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="admins" className="space-y-6">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-500/10">
-            <Crown className="h-6 w-6 text-purple-400" />
+          <div className="p-2.5 rounded-xl bg-primary/10">
+            <Crown className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold font-display">Painel Super Admin</h1>
