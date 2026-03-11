@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
-import { Eye, EyeOff, Phone, User, Mail, Lock, CheckCircle2 } from "lucide-react"
+import { Eye, EyeOff, Phone, User, Mail, Lock, CheckCircle2, ArrowLeft } from "lucide-react"
 import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 import { AppFooter } from "@/components/layout/AppFooter"
 
