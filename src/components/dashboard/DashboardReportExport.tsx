@@ -438,33 +438,6 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               </div>
             )}
 
-            {/* Monthly Summary Table */}
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">📊 Resumo Mensal</h3>
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="text-left p-2 border border-gray-200 font-semibold">Mês</th>
-                    <th className="text-center p-2 border border-gray-200 font-semibold">Manutenções</th>
-                    <th className="text-center p-2 border border-gray-200 font-semibold">Horas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.chartData.filter(d => d.manutenções > 0 || d.horas > 0).map((d, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="p-2 border border-gray-200 capitalize">{d.name}</td>
-                      <td className="p-2 border border-gray-200 text-center font-medium">{d.manutenções}</td>
-                      <td className="p-2 border border-gray-200 text-center font-medium">{d.horas}h</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-gray-100 font-bold">
-                    <td className="p-2 border border-gray-200">Total</td>
-                    <td className="p-2 border border-gray-200 text-center">{data.chartData.reduce((s, d) => s + d.manutenções, 0)}</td>
-                    <td className="p-2 border border-gray-200 text-center">{data.chartData.reduce((s, d) => s + d.horas, 0)}h</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
 
             {/* Detailed Analytical Table */}
             <div className="mb-8">
