@@ -177,6 +177,22 @@ export default function PerfilUsuarios() {
     e.preventDefault()
     
     try {
+      // Validate email uniqueness within tenant
+      const existingUser = profiles.find(p => p.email === newUserData.email)
+      if (existingUser) {
+        toast.error('Este email já está cadastrado neste tenant.')
+        setEmailError('Email já cadastrado')
+        return
+      }
+
+      if (!isPasswordValid(newUserData.password)) {
+        toast.error('A senha não atende aos requisitos mínimos')
+        return
+      }
+      if (newUserData.password !== newUserData.confirmPassword) {
+        toast.error('As senhas não coincidem')
+        return
+      }
       const { data, error: authError } = await supabase.auth.signUp({
         email: newUserData.email,
         password: newUserData.password,
