@@ -46,8 +46,6 @@ export default function PerfilUsuarios() {
   const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false)
   const [newUserData, setNewUserData] = useState({
     email: "",
-    password: "",
-    confirmPassword: "",
     display_name: "",
     is_admin: false,
     permission_profile_id: ""
