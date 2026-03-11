@@ -109,6 +109,24 @@ export default function Clientes() {
     fetchData()
   }, [user])
 
+  const uploadLogo = async (clienteId: string): Promise<string | null> => {
+    if (!logoFile) return null
+    const ext = logoFile.name.split('.').pop()
+    const path = `${user!.id}/${clienteId}.${ext}`
+    const { error } = await supabase.storage.from('client-logos').upload(path, logoFile, { upsert: true })
+    if (error) throw error
+    const { data: { publicUrl } } = supabase.storage.from('client-logos').getPublicUrl(path)
+    return publicUrl
+  }
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      setLogoPreview(URL.createObjectURL(file))
+    }
+  }
+
   const handleSubmit = async (data: ClienteFormData) => {
     if (!user) return
 
@@ -120,25 +138,38 @@ export default function Clientes() {
     try {
       const sanitizedData = sanitizeFormData(data)
       if (editingId) {
+        let logoUrl: string | null = null
+        if (logoFile) logoUrl = await uploadLogo(editingId)
+        const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
         const { error } = await supabase
           .from('clientes')
-          .update(sanitizedData)
+          .update(updateData)
           .eq('id', editingId)
           .eq('user_id', user.id)
 
         if (error) throw error
         toast.success("Cliente atualizado com sucesso!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('clientes')
           .insert([{ ...sanitizedData, user_id: user.id }])
+          .select('id')
+          .single()
 
         if (error) throw error
+        if (logoFile && inserted) {
+          const logoUrl = await uploadLogo(inserted.id)
+          if (logoUrl) {
+            await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
+          }
+        }
         toast.success("Cliente criado com sucesso!")
       }
 
       setOpen(false)
       setEditingId(null)
+      setLogoFile(null)
+      setLogoPreview(null)
       form.reset()
       fetchData()
     } catch (error: any) {
