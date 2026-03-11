@@ -110,12 +110,12 @@ export default function LandingPage() {
             <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
             <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planos</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="text-white hover:text-white">Entrar</Button>
+              <Button variant="ghost" size="sm" className="text-white hover:text-white text-xs sm:text-sm px-2 sm:px-3">Entrar</Button>
             </Link>
             <Link to="/login">
-              <Button size="sm" className="gradient-primary text-white shadow-md">
+              <Button size="sm" className="gradient-primary text-white shadow-md text-xs sm:text-sm px-3 sm:px-4">
                 Começar Grátis
               </Button>
             </Link>
