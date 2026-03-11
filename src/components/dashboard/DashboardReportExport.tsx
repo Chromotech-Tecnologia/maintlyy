@@ -431,7 +431,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                           <td className="p-2 border border-gray-200 text-center">{d.getFullYear()}</td>
                           <td className="p-2 border border-gray-200 text-center">{d.toLocaleDateString('pt-BR')}</td>
                           <td className="p-2 border border-gray-200 text-center">{horas}h{mins > 0 ? `${mins}m` : ''}</td>
-                          <td className="p-2 border border-gray-200 max-w-[200px] truncate">{m.descricao || '—'}</td>
+                          <td className="p-2 border border-gray-200 whitespace-pre-wrap break-words">{m.descricao || '—'}</td>
                           <td className="p-2 border border-gray-200 text-center">{m.status || 'Em andamento'}</td>
                         </tr>
                       )
