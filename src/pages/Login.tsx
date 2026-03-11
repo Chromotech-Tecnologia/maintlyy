@@ -79,23 +79,21 @@ export default function Login() {
     }
   }
 
-  const handleSignUp = async (data: SignupFormData) => {
-    const result = signupSchema.safeParse(data)
-    if (!result.success) {
-      const issues = result.error.issues || []
-      for (const issue of issues) {
-        const field = issue.path?.[0] as keyof SignupFormData | undefined
-        if (field) {
-          signupForm.setError(field, { message: issue.message })
-        }
-      }
+  const handleSignUp = async (data: any) => {
+    if (!data.display_name || !data.email || !data.phone) {
+      toast.error("Preencha todos os campos obrigatórios")
       return
     }
-
-    // Already checked in real-time, but double-check
+    if (!isValidEmail(data.email)) {
+      toast.error("Email inválido")
+      return
+    }
     if (emailExists) return
 
-    const signUpResult = await signUp(data.email, data.password, data.display_name, data.phone)
+    // Generate a random temporary password (user will set their own via email)
+    const tempPassword = crypto.randomUUID() + 'A1!'
+
+    const signUpResult = await signUp(data.email, tempPassword, data.display_name, data.phone)
 
     if (signUpResult.error) {
       const msg = signUpResult.error.message || ""
@@ -104,10 +102,12 @@ export default function Login() {
       } else {
         toast.error(msg || "Erro ao criar conta")
       }
-    } else if (signUpResult.needsConfirmation) {
-      toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
-      toast.success("Cadastro realizado! Você tem 7 dias de teste gratuito.")
+      // Send password reset email so user can set their own password
+      await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      setSignupSuccess(true)
     }
   }
 
