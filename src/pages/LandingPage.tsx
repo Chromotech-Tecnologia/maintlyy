@@ -613,10 +613,15 @@ function TestimonialsSection() {
 }
 
 function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
-  const [page, setPage] = useState(0)
-  const perPage = 3
-  const totalPages = Math.ceil(plans.length / perPage)
-  const visiblePlans = plans.slice(page * perPage, page * perPage + perPage)
+  const [startIndex, setStartIndex] = useState(0)
+  const maxVisible = 3
+  const canGoLeft = startIndex > 0
+  const canGoRight = startIndex + maxVisible < plans.length
+
+  const goLeft = () => setStartIndex(i => Math.max(0, i - 1))
+  const goRight = () => setStartIndex(i => Math.min(plans.length - maxVisible, i + 1))
+
+  const visiblePlans = plans.slice(startIndex, startIndex + maxVisible)
 
   return (
     <section id="planos" className="py-20 sm:py-28 px-4 sm:px-6 bg-muted/30 scroll-mt-20">
@@ -652,41 +657,50 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
             </div>
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative px-8 sm:px-12">
             {/* Navigation arrows */}
-            {totalPages > 1 && (
+            {plans.length > maxVisible && (
               <>
                 <button
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-md"
+                  onClick={goLeft}
+                  disabled={!canGoLeft}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-all duration-300 disabled:opacity-20 disabled:cursor-not-allowed shadow-md"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                  disabled={page === totalPages - 1}
-                  className="absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-md"
+                  onClick={goRight}
+                  disabled={!canGoRight}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full glass-card border border-border/60 flex items-center justify-center text-foreground hover:bg-primary/10 transition-all duration-300 disabled:opacity-20 disabled:cursor-not-allowed shadow-md"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </>
             )}
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {visiblePlans.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
-              ))}
+            <div className="overflow-hidden">
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ease-in-out"
+              >
+                {visiblePlans.map((plan) => (
+                  <div key={plan.id} className="animate-fade-in">
+                    <PlanCard plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Page dots */}
-            {totalPages > 1 && (
+            {/* Indicator dots */}
+            {plans.length > maxVisible && (
               <div className="flex items-center justify-center gap-2 mt-8">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
+                {plans.map((_, i) => (
+                  <div
                     key={i}
-                    onClick={() => setPage(i)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${i === page ? "bg-primary w-6" : "bg-border hover:bg-muted-foreground/40"}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i >= startIndex && i < startIndex + maxVisible
+                        ? "w-6 bg-primary"
+                        : "w-1.5 bg-border"
+                    }`}
                   />
                 ))}
               </div>
