@@ -100,6 +100,8 @@ export default function CofreSenhas() {
   const [selectedPasswordsForExport, setSelectedPasswordsForExport] = useState<Set<string>>(new Set())
   const [selectedClientsForExport, setSelectedClientsForExport] = useState<Set<string>>(new Set())
   const [exportLoading, setExportLoading] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
+  const [pendingExportFormat, setPendingExportFormat] = useState<'txt' | 'csv'>('txt')
 
   const form = useForm<CofreSenhaFormData>({
     resolver: zodResolver(cofreSenhaSchema),
