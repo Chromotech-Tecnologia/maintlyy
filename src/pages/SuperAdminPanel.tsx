@@ -283,8 +283,8 @@ export default function SuperAdminPanel() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
-          <Key className="h-4 w-4 mr-2" /> Alterar senha
+        <DropdownMenuItem onClick={() => setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
+          <Key className="h-4 w-4 mr-2" /> Solicitar troca de senha
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
           <Clock className="h-4 w-4 mr-2" /> Período teste
