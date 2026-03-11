@@ -63,6 +63,20 @@ export default function Login() {
       return
     }
 
+    // Check if email already exists as a tenant (admin user)
+    const { data: existingProfiles } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', data.email)
+      .eq('is_admin', true)
+      .limit(1)
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      toast.error("Este email já está cadastrado no sistema.")
+      signupForm.setError("email", { message: "Email já cadastrado" })
+      return
+    }
+
     const signUpResult = await signUp(data.email, data.password, data.display_name, data.phone)
 
     if (signUpResult.error) {
