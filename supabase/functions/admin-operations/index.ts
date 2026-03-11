@@ -7,13 +7,20 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser'
   userId?: string
   updateData?: {
     email?: string
     password?: string
   }
   trialDays?: number
+  // inviteUser fields
+  email?: string
+  displayName?: string
+  isAdmin?: boolean
+  permissionProfileId?: string
+  phone?: string
+  redirectTo?: string
 }
 
 serve(async (req) => {
@@ -80,6 +87,85 @@ serve(async (req) => {
       case 'listUsers':
         result = await supabaseAdmin.auth.admin.listUsers()
         break
+
+      case 'inviteUser': {
+        if (!body.email) return new Response(JSON.stringify({ error: 'email is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        
+        const redirectUrl = body.redirectTo || 'https://maintlyy.lovable.app/setup-password'
+        
+        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          body.email,
+          { redirectTo: redirectUrl }
+        )
+        
+        if (inviteError) {
+          console.error('Invite error:', inviteError)
+          return new Response(JSON.stringify({ error: 'Failed to invite user: ' + inviteError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        // Create user_profiles record
+        const { error: profileInsertError } = await supabaseAdmin.from('user_profiles').insert({
+          user_id: inviteData.user.id,
+          email: body.email,
+          display_name: body.displayName || null,
+          phone: body.phone || null,
+          is_admin: body.isAdmin || false,
+          permission_profile_id: body.permissionProfileId || null,
+          account_status: 'pending_invite',
+        })
+
+        if (profileInsertError) {
+          console.error('Profile insert error:', profileInsertError)
+          // Try to clean up the invited user
+          await supabaseAdmin.auth.admin.deleteUser(inviteData.user.id)
+          return new Response(JSON.stringify({ error: 'Failed to create profile: ' + profileInsertError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        // Sync permissions from profile if assigned
+        if (body.permissionProfileId) {
+          const { data: permProfile } = await supabaseAdmin
+            .from('permission_profiles')
+            .select('client_access, empresa_access, password_access')
+            .eq('id', body.permissionProfileId)
+            .single()
+
+          if (permProfile) {
+            const clientAccess = Array.isArray(permProfile.client_access) ? permProfile.client_access : []
+            const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
+            const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
+
+            if (clientAccess.length > 0) {
+              await supabaseAdmin.from('user_client_permissions').insert(
+                clientAccess.map((ca: any) => ({
+                  user_id: inviteData.user.id, cliente_id: ca.cliente_id,
+                  can_view: ca.can_view || false, can_edit: ca.can_edit || false,
+                  can_create: ca.can_create || false, can_delete: ca.can_delete || false
+                }))
+              )
+            }
+            if (empresaAccess.length > 0) {
+              await supabaseAdmin.from('user_empresa_permissions').insert(
+                empresaAccess.map((ea: any) => ({
+                  user_id: inviteData.user.id, empresa_terceira_id: ea.empresa_terceira_id,
+                  can_view: ea.can_view || false, can_edit: ea.can_edit || false,
+                  can_delete: ea.can_delete || false, can_create_manutencao: ea.can_create_manutencao || false
+                }))
+              )
+            }
+            if (passwordAccess.length > 0) {
+              await supabaseAdmin.from('user_password_permissions').insert(
+                passwordAccess.map((pa: any) => ({
+                  user_id: inviteData.user.id, senha_id: pa.senha_id,
+                  can_view: pa.can_view || false, can_edit: pa.can_edit || false
+                }))
+              )
+            }
+          }
+        }
+
+        result = { data: inviteData }
+        break
+      }
 
       case 'disableUser':
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -152,7 +238,6 @@ serve(async (req) => {
         const sevenDaysAgoISO = sevenDaysAgo.toISOString()
 
         const statsPromises = admins.map(async (admin) => {
-          // Get permission profiles owned by this admin
           const { data: adminPermProfiles } = await supabaseAdmin
             .from('permission_profiles')
             .select('id')
@@ -160,7 +245,6 @@ serve(async (req) => {
           
           const profileIds = (adminPermProfiles || []).map(p => p.id)
           
-          // Count sub-users
           let subUserCount = 0
           let subUserRecent = 0
           const subUsers: { display_name: string | null; email: string | null }[] = []
@@ -177,12 +261,7 @@ serve(async (req) => {
               subUserRecent = subUserData.filter(u => u.created_at >= sevenDaysAgoISO).length
             }
           }
-          
-          // Also count orphan users (no permission_profile_id, not admin, not super_admin)
-          // We can't easily determine which admin created them without a created_by field
-          // So we only count users linked via permission profiles
 
-          // Count other stats with total + recent
           const [clientsRes, clientsRecentRes, senhasRes, senhasRecentRes, manutRes, manutRecentRes, empresasRes, empresasRecentRes] = await Promise.all([
             supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id),
             supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', admin.user_id).gte('created_at', sevenDaysAgoISO),

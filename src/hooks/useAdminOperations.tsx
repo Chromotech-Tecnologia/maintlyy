@@ -2,12 +2,18 @@ import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser'
   userId?: string
   updateData?: {
     email?: string
     password?: string
   }
+  email?: string
+  displayName?: string
+  isAdmin?: boolean
+  permissionProfileId?: string
+  phone?: string
+  redirectTo?: string
 }
 
 export function useAdminOperations() {
@@ -49,9 +55,28 @@ export function useAdminOperations() {
     return callAdminOperation({ operation: 'listUsers' })
   }
 
+  const inviteUser = async (data: {
+    email: string
+    displayName?: string
+    isAdmin?: boolean
+    permissionProfileId?: string
+    phone?: string
+  }) => {
+    return callAdminOperation({
+      operation: 'inviteUser',
+      email: data.email,
+      displayName: data.displayName,
+      isAdmin: data.isAdmin,
+      permissionProfileId: data.permissionProfileId,
+      phone: data.phone,
+      redirectTo: `${window.location.origin}/setup-password`,
+    })
+  }
+
   return {
     getUserById,
     updateUserById,
-    listUsers
+    listUsers,
+    inviteUser
   }
 }
