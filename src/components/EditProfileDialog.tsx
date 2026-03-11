@@ -298,6 +298,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordMatchIndicator password={newPassword} confirmPassword={confirmPassword} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
