@@ -750,7 +750,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
             <span className="text-sm text-muted-foreground ml-2">por {trialDays} dias</span>
           </div>
         )}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-foreground/50">
           {plan.max_usuarios > 0 && <span>👤 {plan.max_usuarios === 999 ? "Ilimitados" : `Até ${plan.max_usuarios}`} usuário{plan.max_usuarios > 1 ? "s" : ""}</span>}
           {plan.max_empresas > 0 && <span>🏢 {plan.max_empresas === 999 ? "Ilimitadas" : `Até ${plan.max_empresas}`} empresa{plan.max_empresas > 1 ? "s" : ""}</span>}
           {plan.max_manutencoes > 0 && <span>🔧 {plan.max_manutencoes}/mês</span>}
