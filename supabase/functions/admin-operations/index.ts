@@ -256,6 +256,23 @@ serve(async (req) => {
         break
       }
 
+      case 'cancelPlan': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const { error: cancelError } = await supabaseAdmin.from('user_profiles').update({
+          account_status: 'cancelled',
+          is_permanent: false,
+          plan_id: null,
+        }).eq('user_id', body.userId)
+        
+        if (cancelError) {
+          console.error('Error cancelling plan:', cancelError)
+          return new Response(JSON.stringify({ error: 'Failed to cancel: ' + cancelError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        result = { data: { message: 'Plan cancelled' } }
+        break
+      }
+
       case 'getAdminStats': {
         const { data: adminProfiles } = await supabaseAdmin
           .from('user_profiles')
