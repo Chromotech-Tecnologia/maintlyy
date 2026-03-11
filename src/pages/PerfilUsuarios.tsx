@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2 } from "lucide-react"
+import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2, Mail } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
 import { EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
