@@ -281,7 +281,7 @@ export default function LandingPage() {
               Tudo que você precisa
               <span className="block text-primary mt-1">em um só lugar</span>
             </h2>
-            <p className="text-muted-foreground mt-4 text-lg max-w-2xl mx-auto">
+            <p className="text-foreground/60 mt-4 text-lg max-w-2xl mx-auto">
               Uma plataforma completa para gestão de manutenções, segurança da informação e colaboração da equipe.
             </p>
           </div>
