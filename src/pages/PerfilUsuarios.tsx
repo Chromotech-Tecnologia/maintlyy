@@ -45,10 +45,12 @@ export default function PerfilUsuarios() {
   const [newUserData, setNewUserData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     display_name: "",
     is_admin: false,
     permission_profile_id: ""
   })
+  const [emailError, setEmailError] = useState("")
 
   const fetchAll = useCallback(async () => {
     if (!user) return
