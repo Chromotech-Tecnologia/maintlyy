@@ -210,6 +210,14 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
+  const handleCancelPlan = async (userId: string) => {
+    try {
+      await callAdminOp('cancelPlan', userId)
+      toast.success("Plano cancelado! O usuário só terá acesso à tela de assinaturas.")
+      fetchData()
+    } catch {}
+  }
+
   const handleDelete = async () => {
     try {
       await callAdminOp('deleteUser', deleteDialog.userId)
