@@ -289,29 +289,11 @@ export default function PerfilUsuarios() {
                   {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
                   {!emailError && <EmailValidation email={newUserData.email} />}
                 </div>
-                <div>
-                  <Label htmlFor="new_password">Senha</Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    value={newUserData.password}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Senha do usuário"
-                    required
-                  />
-                  <PasswordRequirements password={newUserData.password} />
-                </div>
-                <div>
-                  <Label htmlFor="new_confirm_password">Confirmar Senha</Label>
-                  <Input
-                    id="new_confirm_password"
-                    type="password"
-                    value={newUserData.confirmPassword}
-                    onChange={(e) => setNewUserData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="Repita a senha"
-                    required
-                  />
-                  <PasswordMatchIndicator password={newUserData.password} confirmPassword={newUserData.confirmPassword} />
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    Um convite será enviado por email para o usuário criar sua própria senha.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="new_display_name">Nome de Exibição</Label>
