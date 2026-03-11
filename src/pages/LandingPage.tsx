@@ -3,6 +3,11 @@ import { Navigate, Link } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { AppFooter } from "@/components/layout/AppFooter"
+import testimonial1 from "@/assets/testimonial-1.png"
+import testimonial2 from "@/assets/testimonial-2.png"
+import testimonial3 from "@/assets/testimonial-3.png"
+import testimonial4 from "@/assets/testimonial-4.png"
+import testimonial5 from "@/assets/testimonial-5.png"
 import { Button } from "@/components/ui/button"
 import {
   Wrench, Shield, Users, FileBarChart, KeyRound, Building2,
