@@ -739,7 +739,7 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
       )}
       <div className="mb-4 mt-1">
         <h4 className="text-lg font-display font-bold text-foreground">{plan.nome}</h4>
-        {plan.descricao && <p className="text-sm text-muted-foreground mt-1">{plan.descricao}</p>}
+        {plan.descricao && <p className="text-sm text-foreground/60 mt-1">{plan.descricao}</p>}
       </div>
       <div className="mb-5">
         {plan.preco ? (
