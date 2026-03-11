@@ -355,6 +355,28 @@ export default function Clientes() {
                   )}
                 />
 
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Logotipo do Cliente</Label>
+                  <div className="flex items-center gap-4">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo preview" className="w-16 h-16 object-contain rounded-lg border border-border bg-muted" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg border border-dashed border-border bg-muted/50 flex items-center justify-center">
+                        <Image className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                      <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5 mr-1.5" />
+                        {logoPreview ? "Trocar Logo" : "Enviar Logo"}
+                      </Button>
+                      {logoFile && <p className="text-xs text-muted-foreground mt-1">{logoFile.name}</p>}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <Button
                     type="button"
