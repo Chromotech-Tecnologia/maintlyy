@@ -70,6 +70,7 @@ export default function ResetPassword() {
             <Button className="w-full" onClick={() => navigate("/login")}>Voltar ao Login</Button>
           </CardContent>
         </Card>
+        <AppFooter className="mt-6" />
       </div>
     )
   }
