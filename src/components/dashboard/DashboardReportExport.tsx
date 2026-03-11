@@ -396,12 +396,12 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               )}
             </div>
 
-            {/* Total Horas e Manutenções por Empresa - full width */}
+            {/* Total Horas e Manutenções por Cliente - full width */}
             {(() => {
-              const empresaChartData = filters.empresas.map(emp => {
-                const empManutencoes = allManutencoes.filter(m => m.empresa_terceira_id === emp.id)
-                const totalHoras = Math.round(empManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
-                return { name: emp.nome_empresa, manutenções: empManutencoes.length, horas: totalHoras }
+              const clienteChartData = filters.clientes.map(cli => {
+                const cliManutencoes = allManutencoes.filter(m => m.cliente_id === cli.id)
+                const totalHoras = Math.round(cliManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
+                return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHoras }
               }).filter(e => e.manutenções > 0)
               
               return empresaChartData.length > 0 ? (
