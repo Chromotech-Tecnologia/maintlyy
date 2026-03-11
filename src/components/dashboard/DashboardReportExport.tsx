@@ -270,17 +270,9 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
 
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={format} onValueChange={(v: 'pdf' | 'png' | 'link') => setFormat(v)}>
-              <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pdf"><span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> PDF</span></SelectItem>
-                <SelectItem value="png"><span className="flex items-center gap-1.5"><Image className="h-3.5 w-3.5" /> Imagem</span></SelectItem>
-                <SelectItem value="link"><span className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5" /> Link Público</span></SelectItem>
-              </SelectContent>
-            </Select>
             <Button onClick={() => setSecurityDialogOpen(true)} disabled={exporting} className="h-9">
-              {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : format === 'link' ? <Copy className="h-4 w-4 mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
-              {exporting ? "Exportando..." : format === 'link' ? (copiedLink ? "Copiado!" : "Gerar Link") : "Exportar"}
+              {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+              {exporting ? "Gerando..." : "Gerar Relatório (PDF)"}
             </Button>
             <SecurityTokenDialog
               open={securityDialogOpen}
