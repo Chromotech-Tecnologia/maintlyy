@@ -277,6 +277,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <PasswordRequirements password={newPassword} />
                   </div>
                   <div>
                     <Label htmlFor="confirm_password">Confirmar Senha</Label>
