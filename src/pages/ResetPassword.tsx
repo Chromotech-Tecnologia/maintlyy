@@ -118,7 +118,7 @@ export default function ResetPassword() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !isPasswordValid(password) || password !== confirmPassword}>
               {loading ? "Redefinindo..." : "Redefinir Senha"}
             </Button>
           </form>
