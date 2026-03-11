@@ -56,6 +56,7 @@ const App = () => (
                       <Route path="/permissoes" element={<PermissionProfiles />} />
                       <Route path="/super-admin" element={<SuperAdminPanel />} />
                       <Route path="/relatorios" element={<Relatorios />} />
+                      <Route path="/assinaturas" element={<Assinaturas />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

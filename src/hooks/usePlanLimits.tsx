@@ -32,14 +32,15 @@ export function usePlanLimits(): PlanLimits {
 
   useEffect(() => {
     if (!user) return
-    const fetch = async () => {
+    const fetchLimits = async () => {
       // Get admin's profile with plan_id
-      const { data: profile } = await supabase
+      const { data: profileRaw } = await supabase
         .from('user_profiles')
         .select('plan_id, is_admin, account_status')
         .eq('user_id', user.id)
         .maybeSingle()
 
+      const profile = profileRaw as any
       if (!profile || !profile.is_admin) {
         setLimits(prev => ({ ...prev, loading: false }))
         return
@@ -88,23 +89,24 @@ export function usePlanLimits(): PlanLimits {
       }
 
       // Fetch the plan details
-      const { data: plan } = await supabase
+      const { data: planRaw } = await supabase
         .from('landing_plans')
         .select('nome, tipo, max_usuarios, max_equipes')
         .eq('id', profile.plan_id)
         .maybeSingle()
 
+      const plan = planRaw as any
       if (!plan) {
         setLimits(prev => ({ ...prev, loading: false, isTrial }))
         return
       }
 
       const maxUsers = plan.max_usuarios || 1
-      const maxTeams = (plan as any).max_equipes || 0
+      const maxTeams = plan.max_equipes || 0
 
       let canCreateUser = true
       if (plan.tipo === 'individual') {
-        canCreateUser = false // Individual plans can't create sub-users
+        canCreateUser = false
       } else {
         canCreateUser = currentUsers < maxUsers
       }
@@ -124,7 +126,7 @@ export function usePlanLimits(): PlanLimits {
         isTrial,
       })
     }
-    fetch()
+    fetchLimits()
   }, [user])
 
   return limits

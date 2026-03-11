@@ -32,13 +32,13 @@ export default function Assinaturas() {
   useEffect(() => {
     if (!user) return
     const fetchData = async () => {
-      // Fetch user profile
-      const { data: profile } = await supabase
+      const { data: profileRaw } = await supabase
         .from('user_profiles')
         .select('plan_id, account_status, trial_start, trial_days, is_permanent')
         .eq('user_id', user.id)
         .maybeSingle()
 
+      const profile = profileRaw as any
       if (profile) {
         setCurrentPlanId(profile.plan_id)
         setAccountStatus(profile.account_status || 'active')
@@ -50,7 +50,6 @@ export default function Assinaturas() {
         }
       }
 
-      // Fetch active plans
       const { data: plansData } = await supabase
         .from('landing_plans')
         .select('*')
@@ -70,10 +69,6 @@ export default function Assinaturas() {
   }, [user])
 
   const handlePlanClick = (plan: Plan) => {
-    if (plan.categoria === 'gratis') {
-      // Free plan - go to login
-      return
-    }
     if (plan.whatsapp_numero) {
       const msg = encodeURIComponent(plan.whatsapp_mensagem || `Olá! Tenho interesse no plano ${plan.nome}.`)
       window.open(`https://wa.me/${plan.whatsapp_numero}?text=${msg}`, '_blank')
@@ -114,7 +109,7 @@ export default function Assinaturas() {
           {accountStatus === 'trial' ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
                   <Clock className="h-3.5 w-3.5 mr-1" />
                   Período de Teste
                 </Badge>
@@ -138,7 +133,7 @@ export default function Assinaturas() {
           ) : currentPlan ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">Ativo</Badge>
+                <Badge className="bg-primary/10 text-primary border-primary/30">Ativo</Badge>
                 <span className="font-semibold text-lg">{currentPlan.nome}</span>
                 {currentPlan.preco && <span className="text-muted-foreground">{currentPlan.preco}</span>}
               </div>
@@ -150,7 +145,7 @@ export default function Assinaturas() {
             </div>
           ) : (
             <div className="space-y-3">
-              <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">Ativo</Badge>
+              <Badge className="bg-primary/10 text-primary border-primary/30">Ativo</Badge>
               <p className="text-sm text-muted-foreground">Conta ativa sem plano específico vinculado.</p>
             </div>
           )}
@@ -183,7 +178,7 @@ export default function Assinaturas() {
                   </div>
                   
                   <div className="text-2xl font-bold">
-                    {plan.preco || <span className="text-emerald-600 dark:text-emerald-400">Grátis</span>}
+                    {plan.preco || <span className="text-primary">Grátis</span>}
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -194,7 +189,7 @@ export default function Assinaturas() {
                   <ul className="space-y-2">
                     {plan.recursos.map((recurso, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
-                        <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                        <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                         <span>{recurso}</span>
                       </li>
                     ))}
