@@ -246,7 +246,6 @@ export function PlansManager() {
                 <Label>Máx. equipes</Label>
                 <Input type="number" value={form.max_equipes} onChange={(e) => setForm(f => ({ ...f, max_equipes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
-              </div>
             </div>
             <div>
               <Label>Descrição</Label>

@@ -260,7 +260,21 @@ export default function PerfilUsuarios() {
         {permissions.isAdmin && hasProfiles && (
           <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button 
+                className="bg-primary hover:bg-primary/90"
+                onClick={(e) => {
+                  if (!planLimits.loading && !planLimits.canCreateUser) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (planLimits.planTipo === 'individual') {
+                      toast.error("Seu plano individual não permite criar usuários adicionais.")
+                    } else {
+                      toast.error(`Limite de usuários do plano atingido (${planLimits.currentUsers}/${planLimits.maxUsers}).`)
+                    }
+                    return
+                  }
+                }}
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Criar Usuário
               </Button>
