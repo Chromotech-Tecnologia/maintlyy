@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Navigate } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import { useForm } from "react-hook-form"
@@ -33,6 +33,9 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
+  const [emailExists, setEmailExists] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -42,6 +45,34 @@ export default function Login() {
   const signupForm = useForm<SignupFormData>({
     defaultValues: { display_name: "", email: "", phone: "", password: "", confirmPassword: "" },
   })
+
+  const watchedEmail = signupForm.watch("email")
+
+  useEffect(() => {
+    if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current)
+    setEmailExists(false)
+
+    if (!isValidEmail(watchedEmail)) return
+
+    setCheckingEmail(true)
+    emailCheckTimer.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', watchedEmail)
+          .eq('is_admin', true)
+          .limit(1)
+        setEmailExists(!!(data && data.length > 0))
+      } catch {
+        // ignore
+      } finally {
+        setCheckingEmail(false)
+      }
+    }, 500)
+
+    return () => { if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current) }
+  }, [watchedEmail])
 
   if (user) return <Navigate to="/" replace />
 
@@ -67,24 +98,18 @@ export default function Login() {
       return
     }
 
-    // Check if email already exists as a tenant (admin user)
-    const { data: existingProfiles } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('email', data.email)
-      .eq('is_admin', true)
-      .limit(1)
-
-    if (existingProfiles && existingProfiles.length > 0) {
-      toast.error("Este email já está cadastrado no sistema.")
-      signupForm.setError("email", { message: "Email já cadastrado" })
-      return
-    }
+    // Already checked in real-time, but double-check
+    if (emailExists) return
 
     const signUpResult = await signUp(data.email, data.password, data.display_name, data.phone)
 
     if (signUpResult.error) {
-      toast.error(signUpResult.error.message || "Erro ao criar conta")
+      const msg = signUpResult.error.message || ""
+      if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already been registered")) {
+        setEmailExists(true)
+      } else {
+        toast.error(msg || "Erro ao criar conta")
+      }
     } else if (signUpResult.needsConfirmation) {
       toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
@@ -218,6 +243,17 @@ export default function Login() {
                           <Input type="email" placeholder="seu@email.com" className="pl-10" {...field} />
                         </div>
                       </FormControl>
+                      {isValidEmail(field.value) && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {checkingEmail ? (
+                            <span className="text-xs text-muted-foreground">Verificando...</span>
+                          ) : emailExists ? (
+                            <span className="text-xs text-destructive flex items-center gap-1">✗ Já existe uma conta com este email</span>
+                          ) : (
+                            <span className="text-xs text-success flex items-center gap-1">✓ Email disponível</span>
+                          )}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -276,6 +312,8 @@ export default function Login() {
                     !isPasswordValid(signupForm.watch("password")) || 
                     signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
                     !isValidEmail(signupForm.watch("email")) ||
+                    emailExists ||
+                    checkingEmail ||
                     !signupForm.watch("display_name") ||
                     !signupForm.watch("phone")
                   }>
