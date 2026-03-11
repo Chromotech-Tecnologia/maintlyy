@@ -22,6 +22,7 @@ export type Database = {
           empresa_terceira_id: string
           endereco: string | null
           id: string
+          logo_url: string | null
           nome_cliente: string | null
           telefone: string | null
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           empresa_terceira_id: string
           endereco?: string | null
           id?: string
+          logo_url?: string | null
           nome_cliente?: string | null
           telefone?: string | null
           updated_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           empresa_terceira_id?: string
           endereco?: string | null
           id?: string
+          logo_url?: string | null
           nome_cliente?: string | null
           telefone?: string | null
           updated_at?: string
