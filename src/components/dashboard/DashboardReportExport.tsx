@@ -66,8 +66,8 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
   const { user } = useAuth()
   const { toast } = useToast()
   const [exporting, setExporting] = useState(false)
-  const [format, setFormat] = useState<'pdf' | 'png' | 'link'>('pdf')
-  const [copiedLink, setCopiedLink] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
 
