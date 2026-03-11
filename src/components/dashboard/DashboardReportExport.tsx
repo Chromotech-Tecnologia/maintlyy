@@ -368,10 +368,10 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               ))}
             </div>
 
-            {/* Charts - stacked on mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Visão Mensal — {currentYear}</h3>
+            {/* Charts - Monthly wide + Weekly side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="lg:col-span-2 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal — {currentYear}</h3>
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={data.chartData}>
                     <defs>
