@@ -57,13 +57,8 @@ export default function Login() {
     setCheckingEmail(true)
     emailCheckTimer.current = setTimeout(async () => {
       try {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('id')
-          .eq('email', watchedEmail)
-          .eq('is_admin', true)
-          .limit(1)
-        setEmailExists(!!(data && data.length > 0))
+        const { data } = await supabase.rpc('check_email_exists', { _email: watchedEmail })
+        setEmailExists(!!data)
       } catch {
         // ignore
       } finally {
