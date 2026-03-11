@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
+import { PasswordRequirements, isPasswordValid } from "@/components/ui/password-requirements"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
