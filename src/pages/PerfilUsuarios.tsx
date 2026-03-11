@@ -10,10 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2, Mail } from "lucide-react"
+import { Plus, Edit, Users, Shield, UserPlus, Phone, Building2, Mail, AlertTriangle } from "lucide-react"
 import { EditProfileDialog } from "@/components/EditProfileDialog"
 import { toast } from "sonner"
 import { EmailValidation, isEmailValid } from "@/components/ui/password-requirements"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface UserProfile {
   id: string
@@ -38,6 +39,7 @@ export default function PerfilUsuarios() {
   const { user } = useAuth()
   const permissions = usePermissions()
   const adminOps = useAdminOperations()
+  const planLimits = usePlanLimits()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [permissionProfiles, setPermissionProfiles] = useState<PermissionProfile[]>([])
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
@@ -258,7 +260,21 @@ export default function PerfilUsuarios() {
         {permissions.isAdmin && hasProfiles && (
           <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button 
+                className="bg-primary hover:bg-primary/90"
+                onClick={(e) => {
+                  if (!planLimits.loading && !planLimits.canCreateUser) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (planLimits.planTipo === 'individual') {
+                      toast.error("Seu plano individual não permite criar usuários adicionais.")
+                    } else {
+                      toast.error(`Limite de usuários do plano atingido (${planLimits.currentUsers}/${planLimits.maxUsers}).`)
+                    }
+                    return
+                  }
+                }}
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Criar Usuário
               </Button>

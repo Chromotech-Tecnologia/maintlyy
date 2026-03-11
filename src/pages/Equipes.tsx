@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { equipeSchema, type EquipeFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface Equipe {
   id: string
@@ -27,6 +28,7 @@ interface Equipe {
 export default function Equipes() {
   const { user } = useAuth()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   const [equipes, setEquipes] = useState<Equipe[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -137,6 +139,10 @@ export default function Equipes() {
   }
 
   const openNewDialog = () => {
+    if (!planLimits.loading && !planLimits.canCreateTeam) {
+      toast.error(`Limite de equipes do plano atingido (${planLimits.currentTeams}/${planLimits.maxTeams}).`)
+      return
+    }
     setEditingId(null)
     form.reset()
     setOpen(true)

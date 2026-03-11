@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Crown, FileBarChart
+  KeyRound, Calendar, Crown, FileBarChart, CreditCard
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -29,6 +29,7 @@ const securityItems = [
 const getSystemItems = (isAdmin: boolean) => {
   const items = [
     { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings },
+    { title: "Assinatura", url: "/assinaturas", icon: CreditCard },
   ]
   if (isAdmin) {
     items.push({ title: "Perfil", url: "/permissoes", icon: Shield })

@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, KeyRound, Menu, Building2,
-  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart
+  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -43,6 +43,7 @@ export function MobileNav() {
 
   const systemItems = [
     { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings, section: "Sistema" },
+    { title: "Assinatura", url: "/assinaturas", icon: CreditCard, section: "Sistema" },
     ...(isAdmin ? [{ title: "Perfil de Permissões", url: "/permissoes", icon: Shield, section: "Sistema" }] : []),
     ...(isSuperAdmin ? [{ title: "Painel Admin", url: "/super-admin", icon: Crown, section: "Administração" }] : []),
   ]

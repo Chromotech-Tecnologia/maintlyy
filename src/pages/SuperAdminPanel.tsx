@@ -13,6 +13,7 @@ import {
   Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
@@ -76,6 +77,10 @@ export default function SuperAdminPanel() {
   const [trialDays, setTrialDays] = useState("30")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [actionLoading, setActionLoading] = useState(false)
+  const [activateDialog, setActivateDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("")
+  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string }[]>([])
+  const [plansLoading, setPlansLoading] = useState(false)
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -170,10 +175,24 @@ export default function SuperAdminPanel() {
     } catch {}
   }
 
-  const handleActivatePermanent = async (userId: string) => {
+  const openActivateDialog = async (userId: string, email: string) => {
+    setActivateDialog({ open: true, userId, email })
+    setSelectedPlanId("")
+    setPlansLoading(true)
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo').eq('ativo', true).order('ordem')
+    setAvailablePlans((data || []) as any[])
+    setPlansLoading(false)
+  }
+
+  const handleActivatePermanent = async () => {
+    if (!selectedPlanId) {
+      toast.error("Selecione um plano")
+      return
+    }
     try {
-      await callAdminOp('activatePermanent', userId)
+      await callAdminOp('activatePermanent', activateDialog.userId, { planId: selectedPlanId })
       toast.success("Conta ativada permanentemente!")
+      setActivateDialog({ open: false, userId: "", email: "" })
       fetchData()
     } catch {}
   }
@@ -272,7 +291,7 @@ export default function SuperAdminPanel() {
         <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
           <Clock className="h-4 w-4 mr-2" /> Período teste
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleActivatePermanent(admin.user_id)}>
+        <DropdownMenuItem onClick={() => openActivateDialog(admin.user_id, admin.email || '')}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -614,6 +633,39 @@ export default function SuperAdminPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Activate Permanent with Plan Selection */}
+      <Dialog open={activateDialog.open} onOpenChange={(open) => setActivateDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ativar Conta Permanente</DialogTitle>
+            <DialogDescription>Selecione o plano para {activateDialog.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {plansLoading ? (
+              <div className="text-center py-4 text-muted-foreground">Carregando planos...</div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Plano</Label>
+                <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                  <SelectContent>
+                    {availablePlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} ({p.tipo})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActivateDialog({ open: false, userId: "", email: "" })}>Cancelar</Button>
+            <Button onClick={handleActivatePermanent} disabled={actionLoading || !selectedPlanId}>
+              {actionLoading ? "Ativando..." : "Ativar Permanente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,8 +1,8 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { useEffect, useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { ShieldAlert, LogOut, Clock } from "lucide-react"
+import { ShieldAlert, LogOut, Clock, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
@@ -12,6 +12,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading, signOut } = useAuth()
+  const location = useLocation()
   const [profileChecked, setProfileChecked] = useState(false)
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>('active')
@@ -90,6 +91,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Account disabled or expired
   if (accountStatus === 'disabled' || accountStatus === 'expired') {
+    // Allow access to /assinaturas even when expired
+    if (accountStatus === 'expired' && location.pathname === '/assinaturas') {
+      return <>{children}</>
+    }
+
     const handleSignOut = async () => { try { await signOut() } catch { toast.error("Erro ao sair") } }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -106,13 +112,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             <p className="text-muted-foreground">
               {accountStatus === 'disabled'
                 ? 'Sua conta foi desabilitada pelo administrador. Entre em contato para mais informações.'
-                : 'Seu período de teste expirou. Entre em contato com o administrador para ativar sua conta.'}
+                : 'Seu período de teste expirou. Escolha um plano para continuar utilizando o Maintly.'}
             </p>
           </div>
           <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">Conta conectada:</p>
             <p>{user.email}</p>
           </div>
+          {accountStatus === 'expired' && (
+            <Button asChild className="w-full">
+              <a href="/assinaturas">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Ver Planos
+              </a>
+            </Button>
+          )}
           <Button variant="outline" onClick={handleSignOut} className="w-full">
             <LogOut className="h-4 w-4 mr-2" />
             Sair da conta

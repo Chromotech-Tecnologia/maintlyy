@@ -14,6 +14,7 @@ interface AdminOperationRequest {
     password?: string
   }
   trialDays?: number
+  planId?: string
   // inviteUser fields
   email?: string
   displayName?: string
@@ -208,12 +209,16 @@ serve(async (req) => {
 
       case 'activatePermanent': {
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        const { error: activateError } = await supabaseAdmin.from('user_profiles').update({
+        const activatePayload: any = {
           account_status: 'active',
           is_permanent: true,
           trial_days: 0,
           trial_start: null,
-        }).eq('user_id', body.userId)
+        }
+        if (body.planId) {
+          activatePayload.plan_id = body.planId
+        }
+        const { error: activateError } = await supabaseAdmin.from('user_profiles').update(activatePayload).eq('user_id', body.userId)
         
         if (activateError) {
           console.error('Error activating permanent:', activateError)

@@ -25,6 +25,7 @@ interface Plan {
   categoria: string
   preco: string | null
   max_usuarios: number
+  max_equipes: number
   descricao: string | null
   recursos: string[]
   whatsapp_numero: string | null
@@ -41,6 +42,7 @@ const emptyPlan: Omit<Plan, "id"> = {
   categoria: "gratis",
   preco: "",
   max_usuarios: 1,
+  max_equipes: 0,
   descricao: "",
   recursos: [],
   whatsapp_numero: "",
@@ -99,6 +101,7 @@ export function PlansManager() {
       categoria: form.categoria,
       preco: form.preco || null,
       max_usuarios: form.max_usuarios,
+      max_equipes: form.max_equipes,
       descricao: form.descricao || null,
       recursos,
       whatsapp_numero: form.whatsapp_numero || null,
@@ -230,7 +233,7 @@ export function PlansManager() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Preço (ex: R$ 49,90/mês)</Label>
                 <Input value={form.preco || ""} onChange={(e) => setForm(f => ({ ...f, preco: e.target.value }))} placeholder="R$ 49,90/mês" />
@@ -238,6 +241,10 @@ export function PlansManager() {
               <div>
                 <Label>Máx. usuários</Label>
                 <Input type="number" value={form.max_usuarios} onChange={(e) => setForm(f => ({ ...f, max_usuarios: parseInt(e.target.value) || 1 }))} min={1} />
+              </div>
+              <div>
+                <Label>Máx. equipes</Label>
+                <Input type="number" value={form.max_equipes} onChange={(e) => setForm(f => ({ ...f, max_equipes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
             </div>
             <div>

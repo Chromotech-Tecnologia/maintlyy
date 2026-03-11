@@ -23,6 +23,7 @@ import PermissionProfiles from "./pages/PermissionProfiles";
 import SuperAdminPanel from "./pages/SuperAdminPanel";
 import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
+import Assinaturas from "./pages/Assinaturas";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                       <Route path="/permissoes" element={<PermissionProfiles />} />
                       <Route path="/super-admin" element={<SuperAdminPanel />} />
                       <Route path="/relatorios" element={<Relatorios />} />
+                      <Route path="/assinaturas" element={<Assinaturas />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

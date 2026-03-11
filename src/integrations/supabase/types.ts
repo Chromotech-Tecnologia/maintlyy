@@ -240,6 +240,7 @@ export type Database = {
           descricao: string | null
           destaque: boolean | null
           id: string
+          max_equipes: number | null
           max_usuarios: number | null
           nome: string
           ordem: number | null
@@ -258,6 +259,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          max_equipes?: number | null
           max_usuarios?: number | null
           nome: string
           ordem?: number | null
@@ -276,6 +278,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          max_equipes?: number | null
           max_usuarios?: number | null
           nome?: string
           ordem?: number | null
@@ -703,6 +706,7 @@ export type Database = {
           is_super_admin: boolean | null
           permission_profile_id: string | null
           phone: string | null
+          plan_id: string | null
           trial_days: number | null
           trial_start: string | null
           updated_at: string
@@ -719,6 +723,7 @@ export type Database = {
           is_super_admin?: boolean | null
           permission_profile_id?: string | null
           phone?: string | null
+          plan_id?: string | null
           trial_days?: number | null
           trial_start?: string | null
           updated_at?: string
@@ -735,6 +740,7 @@ export type Database = {
           is_super_admin?: boolean | null
           permission_profile_id?: string | null
           phone?: string | null
+          plan_id?: string | null
           trial_days?: number | null
           trial_start?: string | null
           updated_at?: string
@@ -746,6 +752,13 @@ export type Database = {
             columns: ["permission_profile_id"]
             isOneToOne: false
             referencedRelation: "permission_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "landing_plans"
             referencedColumns: ["id"]
           },
         ]
