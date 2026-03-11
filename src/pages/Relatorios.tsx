@@ -83,6 +83,8 @@ export default function Relatorios() {
   const [filterDataInicio, setFilterDataInicio] = useState("")
   const [filterDataFim, setFilterDataFim] = useState("")
   const [exporting, setExporting] = useState(false)
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
+  const [pendingExportFormat, setPendingExportFormat] = useState<'csv' | 'txt'>('csv')
 
   useEffect(() => {
     if (selectedReport) {
