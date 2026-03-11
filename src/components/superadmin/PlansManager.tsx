@@ -242,7 +242,7 @@ export function PlansManager() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <Label>Preço (ex: R$ 49,90/mês)</Label>
                 <Input value={form.preco || ""} onChange={(e) => setForm(f => ({ ...f, preco: e.target.value }))} placeholder="R$ 49,90/mês" />
@@ -254,6 +254,14 @@ export function PlansManager() {
               <div>
                 <Label>Máx. equipes</Label>
                 <Input type="number" value={form.max_equipes} onChange={(e) => setForm(f => ({ ...f, max_equipes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
+              <div>
+                <Label>Máx. manutenções/mês</Label>
+                <Input type="number" value={form.max_manutencoes} onChange={(e) => setForm(f => ({ ...f, max_manutencoes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
+              <div>
+                <Label>Máx. empresas</Label>
+                <Input type="number" value={form.max_empresas} onChange={(e) => setForm(f => ({ ...f, max_empresas: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
             </div>
             <div>
