@@ -543,6 +543,13 @@ export default function SuperAdminPanel() {
         </>
       )}
 
+        </TabsContent>
+
+        <TabsContent value="planos">
+          <PlansManager />
+        </TabsContent>
+      </Tabs>
+
       {/* Change Password Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(open) => setPasswordDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
