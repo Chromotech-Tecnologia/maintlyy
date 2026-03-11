@@ -326,11 +326,11 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               ))}
             </div>
 
-            {/* Charts - Monthly wide + Weekly side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <div className="lg:col-span-2 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+            {/* Resumo Mensal - full width */}
+            <div className="mb-8">
+              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal — {currentYear}</h3>
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={data.chartData}>
                     <defs>
                       <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
@@ -356,10 +356,13 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
 
+            {/* Tendência Semanal + Por Tipo side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">📈 Tendência Semanal</h3>
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={data.weeklyData}>
                     <defs>
                       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -375,16 +378,13 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </div>
 
-            {/* Type pie only */}
-            {data.tipoData.length > 0 && (
-              <div className="mb-8">
-                <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 max-w-md mx-auto">
+              {data.tipoData.length > 0 && (
+                <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">🔧 Por Tipo</h3>
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={data.tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                      <Pie data={data.tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                         {data.tipoData.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -393,8 +393,50 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Total Horas e Manutenções por Empresa - full width */}
+            {(() => {
+              const empresaChartData = filters.empresas.map(emp => {
+                const empManutencoes = allManutencoes.filter(m => m.empresa_terceira_id === emp.id)
+                const totalHoras = Math.round(empManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
+                return { name: emp.nome_empresa, manutenções: empManutencoes.length, horas: totalHoras }
+              }).filter(e => e.manutenções > 0)
+              
+              return empresaChartData.length > 0 ? (
+                <div className="mb-8">
+                  <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">🏢 Total de Horas e Manutenções por Empresa</h3>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={empresaChartData}>
+                        <defs>
+                          <linearGradient id="barGradEmp1" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                          </linearGradient>
+                          <linearGradient id="barGradEmp2" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9} />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.4} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
+                        <Tooltip />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Bar dataKey="manutenções" fill="url(#barGradEmp1)" radius={[6, 6, 0, 0]}>
+                          <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#8b5cf6' }} />
+                        </Bar>
+                        <Bar dataKey="horas" fill="url(#barGradEmp2)" radius={[6, 6, 0, 0]}>
+                          <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: '#f59e0b' }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ) : null
+            })()}
 
 
             {/* Detailed Analytical Table */}
