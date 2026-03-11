@@ -218,6 +218,8 @@ export default function Clientes() {
 
   const openNewDialog = () => {
     setEditingId(null)
+    setLogoFile(null)
+    setLogoPreview(null)
     form.reset()
     setOpen(true)
   }
