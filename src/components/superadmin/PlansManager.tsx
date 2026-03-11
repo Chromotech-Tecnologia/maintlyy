@@ -26,8 +26,11 @@ interface Plan {
   preco: string | null
   max_usuarios: number
   max_equipes: number
+  max_manutencoes: number
+  max_empresas: number
   descricao: string | null
   recursos: string[]
+  offer_free_signup: boolean
   whatsapp_numero: string | null
   whatsapp_mensagem: string | null
   texto_botao: string
@@ -43,8 +46,11 @@ const emptyPlan: Omit<Plan, "id"> = {
   preco: "",
   max_usuarios: 1,
   max_equipes: 0,
+  max_manutencoes: 0,
+  max_empresas: 0,
   descricao: "",
   recursos: [],
+  offer_free_signup: false,
   whatsapp_numero: "",
   whatsapp_mensagem: "",
   texto_botao: "Começar Grátis",
@@ -102,6 +108,8 @@ export function PlansManager() {
       preco: form.preco || null,
       max_usuarios: form.max_usuarios,
       max_equipes: form.max_equipes,
+      max_manutencoes: form.max_manutencoes,
+      max_empresas: form.max_empresas,
       descricao: form.descricao || null,
       recursos,
       whatsapp_numero: form.whatsapp_numero || null,
@@ -110,6 +118,7 @@ export function PlansManager() {
       destaque: form.destaque,
       ordem: form.ordem,
       ativo: form.ativo,
+      offer_free_signup: form.offer_free_signup,
     }
 
     let error
@@ -233,7 +242,7 @@ export function PlansManager() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <Label>Preço (ex: R$ 49,90/mês)</Label>
                 <Input value={form.preco || ""} onChange={(e) => setForm(f => ({ ...f, preco: e.target.value }))} placeholder="R$ 49,90/mês" />
@@ -245,6 +254,14 @@ export function PlansManager() {
               <div>
                 <Label>Máx. equipes</Label>
                 <Input type="number" value={form.max_equipes} onChange={(e) => setForm(f => ({ ...f, max_equipes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
+              <div>
+                <Label>Máx. manutenções/mês</Label>
+                <Input type="number" value={form.max_manutencoes} onChange={(e) => setForm(f => ({ ...f, max_manutencoes: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
+              <div>
+                <Label>Máx. empresas</Label>
+                <Input type="number" value={form.max_empresas} onChange={(e) => setForm(f => ({ ...f, max_empresas: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
             </div>
             <div>
@@ -269,7 +286,11 @@ export function PlansManager() {
               <Label>Mensagem WhatsApp</Label>
               <Textarea value={form.whatsapp_mensagem || ""} onChange={(e) => setForm(f => ({ ...f, whatsapp_mensagem: e.target.value }))} rows={2} placeholder="Olá! Tenho interesse no plano..." />
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Switch checked={form.offer_free_signup} onCheckedChange={(v) => setForm(f => ({ ...f, offer_free_signup: v }))} />
+                <Label>Oferecer cadastro grátis</Label>
+              </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.destaque} onCheckedChange={(v) => setForm(f => ({ ...f, destaque: v }))} />
                 <Label>Destaque</Label>
@@ -279,6 +300,11 @@ export function PlansManager() {
                 <Label>Ativo</Label>
               </div>
             </div>
+            {!form.offer_free_signup && (
+              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                ⚠️ Ao clicar no botão, o usuário será redirecionado para o WhatsApp com a mensagem configurada.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

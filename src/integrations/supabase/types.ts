@@ -240,9 +240,12 @@ export type Database = {
           descricao: string | null
           destaque: boolean | null
           id: string
+          max_empresas: number | null
           max_equipes: number | null
+          max_manutencoes: number | null
           max_usuarios: number | null
           nome: string
+          offer_free_signup: boolean | null
           ordem: number | null
           preco: string | null
           recursos: Json
@@ -259,9 +262,12 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          max_empresas?: number | null
           max_equipes?: number | null
+          max_manutencoes?: number | null
           max_usuarios?: number | null
           nome: string
+          offer_free_signup?: boolean | null
           ordem?: number | null
           preco?: string | null
           recursos?: Json
@@ -278,9 +284,12 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          max_empresas?: number | null
           max_equipes?: number | null
+          max_manutencoes?: number | null
           max_usuarios?: number | null
           nome?: string
+          offer_free_signup?: boolean | null
           ordem?: number | null
           preco?: string | null
           recursos?: Json
