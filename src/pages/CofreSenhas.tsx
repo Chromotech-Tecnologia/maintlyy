@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
 import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
+import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface CofreSenha {
   id: string
