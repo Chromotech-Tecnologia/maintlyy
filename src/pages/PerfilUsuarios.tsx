@@ -39,6 +39,7 @@ export default function PerfilUsuarios() {
   const { user } = useAuth()
   const permissions = usePermissions()
   const adminOps = useAdminOperations()
+  const planLimits = usePlanLimits()
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [permissionProfiles, setPermissionProfiles] = useState<PermissionProfile[]>([])
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null)
