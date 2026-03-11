@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarGroupLabel,
   useSidebar,
 } from "@/components/ui/sidebar"
 
