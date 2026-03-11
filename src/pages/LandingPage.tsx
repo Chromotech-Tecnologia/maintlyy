@@ -412,7 +412,7 @@ export default function LandingPage() {
           <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">
             Estamos sempre criando novas funcionalidades
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
+          <p className="text-foreground/60 text-lg max-w-2xl mx-auto mb-8">
             Nossa equipe trabalha continuamente para trazer novas ferramentas e melhorias.
             Você sempre terá acesso às últimas inovações.
           </p>
