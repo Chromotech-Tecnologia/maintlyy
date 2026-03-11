@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { loginSchema, signupSchema, type LoginFormData, type SignupFormData } from "@/lib/validations"
-import { Eye, EyeOff, Phone, User, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Phone, User, Mail, Lock, CheckCircle2 } from "lucide-react"
 import { PasswordRequirements, PasswordMatchIndicator, isPasswordValid } from "@/components/ui/password-requirements"
 import { AppFooter } from "@/components/layout/AppFooter"
 
@@ -28,13 +28,12 @@ const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
   const [showLoginPassword, setShowLoginPassword] = useState(false)
-  const [showSignupPassword, setShowSignupPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
   const [emailExists, setEmailExists] = useState(false)
   const [checkingEmail, setCheckingEmail] = useState(false)
+  const [signupSuccess, setSignupSuccess] = useState(false)
   const emailCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loginForm = useForm<LoginFormData>({
@@ -42,8 +41,8 @@ export default function Login() {
     defaultValues: { email: "", password: "" },
   })
 
-  const signupForm = useForm<SignupFormData>({
-    defaultValues: { display_name: "", email: "", phone: "", password: "", confirmPassword: "" },
+  const signupForm = useForm({
+    defaultValues: { display_name: "", email: "", phone: "" },
   })
 
   const watchedEmail = signupForm.watch("email")
@@ -80,23 +79,21 @@ export default function Login() {
     }
   }
 
-  const handleSignUp = async (data: SignupFormData) => {
-    const result = signupSchema.safeParse(data)
-    if (!result.success) {
-      const issues = result.error.issues || []
-      for (const issue of issues) {
-        const field = issue.path?.[0] as keyof SignupFormData | undefined
-        if (field) {
-          signupForm.setError(field, { message: issue.message })
-        }
-      }
+  const handleSignUp = async (data: any) => {
+    if (!data.display_name || !data.email || !data.phone) {
+      toast.error("Preencha todos os campos obrigatórios")
       return
     }
-
-    // Already checked in real-time, but double-check
+    if (!isValidEmail(data.email)) {
+      toast.error("Email inválido")
+      return
+    }
     if (emailExists) return
 
-    const signUpResult = await signUp(data.email, data.password, data.display_name, data.phone)
+    // Generate a random temporary password (user will set their own via email)
+    const tempPassword = crypto.randomUUID() + 'A1!'
+
+    const signUpResult = await signUp(data.email, tempPassword, data.display_name, data.phone)
 
     if (signUpResult.error) {
       const msg = signUpResult.error.message || ""
@@ -105,10 +102,12 @@ export default function Login() {
       } else {
         toast.error(msg || "Erro ao criar conta")
       }
-    } else if (signUpResult.needsConfirmation) {
-      toast.success("Cadastro realizado! Verifique seu email para confirmar a conta.", { duration: 8000 })
     } else {
-      toast.success("Cadastro realizado! Você tem 7 dias de teste gratuito.")
+      // Send password reset email so user can set their own password
+      await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      setSignupSuccess(true)
     }
   }
 
@@ -270,50 +269,36 @@ export default function Login() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={signupForm.control} name="password" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showSignupPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" {...field} />
-                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowSignupPassword(!showSignupPassword)}>
-                            {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                  {signupSuccess ? (
+                    <div className="text-center space-y-4 py-4">
+                      <div className="flex justify-center">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                          <CheckCircle2 className="h-8 w-8 text-primary" />
                         </div>
-                      </FormControl>
-                      <PasswordRequirements password={field.value} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={signupForm.control} name="confirmPassword" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" {...field} />
-                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <PasswordMatchIndicator password={signupForm.watch("password")} confirmPassword={field.value} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full" disabled={
-                    signupForm.formState.isSubmitting || 
-                    !isPasswordValid(signupForm.watch("password")) || 
-                    signupForm.watch("password") !== signupForm.watch("confirmPassword") ||
-                    !isValidEmail(signupForm.watch("email")) ||
-                    emailExists ||
-                    checkingEmail ||
-                    !signupForm.watch("display_name") ||
-                    !signupForm.watch("phone")
-                  }>
-                    {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
-                  </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">Cadastro realizado!</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Enviamos um email para <strong>{signupForm.getValues("email")}</strong> com um link para criar sua senha e acessar o sistema.
+                        </p>
+                        <p className="text-xs text-muted-foreground">Verifique também a pasta de spam.</p>
+                      </div>
+                      <Button variant="outline" className="w-full" onClick={() => { setSignupSuccess(false); signupForm.reset() }}>
+                        Voltar
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="submit" className="w-full" disabled={
+                      signupForm.formState.isSubmitting || 
+                      !isValidEmail(signupForm.watch("email")) ||
+                      emailExists ||
+                      checkingEmail ||
+                      !signupForm.watch("display_name") ||
+                      !signupForm.watch("phone")
+                    }>
+                      {signupForm.formState.isSubmitting ? "Criando conta..." : "Criar conta"}
+                    </Button>
+                  )}
                 </form>
               </Form>
             </TabsContent>

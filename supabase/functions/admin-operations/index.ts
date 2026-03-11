@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset'
   userId?: string
   updateData?: {
     email?: string
@@ -226,6 +226,33 @@ serve(async (req) => {
         }
         
         result = await supabaseAdmin.auth.admin.updateUserById(body.userId, { ban_duration: 'none' })
+        break
+      }
+
+      case 'sendPasswordReset': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        
+        // Get user email
+        const { data: resetUser, error: resetUserError } = await supabaseAdmin.auth.admin.getUserById(body.userId)
+        if (resetUserError || !resetUser?.user?.email) {
+          return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        // Generate recovery link
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email: resetUser.user.email,
+          options: {
+            redirectTo: body.redirectTo || undefined,
+          }
+        })
+        
+        if (linkError) {
+          console.error('Error generating recovery link:', linkError)
+          return new Response(JSON.stringify({ error: 'Failed to send reset email: ' + linkError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        result = { data: { message: 'Password reset email sent' } }
         break
       }
 

@@ -72,7 +72,6 @@ export default function SuperAdminPanel() {
   const [expandedAdmin, setExpandedAdmin] = useState<string | null>(null)
 
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
-  const [newPassword, setNewPassword] = useState("")
   const [trialDialog, setTrialDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [trialDays, setTrialDays] = useState("30")
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
@@ -147,17 +146,15 @@ export default function SuperAdminPanel() {
     }
   }
 
-  const handleChangePassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres")
-      return
-    }
+  const handleSendPasswordReset = async () => {
     try {
-      await callAdminOp('updateUserById', passwordDialog.userId, { updateData: { password: newPassword } })
-      toast.success("Senha alterada com sucesso!")
+      setActionLoading(true)
+      await callAdminOp('sendPasswordReset', passwordDialog.userId, { redirectTo: `${window.location.origin}/reset-password` })
+      toast.success("Email de troca de senha enviado com sucesso!")
       setPasswordDialog({ open: false, userId: "", email: "" })
-      setNewPassword("")
-    } catch {}
+    } catch {} finally {
+      setActionLoading(false)
+    }
   }
 
   const handleSetTrial = async () => {
@@ -285,8 +282,8 @@ export default function SuperAdminPanel() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => { setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' }); setNewPassword("") }}>
-          <Key className="h-4 w-4 mr-2" /> Alterar senha
+        <DropdownMenuItem onClick={() => setPasswordDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
+          <Key className="h-4 w-4 mr-2" /> Solicitar troca de senha
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTrialDialog({ open: true, userId: admin.user_id, email: admin.email || '' })}>
           <Clock className="h-4 w-4 mr-2" /> Período teste
@@ -569,23 +566,17 @@ export default function SuperAdminPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Change Password Dialog */}
+      {/* Password Reset Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(open) => setPasswordDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Alterar Senha</DialogTitle>
-            <DialogDescription>Alterar a senha do usuário {passwordDialog.email}</DialogDescription>
+            <DialogTitle>Solicitar Troca de Senha</DialogTitle>
+            <DialogDescription>Um email será enviado para <strong>{passwordDialog.email}</strong> com um link para redefinir a senha.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nova Senha</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
-            </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPasswordDialog({ open: false, userId: "", email: "" })}>Cancelar</Button>
-            <Button onClick={handleChangePassword} disabled={actionLoading}>
-              {actionLoading ? "Salvando..." : "Salvar"}
+            <Button onClick={handleSendPasswordReset} disabled={actionLoading}>
+              {actionLoading ? "Enviando..." : "Enviar email de troca"}
             </Button>
           </DialogFooter>
         </DialogContent>
