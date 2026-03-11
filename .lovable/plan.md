@@ -1,99 +1,108 @@
 
+# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-# Plan: Landing Page + Plans Management (Super Admin)
+## ✅ CONCLUÍDO
 
-## Summary
+### Problemas Identificados e Corrigidos
 
-Create a public landing page at `/` (for unauthenticated users), a plans management section in the Super Admin panel, and improve the global footer. Authenticated users hitting `/` will see the Dashboard as before.
+#### 1. ✅ Senhas exibidas incorretamente
+- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
 
-## Architecture
+#### 2. ✅ Permissões não refletem nos menus
+- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
 
-```text
-/ (root)
-├── Unauthenticated → LandingPage (new)
-└── Authenticated → Dashboard (existing, inside ProtectedRoute)
+#### 3. ✅ Botões de ação não respeitam permissões
+- Adicionado botão "Ver" (ícone Eye) em todas as páginas
+- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
 
-/super-admin
-└── New tab/section: "Planos" → CRUD for plans table
+#### 4. ✅ Estrutura de permissões expandida
+Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
+- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
+- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
+- `can_edit` = **Editar**
+- `can_create` = **Criar**
+- `can_delete` = **Excluir**
+
+#### 5. ✅ Criação e edição de usuários
+- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
+  - `Admins can insert any profile` (INSERT)
+  - `Admins can update any profile` (UPDATE)
+
+#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
+- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
+- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
+- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+
+#### 7. ✅ Permissões de Empresas Terceiras
+- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
+- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
+- Adicionada nova aba "Empresas" no dialog de permissões
+- Usuários com permissão de criar clientes podem ver lista de empresas
+
+#### 8. ✅ Permissões Granulares de Senhas por Cliente
+- Criado componente `PasswordPermissionsTab` com interface expandida
+- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
+- Usa tabela `user_password_permissions` para controle granular
+- Interface colapsível por cliente com carregamento sob demanda
+
+---
+
+## Arquivos Modificados
+
+1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
+2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
+3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
+4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
+5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
+6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
+7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
+8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
+9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
+10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
+11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
+13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+
+---
+
+## Fluxo de Permissões Implementado
+
+```
+1. Usuário sem "Ver Menu" -> Menu NÃO aparece
+2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
+3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
+4. Usuário com "Editar" -> Botão Editar aparece
+5. Usuário com "Criar" -> Botão Criar/Novo aparece  
+6. Usuário com "Excluir" -> Botão Excluir aparece
 ```
 
-## Database Changes
+## Mapeamento Resource x Menu
 
-**New table: `landing_plans`** -- stores editable plan cards shown on the landing page.
+| Menu                  | resource_type       |
+|-----------------------|---------------------|
+| Dashboard             | dashboard           |
+| Manutenções           | manutencoes         |
+| Clientes              | clientes            |
+| Empresas Terceiras    | empresas_terceiras  |
+| Equipes               | equipes             |
+| Tipos de Manutenção   | tipos_manutencao    |
+| Cofre de Senhas       | cofre_senhas        |
+| Perfis de Usuários    | perfis_usuarios     |
+| Permissões            | permissoes          |
 
-```sql
-CREATE TABLE public.landing_plans (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nome text NOT NULL,
-  tipo text NOT NULL DEFAULT 'individual', -- 'individual' | 'equipe' | 'personalizado'
-  categoria text NOT NULL DEFAULT 'gratis', -- 'gratis' | 'pago'
-  preco text, -- e.g. "R$ 49,90/mês" or null for free
-  max_usuarios integer DEFAULT 1,
-  descricao text,
-  recursos jsonb NOT NULL DEFAULT '[]', -- ["feature1", "feature2"]
-  whatsapp_numero text, -- e.g. "5511999999999"
-  whatsapp_mensagem text, -- pre-filled message
-  texto_botao text NOT NULL DEFAULT 'Começar Grátis',
-  destaque boolean DEFAULT false, -- highlighted plan
-  ordem integer DEFAULT 0,
-  ativo boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+## Estrutura de Permissões Atualizada
 
-ALTER TABLE public.landing_plans ENABLE ROW LEVEL SECURITY;
-
--- Anyone can read active plans (public landing page)
-CREATE POLICY "Anyone can view active plans" ON public.landing_plans
-  FOR SELECT TO anon, authenticated USING (ativo = true);
-
--- Super admins can manage
-CREATE POLICY "Super admins manage plans" ON public.landing_plans
-  FOR ALL TO authenticated
-  USING (is_super_admin(auth.uid()))
-  WITH CHECK (is_super_admin(auth.uid()));
 ```
+Módulo Sistema (user_system_permissions):
+  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
 
-## File Changes
+Clientes (user_client_permissions):
+  - Por cliente: Ver, Editar, Criar, Excluir
 
-### 1. `src/pages/LandingPage.tsx` (new)
-Modern landing page with:
-- **Hero section**: Logo, tagline, CTA button, gradient background with 3D card mockup
-- **Features section**: Grid of feature cards (maintenance management, password vault, teams, reports, permissions, multi-tenant) with icons, glassmorphism
-- **Free trial section**: Shows trial days from `system_settings` (`default_trial_days`)
-- **Plans section**: Fetches `landing_plans` from Supabase (public/anon), renders cards grouped by free/paid. Each card has name, price, features list, CTA button that redirects to WhatsApp (`https://wa.me/{numero}?text={encoded_message}`) or to `/login` for free plans
-- **Footer**: Fixed `AppFooter` with enhanced styling
-- Uses system colors, gradients, 3D shadows from existing CSS variables
-- Fully responsive (mobile-first)
+Empresas Terceiras (user_empresa_permissions):
+  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
 
-### 2. `src/App.tsx`
-- Add `/` route as `<LandingPage />` outside ProtectedRoute
-- Move Dashboard to `/dashboard` inside ProtectedRoute
-- Redirect authenticated users from `/` to `/dashboard` (handled in LandingPage component itself)
-
-### 3. `src/pages/SuperAdminPanel.tsx`
-Add a new "Planos" section (via Tabs or collapsible card):
-- Table listing all plans (active/inactive)
-- Create/Edit dialog with fields: nome, tipo (select), categoria (select), preco, max_usuarios, descricao, recursos (multi-line or tag input), whatsapp_numero, whatsapp_mensagem, texto_botao, destaque (switch), ordem, ativo (switch)
-- Delete plan with confirmation
-- All fields editable including button text and WhatsApp message
-
-### 4. `src/components/layout/AppFooter.tsx`
-- Enhanced design: slightly larger, gradient text for brand names, subtle separator line above
-- Ensure it's always fixed at bottom on all pages (landing, login, app)
-
-### 5. `src/components/layout/AppLayout.tsx`
-- Ensure footer is pinned at bottom (already in main content area, just verify mobile visibility with `pb-24`)
-
-### 6. Navigation updates
-- Update `AppSidebar.tsx` and `MobileNav.tsx` to use `/dashboard` as home route instead of `/`
-- Update any `navigate('/')` calls to `navigate('/dashboard')`
-
-## Technical Details
-
-- **Trial days on landing**: Fetched via `supabase.from('system_settings').select('value').eq('key', 'default_trial_days').single()` using anon key (public read policy already exists)
-- **Plans on landing**: Fetched via `supabase.from('landing_plans').select('*').eq('ativo', true).order('ordem')` using anon key
-- **WhatsApp redirect**: `window.open(\`https://wa.me/${plan.whatsapp_numero}?text=${encodeURIComponent(plan.whatsapp_mensagem)}\`, '_blank')`
-- **Auth check in LandingPage**: Use `useAuth()` -- if user is authenticated, `<Navigate to="/dashboard" />`
-- **Landing page design**: Gradient hero with `gradient-primary`, glassmorphism feature cards, 3D plan cards with `shadow-3d`, smooth scroll animations using existing `animate-fade-in` / `animate-slide-up`
-
+Senhas (user_password_permissions):
+  - Por senha individual: Ver, Editar
+  - Agrupadas por cliente na interface
+```

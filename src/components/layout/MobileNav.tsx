@@ -9,14 +9,14 @@ import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 const bottomNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Cofre", url: "/cofre", icon: KeyRound },
 ]
 
 const allNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, section: "Principal" },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, section: "Principal" },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench, section: "Principal" },
   { title: "Clientes", url: "/clientes", icon: Users, section: "Principal" },
   { title: "Empresas", url: "/empresas", icon: Building2, section: "Principal" },
@@ -57,7 +57,7 @@ export function MobileNav() {
   const allItems = [...filteredNavItems, ...systemItems]
 
   const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/"
+    if (path === "/dashboard") return currentPath === "/dashboard"
     return currentPath.startsWith(path)
   }
 
@@ -71,7 +71,7 @@ export function MobileNav() {
             <NavLink
               key={item.url}
               to={item.url}
-              end={item.url === "/"}
+              end={item.url === "/dashboard"}
               className={() => cn("mobile-nav-item", isActive(item.url) && "active")}
             >
               <item.icon className="h-5 w-5" />
@@ -109,7 +109,7 @@ export function MobileNav() {
                           <NavLink
                             key={item.url}
                             to={item.url}
-                            end={item.url === "/"}
+                            end={item.url === "/dashboard"}
                             onClick={() => setDrawerOpen(false)}
                             className={() => cn(
                               "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",

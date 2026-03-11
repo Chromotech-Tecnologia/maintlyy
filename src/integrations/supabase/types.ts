@@ -232,6 +232,63 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_plans: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          created_at: string | null
+          descricao: string | null
+          destaque: boolean | null
+          id: string
+          max_usuarios: number | null
+          nome: string
+          ordem: number | null
+          preco: string | null
+          recursos: Json
+          texto_botao: string
+          tipo: string
+          updated_at: string | null
+          whatsapp_mensagem: string | null
+          whatsapp_numero: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          id?: string
+          max_usuarios?: number | null
+          nome: string
+          ordem?: number | null
+          preco?: string | null
+          recursos?: Json
+          texto_botao?: string
+          tipo?: string
+          updated_at?: string | null
+          whatsapp_mensagem?: string | null
+          whatsapp_numero?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          id?: string
+          max_usuarios?: number | null
+          nome?: string
+          ordem?: number | null
+          preco?: string | null
+          recursos?: Json
+          texto_botao?: string
+          tipo?: string
+          updated_at?: string | null
+          whatsapp_mensagem?: string | null
+          whatsapp_numero?: string | null
+        }
+        Relationships: []
+      }
       manutencoes: {
         Row: {
           cliente_id: string

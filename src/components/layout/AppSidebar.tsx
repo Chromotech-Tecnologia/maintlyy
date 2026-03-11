@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Empresas", url: "/empresas", icon: Building2 },
@@ -77,7 +77,7 @@ export function AppSidebar() {
   })
 
   const isActiveRoute = (path: string) => {
-    if (path === "/") return currentPath === "/"
+    if (path === "/dashboard") return currentPath === "/dashboard"
     return currentPath.startsWith(path)
   }
 
@@ -90,7 +90,7 @@ export function AppSidebar() {
     )
 
   const getNavStyle = (path: string): React.CSSProperties => {
-    const active = path === "/" ? currentPath === "/" : currentPath.startsWith(path)
+    const active = path === "/dashboard" ? currentPath === "/dashboard" : currentPath.startsWith(path)
     return active ? { background: 'var(--gradient-primary)' } : {}
   }
 
@@ -106,7 +106,7 @@ export function AppSidebar() {
               <NavLink 
                 key={item.title} 
                 to={item.url} 
-                end={item.url === "/"} 
+                end={item.url === "/dashboard"} 
                 className={getNavCls}
                 style={() => getNavStyle(item.url)}
               >

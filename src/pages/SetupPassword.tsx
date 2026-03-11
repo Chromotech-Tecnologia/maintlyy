@@ -63,7 +63,7 @@ export default function SetupPassword() {
       }
 
       toast.success("Senha criada com sucesso! Bem-vindo ao Maintly!")
-      navigate("/")
+      navigate("/dashboard")
     } catch (error: any) {
       toast.error("Erro ao criar senha: " + error.message)
     } finally {

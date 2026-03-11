@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
+import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Manutencoes from "./pages/Manutencoes";
@@ -34,6 +35,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/setup-password" element={<SetupPassword />} />
@@ -42,7 +44,7 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/clientes" element={<Clientes />} />
                       <Route path="/manutencoes" element={<Manutencoes />} />
                       <Route path="/empresas" element={<Empresas />} />

@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
   XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
-  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp
+  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PlansManager } from "@/components/superadmin/PlansManager"
 
 interface StatMetric {
   total: number
@@ -212,7 +214,7 @@ export default function SuperAdminPanel() {
     )
   }
 
-  if (!isSuperAdmin) return <Navigate to="/" replace />
+  if (!isSuperAdmin) return <Navigate to="/dashboard" replace />
 
   const getStatusBadge = (admin: AdminWithStats) => {
     const status = admin.account_status || 'active'
@@ -292,11 +294,24 @@ export default function SuperAdminPanel() {
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
+      {/* Tabs */}
+      <Tabs defaultValue="admins" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="admins" className="gap-1.5">
+            <Crown className="h-4 w-4" /> Administradores
+          </TabsTrigger>
+          <TabsTrigger value="planos" className="gap-1.5">
+            <CreditCard className="h-4 w-4" /> Planos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="admins" className="space-y-6">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-500/10">
-            <Crown className="h-6 w-6 text-purple-400" />
+          <div className="p-2.5 rounded-xl bg-primary/10">
+            <Crown className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold font-display">Painel Super Admin</h1>
@@ -527,6 +542,13 @@ export default function SuperAdminPanel() {
           )}
         </>
       )}
+
+        </TabsContent>
+
+        <TabsContent value="planos">
+          <PlansManager />
+        </TabsContent>
+      </Tabs>
 
       {/* Change Password Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(open) => setPasswordDialog(prev => ({ ...prev, open }))}>
