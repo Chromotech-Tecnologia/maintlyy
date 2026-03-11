@@ -18,6 +18,8 @@ interface LandingPlan {
   categoria: string
   preco: string | null
   max_usuarios: number
+  max_empresas: number
+  max_manutencoes: number
   descricao: string | null
   recursos: string[]
   whatsapp_numero: string | null
@@ -25,6 +27,7 @@ interface LandingPlan {
   texto_botao: string
   destaque: boolean
   ordem: number
+  offer_free_signup: boolean
 }
 
 const features = [
