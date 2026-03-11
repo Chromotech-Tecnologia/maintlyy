@@ -708,6 +708,7 @@ export type Database = {
         Args: { _admin_id: string; _target_user_id: string }
         Returns: boolean
       }
+      check_email_exists: { Args: { _email: string }; Returns: boolean }
       has_system_permission: {
         Args: { _permission: string; _resource: string; _user_id: string }
         Returns: boolean
