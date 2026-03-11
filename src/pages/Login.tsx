@@ -262,6 +262,7 @@ export default function Login() {
                           </button>
                         </div>
                       </FormControl>
+                      <PasswordMatchIndicator password={signupForm.watch("password")} confirmPassword={field.value} />
                       <FormMessage />
                     </FormItem>
                   )} />
