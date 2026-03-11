@@ -1,108 +1,110 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+# Plan: Security Tokens via Email + Invite Flow + Export Verification
 
-### Problemas Identificados e Corrigidos
+## Summary
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
+Implement 3 security mechanisms using email-based verification:
+1. **Sub-user invite flow** -- admin creates user without password, system sends invite email with link to create password
+2. **Tenant signup email validation** -- already partially in place via Supabase, will be reinforced
+3. **Export security token** -- before downloading passwords or sensitive reports, send a 6-digit OTP to user's email for verification
 
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
+## Approach
 
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
+### Email Sending Strategy
 
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
+Use **Supabase's built-in auth email system** -- no external email service needed:
+- **Invites**: `auth.admin.inviteUserByEmail()` sends Supabase's invite email automatically
+- **Export OTP**: `supabase.auth.signInWithOtp({ email, shouldCreateUser: false })` sends a 6-digit code via Supabase's built-in email, then `verifyOtp()` validates it
 
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
+### 1. Sub-User Invite Flow
 
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+**Edge function changes (`admin-operations/index.ts`)**:
+- Add `inviteUser` operation that calls `auth.admin.inviteUserByEmail(email, { redirectTo: origin + '/setup-password' })`
+- Creates the `user_profiles` record with `account_status: 'pending_invite'`
+- No password is set -- the invited user creates their own
 
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
+**New page: `/setup-password`** (`src/pages/SetupPassword.tsx`):
+- Similar to `ResetPassword.tsx` but handles `type=invite` from Supabase URL hash
+- Shows logo, name, password + confirm fields with validation
+- On submit: calls `supabase.auth.updateUser({ password })` then redirects to `/`
 
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+**Modified: `src/pages/PerfilUsuarios.tsx`**:
+- Remove password and confirm password fields from the create user form
+- Replace with info text: "Um convite será enviado por email para o usuário criar sua senha"
+- `handleCreateUser` calls the edge function `inviteUser` operation instead of `supabase.auth.signUp`
+- Remove password validation from button disabled state
 
----
+**Modified: `src/App.tsx`**:
+- Add route `/setup-password` outside ProtectedRoute
 
-## Arquivos Modificados
+### 2. Export Security Token (OTP Verification)
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+**New component: `src/components/SecurityTokenDialog.tsx`**:
+- Reusable dialog that:
+  1. On open, calls `supabase.auth.signInWithOtp({ email: user.email, options: { shouldCreateUser: false } })`
+  2. Shows 6-digit input field with countdown timer (5 min expiry)
+  3. On submit, calls `supabase.auth.verifyOtp({ email, token, type: 'email' })`
+  4. If valid, calls `onVerified()` callback to proceed with the export
+  5. Shows "Reenviar código" button after 60s cooldown
+- Props: `open`, `onOpenChange`, `onVerified`, `email`
 
----
+**Modified: `src/pages/CofreSenhas.tsx`**:
+- Wrap `exportSelectedPasswords()` behind OTP verification
+- When user clicks "Exportar TXT/CSV", open `SecurityTokenDialog` first
+- Only execute export after `onVerified` callback fires
 
-## Fluxo de Permissões Implementado
+**Modified: `src/pages/Relatorios.tsx`**:
+- Same pattern: wrap export behind `SecurityTokenDialog` for `senhas_inventario` report type
+- Maintenance reports (non-sensitive) can export without token
 
+**Modified: `src/components/dashboard/DashboardReportExport.tsx`**:
+- If report contains sensitive data, require OTP before PDF/image/link generation
+
+### 3. Edge Function Updates
+
+**`admin-operations/index.ts`** -- add `inviteUser` operation:
+```typescript
+case 'inviteUser': {
+  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    body.email,
+    { redirectTo: body.redirectTo || origin + '/setup-password' }
+  )
+  if (error) throw error
+  // Create profile record
+  await supabaseAdmin.from('user_profiles').insert({
+    user_id: data.user.id,
+    email: body.email,
+    display_name: body.displayName,
+    is_admin: body.isAdmin || false,
+    permission_profile_id: body.permissionProfileId || null,
+    account_status: 'pending_invite'
+  })
+  // Sync permissions from profile...
+  result = { data }
+  break
+}
 ```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
 
-## Mapeamento Resource x Menu
+## File Changes Summary
 
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
+| File | Action |
+|------|--------|
+| `supabase/functions/admin-operations/index.ts` | Add `inviteUser` operation |
+| `src/pages/SetupPassword.tsx` | New -- invite password setup page |
+| `src/components/SecurityTokenDialog.tsx` | New -- reusable OTP verification dialog |
+| `src/pages/PerfilUsuarios.tsx` | Remove password fields, use invite flow |
+| `src/pages/CofreSenhas.tsx` | Add OTP verification before export |
+| `src/pages/Relatorios.tsx` | Add OTP verification for password reports |
+| `src/components/dashboard/DashboardReportExport.tsx` | Add OTP verification before report generation |
+| `src/App.tsx` | Add `/setup-password` route |
+| `src/hooks/useAdminOperations.tsx` | Add `inviteUser` method |
 
-## Estrutura de Permissões Atualizada
+## Technical Notes
 
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
+- Supabase's `signInWithOtp` with `shouldCreateUser: false` uses the built-in SMTP (no external email service needed)
+- The OTP is valid for the duration configured in Supabase auth settings (default 5 min)
+- `inviteUserByEmail` uses Supabase's invite email template -- customizable in the Supabase dashboard
+- The `verifyOtp` call refreshes the session but since the user is already logged in, this just re-validates
+- `SecurityTokenDialog` includes a 60-second cooldown between resend requests to prevent spam
 
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
-
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
-
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
