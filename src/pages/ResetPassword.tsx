@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
+import { PasswordRequirements, isPasswordValid } from "@/components/ui/password-requirements"
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -99,6 +100,7 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <PasswordRequirements password={password} />
             </div>
             <div>
               <Label htmlFor="confirm">Confirmar Senha</Label>
@@ -116,7 +118,7 @@ export default function ResetPassword() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !isPasswordValid(password) || password !== confirmPassword}>
               {loading ? "Redefinindo..." : "Redefinir Senha"}
             </Button>
           </form>
