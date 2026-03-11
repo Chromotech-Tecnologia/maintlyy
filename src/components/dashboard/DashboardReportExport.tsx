@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
+import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface ReportData {
   chartData: any[]
