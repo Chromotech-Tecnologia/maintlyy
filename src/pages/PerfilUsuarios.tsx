@@ -421,8 +421,10 @@ export default function PerfilUsuarios() {
                     !isPasswordValid(newUserData.password) || 
                     newUserData.password !== newUserData.confirmPassword ||
                     !newUserData.email || 
+                    !isEmailValid(newUserData.email) ||
                     !newUserData.display_name ||
                     !!emailError
+                  }>
                   }>
                     Criar Usuário
                   </Button>
