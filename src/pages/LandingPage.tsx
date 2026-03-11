@@ -261,9 +261,9 @@ export default function LandingPage() {
             { icon: Zap, text: "99.9% de disponibilidade" },
             { icon: Users, text: "Equipes de todos os tamanhos" },
           ].map((item) => (
-            <div key={item.text} className="flex items-center gap-2 text-muted-foreground">
-              <item.icon className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{item.text}</span>
+            <div key={item.text} className="flex items-center gap-2 text-muted-foreground justify-center">
+              <item.icon className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs sm:text-sm font-medium">{item.text}</span>
             </div>
           ))}
         </div>
