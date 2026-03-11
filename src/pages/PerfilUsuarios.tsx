@@ -189,16 +189,60 @@ export default function PerfilUsuarios() {
       if (authError) throw authError
 
       if (data.user) {
+        const selectedProfile = permissionProfiles.find(p => p.id === newUserData.permission_profile_id)
         const { error: profileError } = await supabase
           .from('user_profiles')
           .insert({
             user_id: data.user.id,
             display_name: newUserData.display_name,
             email: newUserData.email,
-            is_admin: newUserData.is_admin
+            is_admin: selectedProfile?.is_admin_profile || false,
+            permission_profile_id: newUserData.permission_profile_id || null
           })
 
         if (profileError) throw profileError
+
+        // Sync permissions from profile
+        if (newUserData.permission_profile_id) {
+          const { data: permProfile } = await supabase
+            .from('permission_profiles')
+            .select('client_access, empresa_access, password_access')
+            .eq('id', newUserData.permission_profile_id)
+            .single()
+
+          if (permProfile) {
+            const clientAccess = Array.isArray(permProfile.client_access) ? permProfile.client_access : []
+            const empresaAccess = Array.isArray(permProfile.empresa_access) ? permProfile.empresa_access : []
+            const passwordAccess = Array.isArray(permProfile.password_access) ? permProfile.password_access : []
+
+            if (clientAccess.length > 0) {
+              await supabase.from('user_client_permissions').insert(
+                clientAccess.map((ca: any) => ({
+                  user_id: data.user!.id, cliente_id: ca.cliente_id,
+                  can_view: ca.can_view || false, can_edit: ca.can_edit || false,
+                  can_create: ca.can_create || false, can_delete: ca.can_delete || false
+                }))
+              )
+            }
+            if (empresaAccess.length > 0) {
+              await supabase.from('user_empresa_permissions').insert(
+                empresaAccess.map((ea: any) => ({
+                  user_id: data.user!.id, empresa_terceira_id: ea.empresa_terceira_id,
+                  can_view: ea.can_view || false, can_edit: ea.can_edit || false,
+                  can_delete: ea.can_delete || false, can_create_manutencao: ea.can_create_manutencao || false
+                }))
+              )
+            }
+            if (passwordAccess.length > 0) {
+              await supabase.from('user_password_permissions').insert(
+                passwordAccess.map((pa: any) => ({
+                  user_id: data.user!.id, senha_id: pa.senha_id,
+                  can_view: pa.can_view || false, can_edit: pa.can_edit || false
+                }))
+              )
+            }
+          }
+        }
       }
 
       toast.success('Usuário criado com sucesso!')
