@@ -472,9 +472,13 @@ export default function Clientes() {
           <div key={cliente.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
+                {cliente.logo_url ? (
+                  <img src={cliente.logo_url} alt={cliente.nome_cliente} className="w-10 h-10 rounded-xl object-contain border border-border bg-muted" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h3 className="font-semibold text-sm truncate">{cliente.nome_cliente}</h3>
                   {cliente.cnpj && <p className="text-xs text-muted-foreground">{cliente.cnpj}</p>}
