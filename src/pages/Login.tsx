@@ -41,8 +41,8 @@ export default function Login() {
     defaultValues: { email: "", password: "" },
   })
 
-  const signupForm = useForm<SignupFormData>({
-    defaultValues: { display_name: "", email: "", phone: "", password: "", confirmPassword: "" },
+  const signupForm = useForm({
+    defaultValues: { display_name: "", email: "", phone: "" },
   })
 
   const watchedEmail = signupForm.watch("email")
