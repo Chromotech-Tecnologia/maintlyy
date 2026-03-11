@@ -7,7 +7,7 @@ export function AppFooter({ className = "" }: { className?: string }) {
         rel="noopener noreferrer"
         className="font-semibold text-primary hover:underline"
       >
-        Maintly
+        Maintly©
       </a>
       {" — Um produto "}
       <a 
@@ -16,7 +16,7 @@ export function AppFooter({ className = "" }: { className?: string }) {
         rel="noopener noreferrer"
         className="font-semibold text-primary hover:underline"
       >
-        Chromotech
+        Chromotech®
       </a>
     </footer>
   )
