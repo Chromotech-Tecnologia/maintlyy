@@ -254,7 +254,7 @@ export default function LandingPage() {
 
       {/* Social Proof Bar */}
       <section className="py-8 px-4 sm:px-6 border-y border-border/50 bg-muted/30">
-        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-8 sm:gap-14">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-4 sm:gap-14">
           {[
             { icon: Clock, text: "Economia de 10h/semana" },
             { icon: ShieldCheck, text: "Criptografia AES-256" },
