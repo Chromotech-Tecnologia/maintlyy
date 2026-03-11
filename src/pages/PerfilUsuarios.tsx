@@ -425,7 +425,6 @@ export default function PerfilUsuarios() {
                     !newUserData.display_name ||
                     !!emailError
                   }>
-                  }>
                     Criar Usuário
                   </Button>
                 </div>
