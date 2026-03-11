@@ -100,8 +100,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       // Validate password if changing
       if (showPasswordSection && newPassword) {
-        if (newPassword.length < 6) {
-          toast.error('A senha deve ter pelo menos 6 caracteres')
+        if (!isPasswordValid(newPassword)) {
+          toast.error('A senha não atende aos requisitos mínimos')
           return
         }
         if (newPassword !== confirmPassword) {
