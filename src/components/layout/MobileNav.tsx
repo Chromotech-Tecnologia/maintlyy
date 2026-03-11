@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 const bottomNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Cofre", url: "/cofre", icon: KeyRound },
