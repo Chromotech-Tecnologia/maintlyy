@@ -212,6 +212,12 @@ export default function Empresas() {
                 <p className="text-lg font-medium">{viewingEmpresa.nome_empresa}</p>
               </div>
               <div>
+                <Label className="text-muted-foreground">Status</Label>
+                <p className={`font-medium ${viewingEmpresa.ativo ? 'text-green-600' : 'text-destructive'}`}>
+                  {viewingEmpresa.ativo ? 'Ativa' : 'Inativa'}
+                </p>
+              </div>
+              <div>
                 <Label className="text-muted-foreground">Data de Criação</Label>
                 <p>{new Date(viewingEmpresa.created_at).toLocaleDateString()}</p>
               </div>
