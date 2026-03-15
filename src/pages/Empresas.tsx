@@ -244,6 +244,7 @@ export default function Empresas() {
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead className="font-semibold">Nome da Empresa</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Data de Criação</TableHead>
                 <TableHead className="w-24 font-semibold">Ações</TableHead>
               </TableRow>
@@ -252,6 +253,11 @@ export default function Empresas() {
               {empresas.filter(e => !searchTerm || searchMatch(e.nome_empresa, searchTerm)).map((empresa) => (
                 <TableRow key={empresa.id} className="border-border/30 hover:bg-muted/40">
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${empresa.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                      {empresa.ativo ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(empresa.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
