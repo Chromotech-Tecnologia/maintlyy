@@ -178,11 +178,17 @@ export default function Manutencoes() {
         if (error) throw error
 
         // Update junction table
-        await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
+        const { error: deleteError } = await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
+        if (deleteError) console.error('Error deleting manutencao_equipes:', deleteError)
+        
         if (equipe_ids.length > 0) {
-          await supabase.from('manutencao_equipes').insert(
+          const { error: insertError } = await supabase.from('manutencao_equipes').insert(
             equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid }))
           )
+          if (insertError) {
+            console.error('Error inserting manutencao_equipes:', insertError)
+            toast.error("Erro ao salvar equipes: " + insertError.message)
+          }
         }
 
         toast.success("Manutenção atualizada!")
@@ -220,8 +226,9 @@ export default function Manutencoes() {
         status: "Em andamento",
         responsavel: ""
       })
-      fetchData()
+      await fetchData()
     } catch (error: any) {
+      console.error('handleSubmit error:', error)
       toast.error(error.message)
     }
   }
