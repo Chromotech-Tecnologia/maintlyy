@@ -106,7 +106,8 @@ export default function Manutencoes() {
             clientes(nome_cliente),
             empresas_terceiras(nome_empresa),
             tipos_manutencao(nome_tipo_manutencao),
-            equipes(nome_equipe)
+            equipes(nome_equipe),
+            manutencao_equipes(equipe_id, equipes(nome_equipe))
           `)
           .order('created_at', { ascending: false }),
         supabase.from('empresas_terceiras').select('*'),
