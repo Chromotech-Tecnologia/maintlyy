@@ -500,7 +500,7 @@ export default function Manutencoes() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               <div className="space-y-1">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Cliente</Label>
-                <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                <Select value={filtroCliente || "todos"} onValueChange={(v) => setFiltroCliente(v === "todos" ? "" : v)}>
                   <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
@@ -510,7 +510,7 @@ export default function Manutencoes() {
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</Label>
-                <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                <Select value={filtroEmpresa || "todos"} onValueChange={(v) => setFiltroEmpresa(v === "todos" ? "" : v)}>
                   <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todas</SelectItem>
@@ -520,7 +520,7 @@ export default function Manutencoes() {
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tipo</Label>
-                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                <Select value={filtroTipo || "todos"} onValueChange={(v) => setFiltroTipo(v === "todos" ? "" : v)}>
                   <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
@@ -530,7 +530,7 @@ export default function Manutencoes() {
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equipe</Label>
-                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                <Select value={filtroEquipe || "todos"} onValueChange={(v) => setFiltroEquipe(v === "todos" ? "" : v)}>
                   <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todas" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todas</SelectItem>
@@ -540,7 +540,7 @@ export default function Manutencoes() {
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</Label>
-                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <Select value={filtroStatus || "todos"} onValueChange={(v) => setFiltroStatus(v === "todos" ? "" : v)}>
                   <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
