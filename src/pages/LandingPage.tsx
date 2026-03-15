@@ -734,7 +734,7 @@ function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanCli
   )
 }
 
-function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
+function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void }) {
   return (
     <div
       className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
