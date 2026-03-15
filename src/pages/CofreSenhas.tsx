@@ -1021,6 +1021,11 @@ export default function CofreSenhas() {
         </div>
       </div>
 
+      {/* Prerequisite Warning */}
+      {cofreMissingPrereqs.length > 0 && (
+        <PrerequisiteWarning context="uma senha" missingItems={cofreMissingPrereqs} />
+      )}
+
       {/* Filtros - Accordion no mobile, grid no desktop */}
       <div className="hidden md:block">
         <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted/30 rounded-lg">
