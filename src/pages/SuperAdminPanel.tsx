@@ -80,8 +80,14 @@ export default function SuperAdminPanel() {
   const [actionLoading, setActionLoading] = useState(false)
   const [activateDialog, setActivateDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [selectedPlanId, setSelectedPlanId] = useState<string>("")
-  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string }[]>([])
+  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string; max_usuarios: number; max_equipes: number; max_manutencoes: number; max_empresas: number; max_senhas: number }[]>([])
   const [plansLoading, setPlansLoading] = useState(false)
+
+  // Change plan dialog
+  const [changePlanDialog, setChangePlanDialog] = useState<{ open: boolean; userId: string; email: string; currentPlanId: string | null }>({ open: false, userId: "", email: "", currentPlanId: null })
+  const [changePlanId, setChangePlanId] = useState<string>("")
+  const [changePlanLimits, setChangePlanLimits] = useState({ max_usuarios: 0, max_equipes: 0, max_manutencoes: 0, max_empresas: 0, max_senhas: 0 })
+  const [changePlanLoading, setChangePlanLoading] = useState(false)
 
   useEffect(() => {
     if (isSuperAdmin) {
