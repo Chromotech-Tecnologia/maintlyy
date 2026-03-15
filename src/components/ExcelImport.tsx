@@ -29,6 +29,43 @@ interface ManutencaoImport {
   solicitante?: string
 }
 
+function parseExcelDate(value: any): string | null {
+  if (!value) return null
+  // Excel serial date number
+  if (typeof value === 'number' && value > 1 && value < 100000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30))
+    const date = new Date(excelEpoch.getTime() + value * 86400000)
+    const y = date.getUTCFullYear()
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(date.getUTCDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  if (typeof value === 'string') {
+    // Already yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+    // dd/mm/yyyy
+    const brMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+    if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`
+  }
+  return String(value)
+}
+
+function parseExcelTime(value: any): string | null {
+  if (!value) return null
+  // Excel fractional day (e.g., 0.5 = 12:00)
+  if (typeof value === 'number' && value >= 0 && value < 1) {
+    const totalMinutes = Math.round(value * 24 * 60)
+    const h = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const m = String(totalMinutes % 60).padStart(2, '0')
+    return `${h}:${m}`
+  }
+  if (typeof value === 'string') {
+    // HH:MM or HH:MM:SS
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) return value.substring(0, 5)
+  }
+  return String(value)
+}
+
 export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
