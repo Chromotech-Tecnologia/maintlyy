@@ -66,7 +66,7 @@ export default function Empresas() {
       if (editingId) {
         const { error } = await supabase
           .from('empresas_terceiras')
-          .update({ nome_empresa: nomeEmpresa.trim() })
+          .update({ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa })
           .eq('id', editingId)
         
         if (error) throw error
