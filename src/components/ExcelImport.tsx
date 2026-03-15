@@ -211,12 +211,27 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             equipe_id = equipe.id
           }
 
+          // Parse datas e horas (suporta serial Excel e strings)
+          const dataInicio = parseExcelDate(row.data_inicio)
+          const horaInicio = parseExcelTime(row.hora_inicio)
+          const dataFim = parseExcelDate(row.data_fim)
+          const horaFim = parseExcelTime(row.hora_fim)
+
+          if (!dataInicio || !/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)) {
+            errors.push(`Linha ${i + 2}: Data início inválida "${row.data_inicio}". Use o formato AAAA-MM-DD ou DD/MM/AAAA.`)
+            continue
+          }
+          if (!horaInicio || !/^\d{1,2}:\d{2}/.test(horaInicio)) {
+            errors.push(`Linha ${i + 2}: Hora início inválida "${row.hora_inicio}". Use o formato HH:MM.`)
+            continue
+          }
+
           // Calcular tempo total se ambas as datas/horas estiverem presentes
           let tempo_total = null
-          if (row.data_inicio && row.hora_inicio && row.data_fim && row.hora_fim) {
-            const inicio = new Date(`${row.data_inicio}T${row.hora_inicio}`)
-            const fim = new Date(`${row.data_fim}T${row.hora_fim}`)
-            tempo_total = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60)) // em minutos
+          if (dataInicio && horaInicio && dataFim && horaFim) {
+            const inicio = new Date(`${dataInicio}T${horaInicio}`)
+            const fim = new Date(`${dataFim}T${horaFim}`)
+            tempo_total = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60))
           }
 
           manutencoes.push({
@@ -225,10 +240,10 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             empresa_terceira_id,
             tipo_manutencao_id: tipo.id,
             equipe_id,
-            data_inicio: row.data_inicio,
-            hora_inicio: row.hora_inicio,
-            data_fim: row.data_fim || null,
-            hora_fim: row.hora_fim || null,
+            data_inicio: dataInicio,
+            hora_inicio: horaInicio,
+            data_fim: dataFim || null,
+            hora_fim: horaFim || null,
             descricao: row.descricao || null,
             status: row.status || 'Em andamento',
             responsavel: row.responsavel || null,
