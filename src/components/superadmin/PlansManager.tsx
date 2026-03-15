@@ -49,6 +49,7 @@ const emptyPlan: Omit<Plan, "id"> = {
   max_equipes: 0,
   max_manutencoes: 0,
   max_empresas: 0,
+  max_senhas: 0,
   descricao: "",
   recursos: [],
   offer_free_signup: false,
