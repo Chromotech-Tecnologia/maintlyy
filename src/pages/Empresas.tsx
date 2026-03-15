@@ -290,7 +290,12 @@ export default function Empresas() {
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{empresa.nome_empresa}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-sm truncate">{empresa.nome_empresa}</p>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${empresa.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {empresa.ativo ? 'Ativa' : 'Inativa'}
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">{new Date(empresa.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
             </div>
