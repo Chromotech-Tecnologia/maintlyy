@@ -493,6 +493,11 @@ export default function Manutencoes() {
         </div>
       </div>
 
+      {/* Prerequisite Warning */}
+      {missingPrereqs.length > 0 && (
+        <PrerequisiteWarning context="uma manutenção" missingItems={missingPrereqs} />
+      )}
+
       {/* Search & Filters */}
       <div className="space-y-3">
         <div className="flex gap-2">
