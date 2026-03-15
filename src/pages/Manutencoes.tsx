@@ -58,6 +58,7 @@ interface FormData {
 export default function Manutencoes() {
   const { user } = useAuth()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([])
   const [empresas, setEmpresas] = useState<any[]>([])
   const [clientes, setClientes] = useState<any[]>([])
