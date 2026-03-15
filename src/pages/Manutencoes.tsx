@@ -417,19 +417,27 @@ export default function Manutencoes() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Equipe</Label>
-                  <Select value={formData.equipe_id} onValueChange={(value) => setFormData({...formData, equipe_id: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipes.map((equipe: any) => (
-                        <SelectItem key={equipe.id} value={equipe.id}>
-                          {equipe.nome_equipe}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Equipes</Label>
+                  <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto bg-background">
+                    {equipes.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma equipe cadastrada</p>}
+                    {equipes.map((equipe: any) => (
+                      <label key={equipe.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.equipe_ids.includes(equipe.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({...formData, equipe_ids: [...formData.equipe_ids, equipe.id]})
+                            } else {
+                              setFormData({...formData, equipe_ids: formData.equipe_ids.filter(id => id !== equipe.id)})
+                            }
+                          }}
+                          className="rounded border-primary"
+                        />
+                        {equipe.nome_equipe}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
               
