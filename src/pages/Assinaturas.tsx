@@ -33,7 +33,7 @@ export default function Assinaturas() {
     const fetchData = async () => {
       const { data: profileRaw } = await supabase
         .from('user_profiles')
-        .select('plan_id, account_status, trial_start, trial_days, is_permanent')
+        .select('plan_id, account_status')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -41,12 +41,6 @@ export default function Assinaturas() {
       if (profile) {
         setCurrentPlanId(profile.plan_id)
         setAccountStatus(profile.account_status || 'active')
-
-        if (profile.account_status === 'trial' && profile.trial_start && profile.trial_days) {
-          const end = new Date(profile.trial_start)
-          end.setDate(end.getDate() + profile.trial_days)
-          setTrialDaysLeft(Math.max(0, Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))))
-        }
       }
 
       const { data: plansData } = await supabase
