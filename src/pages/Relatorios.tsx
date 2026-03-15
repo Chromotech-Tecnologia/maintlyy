@@ -377,8 +377,8 @@ export default function Relatorios() {
               </div>
             </div>
 
-            {/* Date Filters (for non-password reports) */}
-            {selectedReport !== 'senhas_inventario' && (
+            {/* Date Filters (only for maintenance reports) */}
+            {['manutencoes_cliente', 'manutencoes_tipo', 'horas_resumo'].includes(selectedReport) && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Filter className="h-4 w-4 text-muted-foreground" />
