@@ -65,16 +65,11 @@ const trustBadges = [
 
 export default function LandingPage() {
   const { user, loading } = useAuth()
-  const [trialDays, setTrialDays] = useState(7)
   const [plans, setPlans] = useState<LandingPlan[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
-      const [settingsRes, plansRes] = await Promise.all([
-        supabase.from("system_settings").select("value").eq("key", "default_trial_days").single(),
-        supabase.from("landing_plans").select("*").eq("ativo", true).order("ordem"),
-      ])
-      if (settingsRes.data?.value) setTrialDays(parseInt(settingsRes.data.value) || 7)
+      const plansRes = await supabase.from("landing_plans").select("*").eq("ativo", true).order("ordem")
       if (plansRes.data) setPlans(plansRes.data.map((p: any) => ({ ...p, recursos: Array.isArray(p.recursos) ? p.recursos : [] })))
     }
     fetchData()
