@@ -96,6 +96,7 @@ export default function Empresas() {
 
   const handleEdit = (empresa: EmpresaTerceira) => {
     setNomeEmpresa(empresa.nome_empresa)
+    setAtivoEmpresa(empresa.ativo)
     setEditingId(empresa.id)
     setOpen(true)
   }
