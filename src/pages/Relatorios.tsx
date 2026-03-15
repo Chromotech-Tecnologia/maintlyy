@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
-type ReportType = 'manutencoes_cliente' | 'manutencoes_tipo' | 'horas_resumo' | 'senhas_inventario'
+type ReportType = 'manutencoes_cliente' | 'manutencoes_tipo' | 'horas_resumo' | 'senhas_inventario' | 'empresas' | 'clientes' | 'usuarios' | 'perfis'
 
 interface ReportConfig {
   label: string
@@ -72,6 +72,47 @@ const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {
       { key: 'cliente', label: 'Cliente', default: true },
       { key: 'empresa', label: 'Empresa', default: false },
       { key: 'descricao', label: 'Descrição', default: false },
+    ]
+  },
+  empresas: {
+    label: "Empresas",
+    description: "Lista de empresas cadastradas",
+    fields: [
+      { key: 'nome_empresa', label: 'Nome da Empresa', default: true },
+      { key: 'created_at', label: 'Data Cadastro', default: true },
+    ]
+  },
+  clientes: {
+    label: "Clientes",
+    description: "Lista de clientes cadastrados",
+    fields: [
+      { key: 'nome_cliente', label: 'Nome do Cliente', default: true },
+      { key: 'email', label: 'Email', default: true },
+      { key: 'telefone', label: 'Telefone', default: true },
+      { key: 'cnpj', label: 'CNPJ', default: true },
+      { key: 'endereco', label: 'Endereço', default: false },
+      { key: 'empresa', label: 'Empresa', default: true },
+    ]
+  },
+  usuarios: {
+    label: "Usuários",
+    description: "Lista de usuários do sistema",
+    fields: [
+      { key: 'display_name', label: 'Nome', default: true },
+      { key: 'email', label: 'Email', default: true },
+      { key: 'phone', label: 'Telefone', default: true },
+      { key: 'is_admin', label: 'Admin', default: true },
+      { key: 'account_status', label: 'Status', default: true },
+      { key: 'plan', label: 'Plano', default: false },
+    ]
+  },
+  perfis: {
+    label: "Perfis de Permissão",
+    description: "Lista de perfis de permissão cadastrados",
+    fields: [
+      { key: 'nome_perfil', label: 'Nome do Perfil', default: true },
+      { key: 'is_admin_profile', label: 'Perfil Admin', default: true },
+      { key: 'created_at', label: 'Data Cadastro', default: true },
     ]
   },
 }
