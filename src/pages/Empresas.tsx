@@ -76,6 +76,7 @@ export default function Empresas() {
           .from('empresas_terceiras')
           .insert([{ 
             nome_empresa: nomeEmpresa.trim(),
+            ativo: ativoEmpresa,
             user_id: user.id 
           }])
         
