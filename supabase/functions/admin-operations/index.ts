@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset' | 'cancelPlan'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset' | 'cancelPlan' | 'changeTenantPlan' | 'updatePlanLimits'
   userId?: string
   updateData?: {
     email?: string
