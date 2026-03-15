@@ -328,6 +328,14 @@ export default function Manutencoes() {
     )
   }
 
+  const missingPrereqs = [
+    ...(empresas.length === 0 ? [{ label: "Empresas", route: "/empresas" }] : []),
+    ...(clientes.length === 0 ? [{ label: "Clientes", route: "/clientes" }] : []),
+    ...(tipos.length === 0 ? [{ label: "Tipos de Manutenção", route: "/tipos-manutencao" }] : []),
+    ...(equipes.length === 0 ? [{ label: "Equipes", route: "/equipes" }] : []),
+  ]
+  const canCreate = missingPrereqs.length === 0
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="page-header">
@@ -343,6 +351,7 @@ export default function Manutencoes() {
               <DialogTrigger asChild>
                 <Button 
                   onClick={(e) => {
+                    if (!canCreate) { e.preventDefault(); e.stopPropagation(); return }
                     if (!planLimits.loading && !planLimits.canCreateManutencao) {
                       e.preventDefault(); e.stopPropagation()
                       toast.error(`Limite de manutenções do mês atingido (${planLimits.currentManutencoesMes}/${planLimits.maxManutencoes}). Aguarde a virada do mês ou contrate um plano.`)
@@ -350,6 +359,8 @@ export default function Manutencoes() {
                     }
                   }}
                   className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+                  disabled={!canCreate}
+                  title={!canCreate ? "Cadastre os itens necessários primeiro" : undefined}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Nova Manutenção</span>
