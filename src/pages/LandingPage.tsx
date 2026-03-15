@@ -761,7 +761,6 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
         ) : (
           <div>
             <span className="text-3xl font-display font-bold text-foreground">Grátis</span>
-            <span className="text-sm text-muted-foreground ml-2">por {trialDays} dias</span>
           </div>
         )}
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-foreground/50">
