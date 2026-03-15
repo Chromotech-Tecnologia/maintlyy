@@ -666,7 +666,7 @@ function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanCli
             <div className="glass-card max-w-md mx-auto p-8 rounded-2xl">
               <Star className="h-10 w-10 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                Teste grátis por {trialDays} dias
+                Comece grátis agora
               </h3>
               <p className="text-muted-foreground mb-6">
                 Acesso completo a todas as funcionalidades sem compromisso.
