@@ -174,13 +174,31 @@ export default function Manutencoes() {
           .eq('id', editingId)
         
         if (error) throw error
+
+        // Update junction table
+        await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
+        if (equipe_ids.length > 0) {
+          await supabase.from('manutencao_equipes').insert(
+            equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid }))
+          )
+        }
+
         toast.success("Manutenção atualizada!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('manutencoes')
           .insert([data])
+          .select('id')
+          .single()
         
         if (error) throw error
+
+        if (inserted && equipe_ids.length > 0) {
+          await supabase.from('manutencao_equipes').insert(
+            equipe_ids.map(eid => ({ manutencao_id: inserted.id, equipe_id: eid }))
+          )
+        }
+
         toast.success("Manutenção criada!")
       }
 
