@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -18,6 +19,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { clienteSchema, type ClienteFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
+import { BulkActionsBar } from "@/components/BulkActionsBar"
+import { TablePagination } from "@/components/TablePagination"
 
 interface Cliente {
   id: string
@@ -53,61 +56,35 @@ export default function Clientes() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
   const form = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
-    defaultValues: {
-      nome_cliente: "",
-      email: "",
-      telefone: "",
-      cnpj: "",
-      endereco: "",
-      empresa_terceira_id: "",
-    },
+    defaultValues: { nome_cliente: "", email: "", telefone: "", cnpj: "", endereco: "", empresa_terceira_id: "" },
   })
 
   const fetchData = async () => {
     if (!user) return
-
     try {
-      // Se for admin, buscar todos os clientes, senão buscar apenas os permitidos
-      let clientesQuery
-      if (permissions.isAdmin) {
-        clientesQuery = supabase
-          .from('clientes')
-          .select('*, empresas_terceiras(nome_empresa)')
-          .order('created_at', { ascending: false })
-      } else {
-        // Para usuários não-admin, buscar todos os clientes
-        // (as políticas RLS irão filtrar automaticamente)
-        clientesQuery = supabase
-          .from('clientes')
-          .select('*, empresas_terceiras(nome_empresa)')
-          .order('created_at', { ascending: false })
-      }
-
       const [clientesResult, empresasResult] = await Promise.all([
-        clientesQuery,
-        supabase
-          .from('empresas_terceiras')
-          .select('*')
-          .eq('user_id', user.id)
+        supabase.from('clientes').select('*, empresas_terceiras(nome_empresa)').order('created_at', { ascending: false }),
+        supabase.from('empresas_terceiras').select('*').eq('user_id', user.id)
       ])
-
       if (clientesResult.error) throw clientesResult.error
       if (empresasResult.error) throw empresasResult.error
-
       setClientes(clientesResult.data || [])
       setEmpresas(empresasResult.data || [])
     } catch (error: any) {
       toast.error(getGenericErrorMessage(error))
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [user])
+  useEffect(() => { fetchData() }, [user])
 
   const uploadLogo = async (clienteId: string): Promise<string | null> => {
     if (!logoFile) return null
@@ -121,117 +98,84 @@ export default function Clientes() {
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setLogoFile(file)
-      setLogoPreview(URL.createObjectURL(file))
-    }
+    if (file) { setLogoFile(file); setLogoPreview(URL.createObjectURL(file)) }
   }
 
   const handleSubmit = async (data: ClienteFormData) => {
     if (!user) return
-
-    if (isRateLimited(`cliente_${user.id}`, 10, 60000)) {
-      toast.error("Muitas tentativas. Aguarde um minuto.")
-      return
-    }
-
+    if (isRateLimited(`cliente_${user.id}`, 10, 60000)) { toast.error("Muitas tentativas. Aguarde um minuto."); return }
     try {
       const sanitizedData = sanitizeFormData(data)
       if (editingId) {
         let logoUrl: string | null = null
         if (logoFile) logoUrl = await uploadLogo(editingId)
         const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
-        const { error } = await supabase
-          .from('clientes')
-          .update(updateData)
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
+        const { error } = await supabase.from('clientes').update(updateData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
         toast.success("Cliente atualizado com sucesso!")
       } else {
-        const { data: inserted, error } = await supabase
-          .from('clientes')
-          .insert([{ ...sanitizedData, user_id: user.id }])
-          .select('id')
-          .single()
-
+        const { data: inserted, error } = await supabase.from('clientes').insert([{ ...sanitizedData, user_id: user.id }]).select('id').single()
         if (error) throw error
         if (logoFile && inserted) {
           const logoUrl = await uploadLogo(inserted.id)
-          if (logoUrl) {
-            await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
-          }
+          if (logoUrl) await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
         }
         toast.success("Cliente criado com sucesso!")
       }
-
-      setOpen(false)
-      setEditingId(null)
-      setLogoFile(null)
-      setLogoPreview(null)
-      form.reset()
-      fetchData()
-    } catch (error: any) {
-      toast.error(getGenericErrorMessage(error))
-    }
+      setOpen(false); setEditingId(null); setLogoFile(null); setLogoPreview(null); form.reset(); fetchData()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
   const handleEdit = (cliente: Cliente) => {
-    setEditingId(cliente.id)
-    setLogoFile(null)
-    setLogoPreview(cliente.logo_url || null)
-    form.reset({
-      nome_cliente: cliente.nome_cliente,
-      email: cliente.email || "",
-      telefone: cliente.telefone || "",
-      cnpj: cliente.cnpj || "",
-      endereco: cliente.endereco || "",
-      empresa_terceira_id: cliente.empresa_terceira_id,
-    })
+    setEditingId(cliente.id); setLogoFile(null); setLogoPreview(cliente.logo_url || null)
+    form.reset({ nome_cliente: cliente.nome_cliente, email: cliente.email || "", telefone: cliente.telefone || "", cnpj: cliente.cnpj || "", endereco: cliente.endereco || "", empresa_terceira_id: cliente.empresa_terceira_id })
     setOpen(true)
   }
 
-  const handleView = (cliente: Cliente) => {
-    setViewingCliente(cliente)
-    setViewDialogOpen(true)
-  }
+  const handleView = (cliente: Cliente) => { setViewingCliente(cliente); setViewDialogOpen(true) }
 
   const handleDelete = async (id: string) => {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return
-
     try {
-      const { error } = await supabase
-        .from('clientes')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
+      const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
-      toast.success("Cliente excluído com sucesso!")
-      fetchData()
-    } catch (error: any) {
-      toast.error(getGenericErrorMessage(error))
-    }
+      toast.success("Cliente excluído com sucesso!"); fetchData()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
-  const openNewDialog = () => {
-    setEditingId(null)
-    setLogoFile(null)
-    setLogoPreview(null)
-    form.reset()
-    setOpen(true)
+  const openNewDialog = () => { setEditingId(null); setLogoFile(null); setLogoPreview(null); form.reset(); setOpen(true) }
+
+  const filtered = clientes.filter(c => {
+    if (!searchTerm) return true
+    return searchMatch(c.nome_cliente, searchTerm) || searchMatch(c.email, searchTerm) || searchMatch(c.cnpj, searchTerm) || searchMatch(c.telefone, searchTerm) || searchMatch(c.endereco, searchTerm) || searchMatch(c.empresas_terceiras?.nome_empresa, searchTerm)
+  })
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  useEffect(() => { setCurrentPage(1) }, [searchTerm, pageSize])
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  }
+  const selectAllFiltered = () => setSelectedIds(new Set(filtered.map(c => c.id)))
+
+  const handleBulkDelete = async () => {
+    if (!user) return
+    if (!confirm(`Excluir ${selectedIds.size} cliente(s)?`)) return
+    try {
+      for (const id of Array.from(selectedIds)) {
+        const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
+        if (error) throw error
+      }
+      toast.success(`${selectedIds.size} cliente(s) excluído(s)!`); setSelectedIds(new Set()); fetchData()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />)}
-        </div>
-      </div>
-    )
+    return (<div className="space-y-6 animate-fade-in"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />)}</div></div>)
   }
 
   return (
@@ -245,150 +189,55 @@ export default function Clientes() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Novo Cliente</span>
-                <span className="sm:hidden">Novo</span>
+                <Plus className="mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Cliente</span><span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Cliente" : "Novo Cliente"}
-              </DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar Cliente" : "Novo Cliente"}</DialogTitle></DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="nome_cliente"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Cliente</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome da empresa" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="empresa_terceira_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empresa *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma empresa" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {empresas.map((empresa) => (
-                            <SelectItem key={empresa.id} value={empresa.id}>
-                              {empresa.nome_empresa}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                <FormField control={form.control} name="nome_cliente" render={({ field }) => (
+                  <FormItem><FormLabel>Nome do Cliente</FormLabel><FormControl><Input placeholder="Nome da empresa" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="empresa_terceira_id" render={({ field }) => (
+                  <FormItem><FormLabel>Empresa *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione uma empresa" /></SelectTrigger></FormControl>
+                      <SelectContent>{empresas.map((empresa) => (<SelectItem key={empresa.id} value={empresa.id}>{empresa.nome_empresa}</SelectItem>))}</SelectContent>
+                    </Select><FormMessage />
+                  </FormItem>
+                )} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="email@exemplo.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="telefone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="(11) 99999-9999" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemplo.com" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="telefone" render={({ field }) => (
+                    <FormItem><FormLabel>Telefone</FormLabel><FormControl><Input placeholder="(11) 99999-9999" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="cnpj"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CNPJ</FormLabel>
-                      <FormControl>
-                        <Input placeholder="00.000.000/0000-00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="endereco"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Endereço completo" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Logo Upload */}
+                <FormField control={form.control} name="cnpj" render={({ field }) => (
+                  <FormItem><FormLabel>CNPJ</FormLabel><FormControl><Input placeholder="00.000.000/0000-00" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="endereco" render={({ field }) => (
+                  <FormItem><FormLabel>Endereço</FormLabel><FormControl><Textarea placeholder="Endereço completo" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <div className="space-y-2">
                   <Label>Logotipo do Cliente</Label>
                   <div className="flex items-center gap-4">
                     {logoPreview ? (
                       <img src={logoPreview} alt="Logo preview" className="w-16 h-16 object-contain rounded-lg border border-border bg-muted" />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg border border-dashed border-border bg-muted/50 flex items-center justify-center">
-                        <Image className="h-6 w-6 text-muted-foreground" />
-                      </div>
+                      <div className="w-16 h-16 rounded-lg border border-dashed border-border bg-muted/50 flex items-center justify-center"><Image className="h-6 w-6 text-muted-foreground" /></div>
                     )}
                     <div>
                       <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-                      <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
-                        <Upload className="h-3.5 w-3.5 mr-1.5" />
-                        {logoPreview ? "Trocar Logo" : "Enviar Logo"}
-                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}><Upload className="h-3.5 w-3.5 mr-1.5" />{logoPreview ? "Trocar Logo" : "Enviar Logo"}</Button>
                       {logoFile && <p className="text-xs text-muted-foreground mt-1">{logoFile.name}</p>}
                     </div>
                   </div>
                 </div>
-
                 <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-1">
-                    {editingId ? "Atualizar" : "Criar"}
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancelar</Button>
+                  <Button type="submit" className="flex-1">{editingId ? "Atualizar" : "Criar"}</Button>
                 </div>
               </form>
             </Form>
@@ -400,84 +249,48 @@ export default function Clientes() {
       {/* Search */}
       <div className="search-bar">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-        <Input
-          placeholder="Buscar por nome, email, CNPJ, telefone, empresa..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
-        />
+        <Input placeholder="Buscar por nome, email, CNPJ, telefone, empresa..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm" />
       </div>
 
-      {/* Dialog de Visualização */}
+      {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Detalhes do Cliente</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Detalhes do Cliente</DialogTitle></DialogHeader>
           {viewingCliente && (
             <div className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Nome do Cliente</Label>
-                <p className="text-lg font-medium">{viewingCliente.nome_cliente}</p>
-              </div>
-              {viewingCliente.cnpj && (
-                <div>
-                  <Label className="text-muted-foreground">CNPJ</Label>
-                  <p>{viewingCliente.cnpj}</p>
-                </div>
-              )}
-              {viewingCliente.email && (
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p>{viewingCliente.email}</p>
-                </div>
-              )}
-              {viewingCliente.telefone && (
-                <div>
-                  <Label className="text-muted-foreground">Telefone</Label>
-                  <p>{viewingCliente.telefone}</p>
-                </div>
-              )}
-              {viewingCliente.endereco && (
-                <div>
-                  <Label className="text-muted-foreground">Endereço</Label>
-                  <p>{viewingCliente.endereco}</p>
-                </div>
-              )}
-              {viewingCliente.empresas_terceiras && (
-                <div>
-                  <Label className="text-muted-foreground">Empresa</Label>
-                  <p>{viewingCliente.empresas_terceiras.nome_empresa}</p>
-                </div>
-              )}
-              <div>
-                <Label className="text-muted-foreground">Data de Criação</Label>
-                <p>{new Date(viewingCliente.created_at).toLocaleDateString('pt-BR')}</p>
-              </div>
+              <div><Label className="text-muted-foreground">Nome do Cliente</Label><p className="text-lg font-medium">{viewingCliente.nome_cliente}</p></div>
+              {viewingCliente.cnpj && (<div><Label className="text-muted-foreground">CNPJ</Label><p>{viewingCliente.cnpj}</p></div>)}
+              {viewingCliente.email && (<div><Label className="text-muted-foreground">Email</Label><p>{viewingCliente.email}</p></div>)}
+              {viewingCliente.telefone && (<div><Label className="text-muted-foreground">Telefone</Label><p>{viewingCliente.telefone}</p></div>)}
+              {viewingCliente.endereco && (<div><Label className="text-muted-foreground">Endereço</Label><p>{viewingCliente.endereco}</p></div>)}
+              {viewingCliente.empresas_terceiras && (<div><Label className="text-muted-foreground">Empresa</Label><p>{viewingCliente.empresas_terceiras.nome_empresa}</p></div>)}
+              <div><Label className="text-muted-foreground">Data de Criação</Label><p>{new Date(viewingCliente.created_at).toLocaleDateString('pt-BR')}</p></div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Actions */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        totalCount={filtered.length}
+        onSelectAll={selectAllFiltered}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkDelete={handleBulkDelete}
+        canDelete={isAdmin || canDeleteSystem('clientes')}
+        canEdit={false}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {clientes.filter(c => {
-          if (!searchTerm) return true
-          return searchMatch(c.nome_cliente, searchTerm) ||
-            searchMatch(c.email, searchTerm) ||
-            searchMatch(c.cnpj, searchTerm) ||
-            searchMatch(c.telefone, searchTerm) ||
-            searchMatch(c.endereco, searchTerm) ||
-            searchMatch(c.empresas_terceiras?.nome_empresa, searchTerm)
-        }).map((cliente) => (
-          <div key={cliente.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
+        {paginatedData.map((cliente) => (
+          <div key={cliente.id} className={`glass-card p-4 space-y-3 hover:shadow-lg ${selectedIds.has(cliente.id) ? 'ring-2 ring-primary/30' : ''}`}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
+                <Checkbox checked={selectedIds.has(cliente.id)} onCheckedChange={() => toggleSelect(cliente.id)} />
                 {cliente.logo_url ? (
                   <img src={cliente.logo_url} alt={cliente.nome_cliente} className="w-10 h-10 rounded-xl object-contain border border-border bg-muted" />
                 ) : (
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"><Building2 className="h-5 w-5 text-primary" /></div>
                 )}
                 <div className="min-w-0">
                   <h3 className="font-semibold text-sm truncate">{cliente.nome_cliente}</h3>
@@ -488,24 +301,9 @@ export default function Clientes() {
             </div>
             
             <div className="space-y-1.5">
-              {cliente.telefone && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{cliente.telefone}</span>
-                </div>
-              )}
-              {cliente.email && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{cliente.email}</span>
-                </div>
-              )}
-              {cliente.endereco && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{cliente.endereco}</span>
-                </div>
-              )}
+              {cliente.telefone && (<div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{cliente.telefone}</span></div>)}
+              {cliente.email && (<div className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{cliente.email}</span></div>)}
+              {cliente.endereco && (<div className="flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{cliente.endereco}</span></div>)}
             </div>
 
             {cliente.empresas_terceiras && (
@@ -530,15 +328,17 @@ export default function Clientes() {
         ))}
       </div>
 
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <TablePagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} totalItems={filtered.length} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+      )}
+
       {clientes.length === 0 && (
         <div className="glass-card text-center py-12">
           <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
           <h3 className="font-display font-semibold mb-1">Nenhum cliente cadastrado</h3>
           <p className="text-sm text-muted-foreground mb-4">Comece adicionando seu primeiro cliente.</p>
-          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Primeiro Cliente
-          </Button>
+          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl"><Plus className="mr-2 h-4 w-4" />Adicionar Primeiro Cliente</Button>
         </div>
       )}
     </div>
