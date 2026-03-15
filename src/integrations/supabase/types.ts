@@ -301,6 +301,42 @@ export type Database = {
         }
         Relationships: []
       }
+      manutencao_equipes: {
+        Row: {
+          created_at: string
+          equipe_id: string
+          id: string
+          manutencao_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipe_id: string
+          id?: string
+          manutencao_id: string
+        }
+        Update: {
+          created_at?: string
+          equipe_id?: string
+          id?: string
+          manutencao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencao_equipes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencao_equipes_manutencao_id_fkey"
+            columns: ["manutencao_id"]
+            isOneToOne: false
+            referencedRelation: "manutencoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manutencoes: {
         Row: {
           cliente_id: string
