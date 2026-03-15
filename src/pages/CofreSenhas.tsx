@@ -351,6 +351,10 @@ export default function CofreSenhas() {
   }
 
   const openNewDialog = () => {
+    if (!planLimits.loading && !planLimits.canCreateSenha) {
+      toast.error(`Limite de senhas atingido (${planLimits.currentSenhas}/${planLimits.maxSenhas}). Contrate um plano para cadastrar mais.`)
+      return
+    }
     console.log('Opening new dialog')
     setEditingId(null)
     form.reset({
