@@ -61,7 +61,7 @@ serve(async (req) => {
     const body: AdminOperationRequest = await req.json()
     const isSuperAdmin = profile?.is_super_admin === true
 
-    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats', 'cancelPlan']
+    const superAdminOps = ['disableUser', 'enableUser', 'deleteUser', 'setTrialPeriod', 'activatePermanent', 'getAdminStats', 'cancelPlan', 'changeTenantPlan', 'updatePlanLimits']
     if (superAdminOps.includes(body.operation) && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Only super admins can perform this operation' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
