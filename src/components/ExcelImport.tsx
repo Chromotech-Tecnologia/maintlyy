@@ -357,6 +357,26 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             </CardContent>
           </Card>
 
+          {importErrors.length > 0 && (
+            <Card className="border-destructive">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-destructive">
+                  {importErrors.length} erro(s) encontrado(s)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Corrija os dados na planilha e tente novamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {importErrors.map((err, idx) => (
+                    <p key={idx} className="text-xs text-destructive">{err}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {importing && (
             <Card>
               <CardContent className="pt-6">
