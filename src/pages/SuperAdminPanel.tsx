@@ -184,9 +184,46 @@ export default function SuperAdminPanel() {
     setActivateDialog({ open: true, userId, email })
     setSelectedPlanId("")
     setPlansLoading(true)
-    const { data } = await supabase.from('landing_plans').select('id, nome, tipo').eq('ativo', true).order('ordem')
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas').eq('ativo', true).order('ordem')
     setAvailablePlans((data || []) as any[])
     setPlansLoading(false)
+  }
+
+  const openChangePlanDialog = async (admin: AdminWithStats) => {
+    setChangePlanDialog({ open: true, userId: admin.user_id, email: admin.email || '', currentPlanId: admin.plan_id })
+    setChangePlanId(admin.plan_id || "")
+    setPlansLoading(true)
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas').eq('ativo', true).order('ordem')
+    const plans = (data || []) as any[]
+    setAvailablePlans(plans)
+    // Set current plan limits
+    const currentPlan = plans.find(p => p.id === admin.plan_id)
+    if (currentPlan) {
+      setChangePlanLimits({
+        max_usuarios: currentPlan.max_usuarios || 0,
+        max_equipes: currentPlan.max_equipes || 0,
+        max_manutencoes: currentPlan.max_manutencoes || 0,
+        max_empresas: currentPlan.max_empresas || 0,
+        max_senhas: currentPlan.max_senhas || 0,
+      })
+    }
+    setPlansLoading(false)
+  }
+
+  const handleChangePlan = async () => {
+    if (!changePlanId) { toast.error("Selecione um plano"); return }
+    setChangePlanLoading(true)
+    try {
+      // Change the tenant's plan
+      await callAdminOp('changeTenantPlan', changePlanDialog.userId, { planId: changePlanId })
+      // Update the plan limits
+      await callAdminOp('updatePlanLimits', changePlanDialog.userId, { planId: changePlanId, limits: changePlanLimits })
+      toast.success("Plano e limites atualizados!")
+      setChangePlanDialog({ open: false, userId: "", email: "", currentPlanId: null })
+      fetchData()
+    } catch {} finally {
+      setChangePlanLoading(false)
+    }
   }
 
   const handleActivatePermanent = async () => {
