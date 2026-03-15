@@ -1,0 +1,2 @@
+INSERT INTO public.landing_plans (nome, tipo, categoria, preco, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, ativo, destaque, ordem, offer_free_signup, texto_botao, descricao, recursos)
+VALUES ('Ilimitado', 'empresarial', 'premium', 'Personalizado', 999999, 0, 0, 0, 0, false, false, 99, false, 'Contato', 'Plano sem limites para super administradores', '["Usuários ilimitados","Equipes ilimitadas","Manutenções ilimitadas","Empresas ilimitadas","Senhas ilimitadas","Suporte prioritário"]'::jsonb);
