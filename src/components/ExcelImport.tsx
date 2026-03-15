@@ -134,6 +134,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
 
     setImporting(true)
     setProgress(0)
+    setImportErrors([])
 
     try {
       const data = await file.arrayBuffer()
