@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ExcelImport } from "@/components/ExcelImport"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface Manutencao {
   id: string
