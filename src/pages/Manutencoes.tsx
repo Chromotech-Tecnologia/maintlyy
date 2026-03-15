@@ -800,8 +800,8 @@ export default function Manutencoes() {
                 <p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
               </div>
               <div>
-                <p className="mobile-card-label">Equipe</p>
-                <p className="text-xs font-medium">{manutencao.equipes?.nome_equipe || "-"}</p>
+                <p className="mobile-card-label">Equipes</p>
+                <p className="text-xs font-medium">{getEquipeNames(manutencao)}</p>
               </div>
               <div>
                 <p className="mobile-card-label">Data</p>
