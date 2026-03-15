@@ -426,7 +426,7 @@ export default function LandingPage() {
       <TestimonialsSection />
 
       {/* Plans */}
-      <PlansCarousel plans={plans} trialDays={trialDays} onPlanClick={handlePlanClick} />
+      <PlansCarousel plans={plans} onPlanClick={handlePlanClick} />
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
