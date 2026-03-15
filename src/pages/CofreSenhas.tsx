@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
 import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
 import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface CofreSenha {
   id: string
