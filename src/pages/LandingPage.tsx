@@ -65,16 +65,11 @@ const trustBadges = [
 
 export default function LandingPage() {
   const { user, loading } = useAuth()
-  const [trialDays, setTrialDays] = useState(7)
   const [plans, setPlans] = useState<LandingPlan[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
-      const [settingsRes, plansRes] = await Promise.all([
-        supabase.from("system_settings").select("value").eq("key", "default_trial_days").single(),
-        supabase.from("landing_plans").select("*").eq("ativo", true).order("ordem"),
-      ])
-      if (settingsRes.data?.value) setTrialDays(parseInt(settingsRes.data.value) || 7)
+      const plansRes = await supabase.from("landing_plans").select("*").eq("ativo", true).order("ordem")
       if (plansRes.data) setPlans(plansRes.data.map((p: any) => ({ ...p, recursos: Array.isArray(p.recursos) ? p.recursos : [] })))
     }
     fetchData()
@@ -161,7 +156,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
                 <Link to="/login">
                   <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-13 px-8 text-base font-semibold">
-                    Começar {trialDays} dias grátis
+                    Comece agora — é grátis
                     <ArrowRight className="h-5 w-5 ml-1" />
                   </Button>
                 </Link>
@@ -431,7 +426,7 @@ export default function LandingPage() {
       <TestimonialsSection />
 
       {/* Plans */}
-      <PlansCarousel plans={plans} trialDays={trialDays} onPlanClick={handlePlanClick} />
+      <PlansCarousel plans={plans} onPlanClick={handlePlanClick} />
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28 px-4 sm:px-6 relative overflow-hidden">
@@ -449,7 +444,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
               Junte-se a profissionais que já otimizaram sua rotina.
-              Comece seus <strong className="text-foreground">{trialDays} dias grátis</strong> agora.
+              Comece <strong className="text-foreground">agora — é grátis</strong>.
             </p>
             <Link to="/login">
               <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-14 px-10 text-lg font-semibold">
@@ -620,7 +615,7 @@ function TestimonialsSection() {
   )
 }
 
-function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
+function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanClick: (plan: LandingPlan) => void }) {
   const [startIndex, setStartIndex] = useState(0)
   const [maxVisible, setMaxVisible] = useState(3)
 
@@ -662,7 +657,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
             Planos & Preços
           </h2>
           <p className="text-muted-foreground mt-3 text-lg">
-            Comece grátis por {trialDays} dias. Escolha o plano ideal para você.
+            Comece grátis. Escolha o plano ideal para você.
           </p>
         </div>
 
@@ -671,7 +666,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
             <div className="glass-card max-w-md mx-auto p-8 rounded-2xl">
               <Star className="h-10 w-10 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                Teste grátis por {trialDays} dias
+                Comece grátis agora
               </h3>
               <p className="text-muted-foreground mb-6">
                 Acesso completo a todas as funcionalidades sem compromisso.
@@ -711,7 +706,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
               >
                 {visiblePlans.map((plan) => (
                   <div key={plan.id} className="animate-fade-in flex">
-                    <PlanCard plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
+                    <PlanCard plan={plan} onClick={() => onPlanClick(plan)} />
                   </div>
                 ))}
               </div>
@@ -739,7 +734,7 @@ function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]
   )
 }
 
-function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: () => void; trialDays: number }) {
+function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void }) {
   return (
     <div
       className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
@@ -766,7 +761,6 @@ function PlanCard({ plan, onClick, trialDays }: { plan: LandingPlan; onClick: ()
         ) : (
           <div>
             <span className="text-3xl font-display font-bold text-foreground">Grátis</span>
-            <span className="text-sm text-muted-foreground ml-2">por {trialDays} dias</span>
           </div>
         )}
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-foreground/50">

@@ -1,70 +1,108 @@
 
+# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## Plano: Substituir trial por plano grátis + limites de senhas
+## ✅ CONCLUÍDO
 
-### Contexto
-Hoje o sistema usa um período de teste (trial) de 7 dias. O pedido é substituir isso por um **plano grátis mínimo** permanente, com limites rígidos. Quando um limite é atingido, a mensagem varia:
-- **Manutenções**: "Aguarde a virada do mês ou contrate um plano"
-- **Outros recursos**: "Você precisa contratar um plano"
+### Problemas Identificados e Corrigidos
 
-Também será adicionado o campo `max_senhas` (cofre de senhas) editável nos planos.
+#### 1. ✅ Senhas exibidas incorretamente
+- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
 
-### Alterações no Banco de Dados
+#### 2. ✅ Permissões não refletem nos menus
+- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
 
-1. **Migração**: Adicionar coluna `max_senhas integer DEFAULT 0` na tabela `landing_plans` (0 = ilimitado, mesmo padrão dos outros limites)
+#### 3. ✅ Botões de ação não respeitam permissões
+- Adicionado botão "Ver" (ícone Eye) em todas as páginas
+- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
 
-### Alterações no Super Admin (PlansManager.tsx)
+#### 4. ✅ Estrutura de permissões expandida
+Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
+- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
+- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
+- `can_edit` = **Editar**
+- `can_create` = **Criar**
+- `can_delete` = **Excluir**
 
-2. Adicionar campo "Máx. senhas" no grid de inputs do formulário de plano, ao lado dos outros limites
+#### 5. ✅ Criação e edição de usuários
+- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
+  - `Admins can insert any profile` (INSERT)
+  - `Admins can update any profile` (UPDATE)
 
-### Alterações no Signup (useAuth.tsx)
+#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
+- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
+- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
+- Campo Empresa Terceira fica desabilitado quando cliente selecionado
 
-3. Trocar a lógica de criação de perfil no cadastro:
-   - Em vez de `account_status: 'trial'`, usar `account_status: 'active'`
-   - Buscar o plano grátis (plano com `offer_free_signup = true` ou `categoria = 'gratis'`) e atribuir o `plan_id` automaticamente
-   - Remover `trial_days` e `trial_start`
+#### 7. ✅ Permissões de Empresas Terceiras
+- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
+- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
+- Adicionada nova aba "Empresas" no dialog de permissões
+- Usuários com permissão de criar clientes podem ver lista de empresas
 
-### Alterações no usePlanLimits (usePlanLimits.tsx)
+#### 8. ✅ Permissões Granulares de Senhas por Cliente
+- Criado componente `PasswordPermissionsTab` com interface expandida
+- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
+- Usa tabela `user_password_permissions` para controle granular
+- Interface colapsível por cliente com carregamento sob demanda
 
-4. Expandir o hook para incluir:
-   - `maxEmpresas`, `currentEmpresas`, `canCreateEmpresa`
-   - `maxManutencoes`, `currentManutencoesMes`, `canCreateManutencao`
-   - `maxSenhas`, `currentSenhas`, `canCreateSenha`
-   - Buscar `max_manutencoes, max_empresas, max_senhas` do plano
-   - Contar manutenções do mês atual para o limite mensal
-   - Remover lógica de "trial sem plano" (agora todo usuário terá plano)
+---
 
-### Alterações nas Páginas de Ação
+## Arquivos Modificados
 
-5. **Manutencoes.tsx**: Antes de abrir o dialog de criar, checar `canCreateManutencao`. Se não pode, mostrar toast: "Limite de manutenções do mês atingido. Aguarde a virada do mês ou contrate um plano."
+1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
+2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
+3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
+4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
+5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
+6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
+7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
+8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
+9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
+10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
+11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
+12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
+13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
 
-6. **Empresas.tsx**: Checar `canCreateEmpresa`. Toast: "Limite de empresas atingido. Contrate um plano para cadastrar mais."
+---
 
-7. **CofreSenhas.tsx**: Checar `canCreateSenha`. Toast: "Limite de senhas atingido. Contrate um plano para cadastrar mais."
+## Fluxo de Permissões Implementado
 
-8. **Equipes.tsx**: Já tem limite. Ajustar mensagem para: "Limite de equipes atingido. Contrate um plano para criar mais."
-
-9. **PerfilUsuarios.tsx**: Já tem limite. Ajustar mensagem para: "Contrate um plano para adicionar mais usuários."
-
-### Remoção/Ajuste do Trial
-
-10. **ProtectedRoute.tsx**: Remover lógica de `trial` e `expired` (não existem mais). Manter `disabled` e `cancelled`.
-
-11. **TrialBanner.tsx**: Remover ou transformar em banner de "plano grátis" mostrando limites (ou simplesmente remover, pois não há mais trial).
-
-12. **LandingPage.tsx**: Remover referências a "7 dias grátis" / "trial". Atualizar CTA para "Comece agora — é grátis".
-
-13. **Assinaturas.tsx**: Remover seção de "Período de Teste" do card de plano atual.
-
-### Resumo das Mensagens por Recurso
-
-```text
-Recurso         | Mensagem ao atingir limite
-----------------|-----------------------------------------------
-Manutenções     | "Aguarde a virada do mês ou contrate um plano"
-Empresas        | "Contrate um plano para cadastrar mais"
-Senhas          | "Contrate um plano para cadastrar mais"
-Equipes         | "Contrate um plano para criar mais"
-Usuários        | "Contrate um plano para adicionar mais"
+```
+1. Usuário sem "Ver Menu" -> Menu NÃO aparece
+2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
+3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
+4. Usuário com "Editar" -> Botão Editar aparece
+5. Usuário com "Criar" -> Botão Criar/Novo aparece  
+6. Usuário com "Excluir" -> Botão Excluir aparece
 ```
 
+## Mapeamento Resource x Menu
+
+| Menu                  | resource_type       |
+|-----------------------|---------------------|
+| Dashboard             | dashboard           |
+| Manutenções           | manutencoes         |
+| Clientes              | clientes            |
+| Empresas Terceiras    | empresas_terceiras  |
+| Equipes               | equipes             |
+| Tipos de Manutenção   | tipos_manutencao    |
+| Cofre de Senhas       | cofre_senhas        |
+| Perfis de Usuários    | perfis_usuarios     |
+| Permissões            | permissoes          |
+
+## Estrutura de Permissões Atualizada
+
+```
+Módulo Sistema (user_system_permissions):
+  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
+
+Clientes (user_client_permissions):
+  - Por cliente: Ver, Editar, Criar, Excluir
+
+Empresas Terceiras (user_empresa_permissions):
+  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
+
+Senhas (user_password_permissions):
+  - Por senha individual: Ver, Editar
+  - Agrupadas por cliente na interface
+```

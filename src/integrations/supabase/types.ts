@@ -243,6 +243,7 @@ export type Database = {
           max_empresas: number | null
           max_equipes: number | null
           max_manutencoes: number | null
+          max_senhas: number | null
           max_usuarios: number | null
           nome: string
           offer_free_signup: boolean | null
@@ -265,6 +266,7 @@ export type Database = {
           max_empresas?: number | null
           max_equipes?: number | null
           max_manutencoes?: number | null
+          max_senhas?: number | null
           max_usuarios?: number | null
           nome: string
           offer_free_signup?: boolean | null
@@ -287,6 +289,7 @@ export type Database = {
           max_empresas?: number | null
           max_equipes?: number | null
           max_manutencoes?: number | null
+          max_senhas?: number | null
           max_usuarios?: number | null
           nome?: string
           offer_free_signup?: boolean | null

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
-import { CreditCard, Check, Clock, Crown, ExternalLink, Users } from "lucide-react"
+import { CreditCard, Check, Crown, ExternalLink, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,6 @@ export default function Assinaturas() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>('active')
-  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export default function Assinaturas() {
     const fetchData = async () => {
       const { data: profileRaw } = await supabase
         .from('user_profiles')
-        .select('plan_id, account_status, trial_start, trial_days, is_permanent')
+        .select('plan_id, account_status')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -42,12 +41,6 @@ export default function Assinaturas() {
       if (profile) {
         setCurrentPlanId(profile.plan_id)
         setAccountStatus(profile.account_status || 'active')
-
-        if (profile.account_status === 'trial' && profile.trial_start && profile.trial_days) {
-          const end = new Date(profile.trial_start)
-          end.setDate(end.getDate() + profile.trial_days)
-          setTrialDaysLeft(Math.max(0, Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))))
-        }
       }
 
       const { data: plansData } = await supabase
@@ -106,31 +99,7 @@ export default function Assinaturas() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {accountStatus === 'trial' ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                  <Clock className="h-3.5 w-3.5 mr-1" />
-                  Período de Teste
-                </Badge>
-                {trialDaysLeft !== null && (
-                  <span className="text-sm text-muted-foreground">
-                    {trialDaysLeft === 0 ? 'Expira hoje' : `${trialDaysLeft} dia${trialDaysLeft > 1 ? 's' : ''} restante${trialDaysLeft > 1 ? 's' : ''}`}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Escolha um plano abaixo para continuar utilizando o Maintly após o período de teste.
-              </p>
-            </div>
-          ) : accountStatus === 'expired' ? (
-            <div className="space-y-3">
-              <Badge variant="destructive">Expirado</Badge>
-              <p className="text-sm text-muted-foreground">
-                Seu período de teste expirou. Escolha um plano para reativar sua conta.
-              </p>
-            </div>
-          ) : currentPlan ? (
+          {currentPlan ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Badge className="bg-primary/10 text-primary border-primary/30">Ativo</Badge>

@@ -28,6 +28,7 @@ interface Plan {
   max_equipes: number
   max_manutencoes: number
   max_empresas: number
+  max_senhas: number
   descricao: string | null
   recursos: string[]
   offer_free_signup: boolean
@@ -48,6 +49,7 @@ const emptyPlan: Omit<Plan, "id"> = {
   max_equipes: 0,
   max_manutencoes: 0,
   max_empresas: 0,
+  max_senhas: 0,
   descricao: "",
   recursos: [],
   offer_free_signup: false,
@@ -110,6 +112,7 @@ export function PlansManager() {
       max_equipes: form.max_equipes,
       max_manutencoes: form.max_manutencoes,
       max_empresas: form.max_empresas,
+      max_senhas: form.max_senhas,
       descricao: form.descricao || null,
       recursos,
       whatsapp_numero: form.whatsapp_numero || null,
@@ -262,6 +265,10 @@ export function PlansManager() {
               <div>
                 <Label>Máx. empresas</Label>
                 <Input type="number" value={form.max_empresas} onChange={(e) => setForm(f => ({ ...f, max_empresas: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
+              <div>
+                <Label>Máx. senhas</Label>
+                <Input type="number" value={form.max_senhas} onChange={(e) => setForm(f => ({ ...f, max_senhas: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
             </div>
             <div>

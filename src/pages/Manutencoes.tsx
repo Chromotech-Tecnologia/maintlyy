@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ExcelImport } from "@/components/ExcelImport"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface Manutencao {
   id: string
@@ -57,6 +58,7 @@ interface FormData {
 export default function Manutencoes() {
   const { user } = useAuth()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([])
   const [empresas, setEmpresas] = useState<any[]>([])
   const [clientes, setClientes] = useState<any[]>([])
@@ -337,7 +339,17 @@ export default function Manutencoes() {
           {(isAdmin || canCreateSystem('manutencoes')) && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
+                <Button 
+                  onClick={(e) => {
+                    if (!planLimits.loading && !planLimits.canCreateManutencao) {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      toast.error(`Limite de manutenções do mês atingido (${planLimits.currentManutencoesMes}/${planLimits.maxManutencoes}). Aguarde a virada do mês ou contrate um plano.`)
+                      return
+                    }
+                  }}
+                  className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Nova Manutenção</span>
                   <span className="sm:hidden">Novo</span>

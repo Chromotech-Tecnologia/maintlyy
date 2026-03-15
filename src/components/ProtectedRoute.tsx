@@ -23,7 +23,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const checkProfile = async () => {
       const { data } = await supabase
         .from('user_profiles')
-        .select('permission_profile_id, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent')
+        .select('permission_profile_id, is_admin, is_super_admin, account_status')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -32,18 +32,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       } else {
         const status = (data as any).account_status || 'active'
         setAccountStatus(status)
-
-        // Check trial expiry
-        if (status === 'trial' && (data as any).trial_start && (data as any).trial_days) {
-          const trialEnd = new Date((data as any).trial_start)
-          trialEnd.setDate(trialEnd.getDate() + (data as any).trial_days)
-          if (new Date() > trialEnd) {
-            setAccountStatus('expired')
-            setHasProfile(true)
-            setProfileChecked(true)
-            return
-          }
-        }
 
         if (status === 'disabled') {
           setHasProfile(true)
@@ -89,10 +77,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // Account disabled, expired, or cancelled
-  if (accountStatus === 'disabled' || accountStatus === 'expired' || accountStatus === 'cancelled') {
-    // Allow access to /assinaturas when expired or cancelled
-    if ((accountStatus === 'expired' || accountStatus === 'cancelled') && location.pathname === '/assinaturas') {
+  // Account disabled or cancelled
+  if (accountStatus === 'disabled' || accountStatus === 'cancelled') {
+    // Allow access to /assinaturas when cancelled
+    if (accountStatus === 'cancelled' && location.pathname === '/assinaturas') {
       return <>{children}</>
     }
 
@@ -100,12 +88,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     const titleMap: Record<string, string> = {
       disabled: 'Conta desabilitada',
-      expired: 'Período de teste expirado',
       cancelled: 'Plano cancelado',
     }
     const descriptionMap: Record<string, string> = {
       disabled: 'Sua conta foi desabilitada pelo administrador. Entre em contato para mais informações.',
-      expired: 'Seu período de teste expirou. Escolha um plano para continuar utilizando o Maintly.',
       cancelled: 'Seu plano foi cancelado. Escolha um novo plano para continuar utilizando o Maintly.',
     }
 
@@ -129,7 +115,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             <p className="font-medium text-foreground mb-1">Conta conectada:</p>
             <p>{user.email}</p>
           </div>
-          {(accountStatus === 'expired' || accountStatus === 'cancelled') && (
+          {accountStatus === 'cancelled' && (
             <Button asChild className="w-full">
               <a href="/assinaturas">
                 <CreditCard className="h-4 w-4 mr-2" />

@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
 import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
 import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface CofreSenha {
   id: string
@@ -74,6 +75,7 @@ interface Manutencao {
 export default function CofreSenhas() {
   const { user } = useAuth()
   const permissions = usePermissions()
+  const planLimits = usePlanLimits()
   
   // Senhas armazenadas ENCRIPTADAS - descriptografia sob demanda
   const [senhasEncriptadas, setSenhasEncriptadas] = useState<CofreSenha[]>([])
@@ -349,6 +351,10 @@ export default function CofreSenhas() {
   }
 
   const openNewDialog = () => {
+    if (!planLimits.loading && !planLimits.canCreateSenha) {
+      toast.error(`Limite de senhas atingido (${planLimits.currentSenhas}/${planLimits.maxSenhas}). Contrate um plano para cadastrar mais.`)
+      return
+    }
     console.log('Opening new dialog')
     setEditingId(null)
     form.reset({

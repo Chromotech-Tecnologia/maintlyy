@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_plans ADD COLUMN IF NOT EXISTS max_senhas integer DEFAULT 0;

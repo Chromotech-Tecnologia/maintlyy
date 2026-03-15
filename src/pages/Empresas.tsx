@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface EmpresaTerceira {
   id: string
@@ -21,6 +22,7 @@ interface EmpresaTerceira {
 export default function Empresas() {
   const { user } = useAuth()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -132,7 +134,17 @@ export default function Empresas() {
         {(isAdmin || canCreateSystem('empresas_terceiras')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
+              <Button 
+                onClick={(e) => {
+                  if (!planLimits.loading && !planLimits.canCreateEmpresa) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    toast.error(`Limite de empresas atingido (${planLimits.currentEmpresas}/${planLimits.maxEmpresas}). Contrate um plano para cadastrar mais.`)
+                    return
+                  }
+                }}
+                className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Empresa</span>
                 <span className="sm:hidden">Novo</span>
