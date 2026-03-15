@@ -23,7 +23,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const checkProfile = async () => {
       const { data } = await supabase
         .from('user_profiles')
-        .select('permission_profile_id, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent')
+        .select('permission_profile_id, is_admin, is_super_admin, account_status')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -32,18 +32,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       } else {
         const status = (data as any).account_status || 'active'
         setAccountStatus(status)
-
-        // Check trial expiry
-        if (status === 'trial' && (data as any).trial_start && (data as any).trial_days) {
-          const trialEnd = new Date((data as any).trial_start)
-          trialEnd.setDate(trialEnd.getDate() + (data as any).trial_days)
-          if (new Date() > trialEnd) {
-            setAccountStatus('expired')
-            setHasProfile(true)
-            setProfileChecked(true)
-            return
-          }
-        }
 
         if (status === 'disabled') {
           setHasProfile(true)
