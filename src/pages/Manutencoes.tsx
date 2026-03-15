@@ -159,10 +159,11 @@ export default function Manutencoes() {
         formData.hora_fim
       )
 
+      const { equipe_ids, ...rest } = formData
       const data = {
-        ...formData,
+        ...rest,
         user_id: user.id,
-        equipe_id: formData.equipe_id || null,
+        equipe_id: equipe_ids[0] || null,
         tempo_total
       }
 
