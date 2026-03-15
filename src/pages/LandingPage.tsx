@@ -156,7 +156,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
                 <Link to="/login">
                   <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-13 px-8 text-base font-semibold">
-                    Começar {trialDays} dias grátis
+                    Comece agora — é grátis
                     <ArrowRight className="h-5 w-5 ml-1" />
                   </Button>
                 </Link>
