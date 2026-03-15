@@ -706,7 +706,7 @@ function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanCli
               >
                 {visiblePlans.map((plan) => (
                   <div key={plan.id} className="animate-fade-in flex">
-                    <PlanCard plan={plan} onClick={() => onPlanClick(plan)} trialDays={trialDays} />
+                    <PlanCard plan={plan} onClick={() => onPlanClick(plan)} />
                   </div>
                 ))}
               </div>
