@@ -134,7 +134,17 @@ export default function Empresas() {
         {(isAdmin || canCreateSystem('empresas_terceiras')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
+              <Button 
+                onClick={(e) => {
+                  if (!planLimits.loading && !planLimits.canCreateEmpresa) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    toast.error(`Limite de empresas atingido (${planLimits.currentEmpresas}/${planLimits.maxEmpresas}). Contrate um plano para cadastrar mais.`)
+                    return
+                  }
+                }}
+                className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Empresa</span>
                 <span className="sm:hidden">Novo</span>

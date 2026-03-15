@@ -140,7 +140,7 @@ export default function Equipes() {
 
   const openNewDialog = () => {
     if (!planLimits.loading && !planLimits.canCreateTeam) {
-      toast.error(`Limite de equipes do plano atingido (${planLimits.currentTeams}/${planLimits.maxTeams}).`)
+      toast.error(`Limite de equipes atingido (${planLimits.currentTeams}/${planLimits.maxTeams}). Contrate um plano para criar mais.`)
       return
     }
     setEditingId(null)

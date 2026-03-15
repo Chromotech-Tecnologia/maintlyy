@@ -267,9 +267,9 @@ export default function PerfilUsuarios() {
                     e.preventDefault()
                     e.stopPropagation()
                     if (planLimits.planTipo === 'individual') {
-                      toast.error("Seu plano individual não permite criar usuários adicionais.")
+                      toast.error("Seu plano individual não permite criar usuários adicionais. Contrate um plano para adicionar mais.")
                     } else {
-                      toast.error(`Limite de usuários do plano atingido (${planLimits.currentUsers}/${planLimits.maxUsers}).`)
+                      toast.error(`Limite de usuários atingido (${planLimits.currentUsers}/${planLimits.maxUsers}). Contrate um plano para adicionar mais.`)
                     }
                     return
                   }
