@@ -615,7 +615,7 @@ function TestimonialsSection() {
   )
 }
 
-function PlansCarousel({ plans, trialDays, onPlanClick }: { plans: LandingPlan[]; trialDays: number; onPlanClick: (plan: LandingPlan) => void }) {
+function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanClick: (plan: LandingPlan) => void }) {
   const [startIndex, setStartIndex] = useState(0)
   const [maxVisible, setMaxVisible] = useState(3)
 
