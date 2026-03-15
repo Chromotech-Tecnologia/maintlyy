@@ -267,6 +267,12 @@ export default function Manutencoes() {
     }
   }
 
+  const getEquipeNames = (m: Manutencao) => {
+    const fromJunction = (m as any).manutencao_equipes?.map((me: any) => me.equipes?.nome_equipe).filter(Boolean)
+    if (fromJunction && fromJunction.length > 0) return fromJunction.join(', ')
+    return m.equipes?.nome_equipe || '-'
+  }
+
   const formatTempo = (minutos?: number) => {
     if (!minutos) return "-"
     const horas = Math.floor(minutos / 60)
