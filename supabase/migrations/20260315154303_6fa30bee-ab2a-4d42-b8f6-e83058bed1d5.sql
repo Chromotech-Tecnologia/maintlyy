@@ -1,0 +1,1 @@
+ALTER TABLE public.empresas_terceiras ADD COLUMN ativo boolean NOT NULL DEFAULT true;

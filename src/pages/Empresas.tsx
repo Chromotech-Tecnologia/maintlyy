@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Edit, Trash2, Building2, Eye, Search } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
@@ -16,6 +17,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits"
 interface EmpresaTerceira {
   id: string
   nome_empresa: string
+  ativo: boolean
   created_at: string
 }
 
@@ -30,6 +32,7 @@ export default function Empresas() {
   const [viewingEmpresa, setViewingEmpresa] = useState<EmpresaTerceira | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nomeEmpresa, setNomeEmpresa] = useState("")
+  const [ativoEmpresa, setAtivoEmpresa] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
 
   const fetchEmpresas = async () => {
@@ -63,7 +66,7 @@ export default function Empresas() {
       if (editingId) {
         const { error } = await supabase
           .from('empresas_terceiras')
-          .update({ nome_empresa: nomeEmpresa.trim() })
+          .update({ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa })
           .eq('id', editingId)
         
         if (error) throw error
@@ -73,6 +76,7 @@ export default function Empresas() {
           .from('empresas_terceiras')
           .insert([{ 
             nome_empresa: nomeEmpresa.trim(),
+            ativo: ativoEmpresa,
             user_id: user.id 
           }])
         
@@ -83,6 +87,7 @@ export default function Empresas() {
       setOpen(false)
       setEditingId(null)
       setNomeEmpresa("")
+      setAtivoEmpresa(true)
       fetchEmpresas()
     } catch (error: any) {
       toast.error(error.message)
@@ -91,6 +96,7 @@ export default function Empresas() {
 
   const handleEdit = (empresa: EmpresaTerceira) => {
     setNomeEmpresa(empresa.nome_empresa)
+    setAtivoEmpresa(empresa.ativo)
     setEditingId(empresa.id)
     setOpen(true)
   }
@@ -169,6 +175,15 @@ export default function Empresas() {
                     required
                   />
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ativo_empresa">Empresa ativa</Label>
+                  <Switch
+                    id="ativo_empresa"
+                    checked={ativoEmpresa}
+                    onCheckedChange={setAtivoEmpresa}
+                  />
+                </div>
                 
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -197,6 +212,12 @@ export default function Empresas() {
                 <p className="text-lg font-medium">{viewingEmpresa.nome_empresa}</p>
               </div>
               <div>
+                <Label className="text-muted-foreground">Status</Label>
+                <p className={`font-medium ${viewingEmpresa.ativo ? 'text-green-600' : 'text-destructive'}`}>
+                  {viewingEmpresa.ativo ? 'Ativa' : 'Inativa'}
+                </p>
+              </div>
+              <div>
                 <Label className="text-muted-foreground">Data de Criação</Label>
                 <p>{new Date(viewingEmpresa.created_at).toLocaleDateString()}</p>
               </div>
@@ -223,6 +244,7 @@ export default function Empresas() {
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead className="font-semibold">Nome da Empresa</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Data de Criação</TableHead>
                 <TableHead className="w-24 font-semibold">Ações</TableHead>
               </TableRow>
@@ -231,6 +253,11 @@ export default function Empresas() {
               {empresas.filter(e => !searchTerm || searchMatch(e.nome_empresa, searchTerm)).map((empresa) => (
                 <TableRow key={empresa.id} className="border-border/30 hover:bg-muted/40">
                   <TableCell className="font-medium">{empresa.nome_empresa}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${empresa.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                      {empresa.ativo ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(empresa.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
@@ -263,7 +290,12 @@ export default function Empresas() {
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{empresa.nome_empresa}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-sm truncate">{empresa.nome_empresa}</p>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${empresa.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {empresa.ativo ? 'Ativa' : 'Inativa'}
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">{new Date(empresa.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
             </div>
