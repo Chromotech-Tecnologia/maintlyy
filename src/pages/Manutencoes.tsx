@@ -225,11 +225,15 @@ export default function Manutencoes() {
   }
 
   const handleEdit = (manutencao: Manutencao) => {
+    const equipeIds = (manutencao as any).manutencao_equipes?.map((me: any) => me.equipe_id) || []
+    const legacyEquipeId = manutencao.equipe_id
+    const finalEquipeIds = equipeIds.length > 0 ? equipeIds : (legacyEquipeId ? [legacyEquipeId] : [])
+    
     setFormData({
       empresa_terceira_id: manutencao.empresa_terceira_id,
       cliente_id: manutencao.cliente_id,
       tipo_manutencao_id: manutencao.tipo_manutencao_id,
-      equipe_id: manutencao.equipe_id || "",
+      equipe_ids: finalEquipeIds,
       data_inicio: manutencao.data_inicio,
       hora_inicio: manutencao.hora_inicio,
       data_fim: manutencao.data_fim || "",
