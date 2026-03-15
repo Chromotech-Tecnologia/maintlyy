@@ -83,7 +83,7 @@ export default function Manutencoes() {
     empresa_terceira_id: "",
     cliente_id: "",
     tipo_manutencao_id: "",
-    equipe_id: "",
+    equipe_ids: [],
     data_inicio: "",
     hora_inicio: "",
     data_fim: "",
