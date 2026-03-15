@@ -657,7 +657,7 @@ function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanCli
             Planos & Preços
           </h2>
           <p className="text-muted-foreground mt-3 text-lg">
-            Comece grátis por {trialDays} dias. Escolha o plano ideal para você.
+            Comece grátis. Escolha o plano ideal para você.
           </p>
         </div>
 
