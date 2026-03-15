@@ -757,7 +757,7 @@ export default function Manutencoes() {
                     {manutencao.status}
                   </span>
                 </TableCell>
-                <TableCell className="text-sm">{manutencao.equipes?.nome_equipe || "-"}</TableCell>
+                <TableCell className="text-sm">{getEquipeNames(manutencao)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {(isAdmin || canViewDetailsSystem('manutencoes')) && (
