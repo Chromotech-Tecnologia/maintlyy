@@ -19,6 +19,7 @@ import { ExcelImport } from "@/components/ExcelImport"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
+import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 
 interface Manutencao {
   id: string
