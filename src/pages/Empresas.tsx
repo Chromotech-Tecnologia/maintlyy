@@ -32,6 +32,7 @@ export default function Empresas() {
   const [viewingEmpresa, setViewingEmpresa] = useState<EmpresaTerceira | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nomeEmpresa, setNomeEmpresa] = useState("")
+  const [ativoEmpresa, setAtivoEmpresa] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
 
   const fetchEmpresas = async () => {
