@@ -765,7 +765,13 @@ export default function CofreSenhas() {
 
           <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} size="sm" className="bg-primary hover:bg-primary/90">
+              <Button 
+                onClick={openNewDialog} 
+                size="sm" 
+                className="bg-primary hover:bg-primary/90"
+                disabled={!canCreateCofre}
+                title={!canCreateCofre ? "Cadastre os itens necessários primeiro" : undefined}
+              >
                 <Plus className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Senha</span>
                 <span className="sm:hidden">Nova</span>
