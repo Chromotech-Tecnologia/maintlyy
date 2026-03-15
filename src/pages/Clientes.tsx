@@ -21,6 +21,7 @@ import { clienteSchema, type ClienteFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
+import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 
 interface Cliente {
   id: string
