@@ -136,11 +136,11 @@ export default function LandingPage() {
                 Novas funcionalidades toda semana
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
+              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.15]">
                 Gestão de
                 <br />
                 Manutenções
-                <span className="block mt-1 bg-clip-text text-transparent animate-gradient-text" style={{
+                <span className="block mt-1 pt-1 bg-clip-text text-transparent animate-gradient-text leading-[1.12]" style={{
                   backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(250 83% 63%), hsl(var(--primary)))",
                   backgroundSize: "200% 200%"
                 }}>
