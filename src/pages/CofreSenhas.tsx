@@ -623,6 +623,12 @@ export default function CofreSenhas() {
     )
   }
 
+  const cofreMissingPrereqs = [
+    ...(empresas.length === 0 ? [{ label: "Empresas", route: "/empresas" }] : []),
+    ...(clientes.length === 0 ? [{ label: "Clientes", route: "/clientes" }] : []),
+  ]
+  const canCreateCofre = cofreMissingPrereqs.length === 0
+
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
