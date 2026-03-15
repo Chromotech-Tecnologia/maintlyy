@@ -312,7 +312,7 @@ serve(async (req) => {
       case 'getAdminStats': {
         const { data: adminProfiles } = await supabaseAdmin
           .from('user_profiles')
-          .select('user_id, display_name, email, phone, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent, created_at')
+          .select('user_id, display_name, email, phone, is_admin, is_super_admin, account_status, trial_days, trial_start, is_permanent, created_at, plan_id')
           .eq('is_admin', true)
           .order('created_at', { ascending: false })
 
