@@ -206,7 +206,8 @@ export default function Relatorios() {
 
       content += `\n\nGerado por Maintly - https://maintly.chromotech.com.br/`
 
-      const blob = new Blob([content], { type: format === 'csv' ? 'text/csv' : 'text/plain' })
+      const BOM = '\uFEFF'
+      const blob = new Blob([BOM + content], { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

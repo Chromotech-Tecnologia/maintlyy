@@ -36,13 +36,14 @@ interface Manutencao {
   empresas_terceiras?: { nome_empresa: string }
   tipos_manutencao?: { nome_tipo_manutencao: string }
   equipes?: { nome_equipe: string }
+  manutencao_equipes?: { equipe_id: string; equipes: { nome_equipe: string } }[]
 }
 
 interface FormData {
   empresa_terceira_id: string
   cliente_id: string
   tipo_manutencao_id: string
-  equipe_id: string
+  equipe_ids: string[]
   data_inicio: string
   hora_inicio: string
   data_fim: string
