@@ -119,7 +119,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 sm:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 relative overflow-hidden">
+      <section className="pt-36 sm:pt-44 pb-16 sm:pb-24 px-4 sm:px-6 relative overflow-x-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
@@ -136,11 +136,11 @@ export default function LandingPage() {
                 Novas funcionalidades toda semana
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.1]">
+              <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-display font-bold tracking-tight mb-6 text-foreground leading-[1.15]">
                 Gestão de
                 <br />
                 Manutenções
-                <span className="block mt-1 bg-clip-text text-transparent animate-gradient-text" style={{
+                <span className="block mt-1 pt-1 bg-clip-text text-transparent animate-gradient-text leading-[1.12]" style={{
                   backgroundImage: "linear-gradient(135deg, hsl(var(--primary)), hsl(250 83% 63%), hsl(var(--primary)))",
                   backgroundSize: "200% 200%"
                 }}>
