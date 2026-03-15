@@ -226,8 +226,9 @@ export default function Manutencoes() {
         status: "Em andamento",
         responsavel: ""
       })
-      fetchData()
+      await fetchData()
     } catch (error: any) {
+      console.error('handleSubmit error:', error)
       toast.error(error.message)
     }
   }
