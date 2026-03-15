@@ -273,6 +273,42 @@ serve(async (req) => {
         break
       }
 
+      case 'changeTenantPlan': {
+        if (!body.userId || !body.planId) return new Response(JSON.stringify({ error: 'userId and planId are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const { error: changePlanError } = await supabaseAdmin.from('user_profiles').update({
+          plan_id: body.planId,
+        }).eq('user_id', body.userId)
+        
+        if (changePlanError) {
+          console.error('Error changing plan:', changePlanError)
+          return new Response(JSON.stringify({ error: 'Failed to change plan: ' + changePlanError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        result = { data: { message: 'Plan changed successfully' } }
+        break
+      }
+
+      case 'updatePlanLimits': {
+        if (!body.planId) return new Response(JSON.stringify({ error: 'planId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const limits = (body as any).limits || {}
+        const updatePayload: Record<string, any> = {}
+        if (limits.max_usuarios !== undefined) updatePayload.max_usuarios = limits.max_usuarios
+        if (limits.max_equipes !== undefined) updatePayload.max_equipes = limits.max_equipes
+        if (limits.max_manutencoes !== undefined) updatePayload.max_manutencoes = limits.max_manutencoes
+        if (limits.max_empresas !== undefined) updatePayload.max_empresas = limits.max_empresas
+        if (limits.max_senhas !== undefined) updatePayload.max_senhas = limits.max_senhas
+        
+        const { error: limitsError } = await supabaseAdmin.from('landing_plans').update(updatePayload).eq('id', body.planId)
+        
+        if (limitsError) {
+          console.error('Error updating plan limits:', limitsError)
+          return new Response(JSON.stringify({ error: 'Failed to update limits: ' + limitsError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        
+        result = { data: { message: 'Plan limits updated' } }
+        break
+      }
+
       case 'getAdminStats': {
         const { data: adminProfiles } = await supabaseAdmin
           .from('user_profiles')
