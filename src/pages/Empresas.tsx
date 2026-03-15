@@ -17,6 +17,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits"
 interface EmpresaTerceira {
   id: string
   nome_empresa: string
+  ativo: boolean
   created_at: string
 }
 
