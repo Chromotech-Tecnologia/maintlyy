@@ -28,6 +28,7 @@ interface Plan {
   max_equipes: number
   max_manutencoes: number
   max_empresas: number
+  max_senhas: number
   descricao: string | null
   recursos: string[]
   offer_free_signup: boolean
