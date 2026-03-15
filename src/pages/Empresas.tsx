@@ -87,6 +87,7 @@ export default function Empresas() {
       setOpen(false)
       setEditingId(null)
       setNomeEmpresa("")
+      setAtivoEmpresa(true)
       fetchEmpresas()
     } catch (error: any) {
       toast.error(error.message)
