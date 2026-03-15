@@ -444,7 +444,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
               Junte-se a profissionais que já otimizaram sua rotina.
-              Comece seus <strong className="text-foreground">{trialDays} dias grátis</strong> agora.
+              Comece <strong className="text-foreground">agora — é grátis</strong>.
             </p>
             <Link to="/login">
               <Button size="lg" className="gradient-primary text-primary-foreground shadow-lg shadow-primary/25 h-14 px-10 text-lg font-semibold">
