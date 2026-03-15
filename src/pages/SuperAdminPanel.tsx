@@ -719,6 +719,81 @@ export default function SuperAdminPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={changePlanDialog.open} onOpenChange={(open) => setChangePlanDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Mudar Plano e Limites</DialogTitle>
+            <DialogDescription>Altere o plano e os limites para {changePlanDialog.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {plansLoading ? (
+              <div className="text-center py-4 text-muted-foreground">Carregando planos...</div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Plano</Label>
+                  <Select value={changePlanId} onValueChange={(v) => {
+                    setChangePlanId(v)
+                    const plan = availablePlans.find(p => p.id === v)
+                    if (plan) {
+                      setChangePlanLimits({
+                        max_usuarios: plan.max_usuarios || 0,
+                        max_equipes: plan.max_equipes || 0,
+                        max_manutencoes: plan.max_manutencoes || 0,
+                        max_empresas: plan.max_empresas || 0,
+                        max_senhas: plan.max_senhas || 0,
+                      })
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                    <SelectContent>
+                      {availablePlans.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.nome} ({p.tipo})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {changePlanId && (
+                  <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-muted/30">
+                    <p className="text-sm font-medium">Limites do Plano <span className="text-xs text-muted-foreground">(0 = ilimitado)</span></p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Máx. Usuários</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_usuarios} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_usuarios: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Equipes</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_equipes} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_equipes: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Manutenções/mês</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_manutencoes} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_manutencoes: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Empresas</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_empresas} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_empresas: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Senhas</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_senhas} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_senhas: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangePlanDialog({ open: false, userId: "", email: "", currentPlanId: null })}>Cancelar</Button>
+            <Button onClick={handleChangePlan} disabled={changePlanLoading || !changePlanId}>
+              {changePlanLoading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
