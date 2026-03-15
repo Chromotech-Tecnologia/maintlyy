@@ -72,6 +72,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [importErrors, setImportErrors] = useState<string[]>([])
 
   const downloadTemplate = () => {
     const template = [
