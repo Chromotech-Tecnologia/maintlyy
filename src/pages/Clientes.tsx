@@ -189,7 +189,12 @@ export default function Clientes() {
         {(isAdmin || canCreateSystem('clientes')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
+              <Button 
+                onClick={openNewDialog} 
+                className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+                disabled={empresas.length === 0}
+                title={empresas.length === 0 ? "Cadastre uma empresa primeiro" : undefined}
+              >
                 <Plus className="mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Cliente</span><span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
