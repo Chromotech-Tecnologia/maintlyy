@@ -99,31 +99,7 @@ export default function Assinaturas() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {accountStatus === 'trial' ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                  <Clock className="h-3.5 w-3.5 mr-1" />
-                  Período de Teste
-                </Badge>
-                {trialDaysLeft !== null && (
-                  <span className="text-sm text-muted-foreground">
-                    {trialDaysLeft === 0 ? 'Expira hoje' : `${trialDaysLeft} dia${trialDaysLeft > 1 ? 's' : ''} restante${trialDaysLeft > 1 ? 's' : ''}`}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Escolha um plano abaixo para continuar utilizando o Maintly após o período de teste.
-              </p>
-            </div>
-          ) : accountStatus === 'expired' ? (
-            <div className="space-y-3">
-              <Badge variant="destructive">Expirado</Badge>
-              <p className="text-sm text-muted-foreground">
-                Seu período de teste expirou. Escolha um plano para reativar sua conta.
-              </p>
-            </div>
-          ) : currentPlan ? (
+          {currentPlan ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Badge className="bg-primary/10 text-primary border-primary/30">Ativo</Badge>
