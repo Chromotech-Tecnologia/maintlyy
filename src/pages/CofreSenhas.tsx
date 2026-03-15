@@ -75,6 +75,7 @@ interface Manutencao {
 export default function CofreSenhas() {
   const { user } = useAuth()
   const permissions = usePermissions()
+  const planLimits = usePlanLimits()
   
   // Senhas armazenadas ENCRIPTADAS - descriptografia sob demanda
   const [senhasEncriptadas, setSenhasEncriptadas] = useState<CofreSenha[]>([])
