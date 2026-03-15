@@ -26,7 +26,6 @@ export default function Assinaturas() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>('active')
-  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
