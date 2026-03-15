@@ -252,6 +252,14 @@ export default function Clientes() {
         )}
       </div>
 
+      {/* Prerequisite Warning */}
+      {empresas.length === 0 && (
+        <PrerequisiteWarning
+          context="um cliente"
+          missingItems={[{ label: "Empresas", route: "/empresas" }]}
+        />
+      )}
+
       {/* Search */}
       <div className="search-bar">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
