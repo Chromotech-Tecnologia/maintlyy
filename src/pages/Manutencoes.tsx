@@ -667,8 +667,8 @@ export default function Manutencoes() {
                   <p>{viewingManutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Equipe</Label>
-                  <p>{viewingManutencao.equipes?.nome_equipe || "-"}</p>
+                  <Label className="text-muted-foreground">Equipes</Label>
+                  <p>{getEquipeNames(viewingManutencao)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
