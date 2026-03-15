@@ -161,7 +161,7 @@ export default function LandingPage() {
                   </Button>
                 </Link>
                 <a href="#funcionalidades">
-                  <Button variant="outline" size="lg" className="h-13 px-8 text-base">
+                  <Button variant="outline" size="lg" className="h-13 px-8 text-base text-white border-white/30 hover:bg-white/10 hover:text-white">
                     Conhecer recursos
                   </Button>
                 </a>
