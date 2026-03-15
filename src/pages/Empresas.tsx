@@ -175,6 +175,15 @@ export default function Empresas() {
                     required
                   />
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ativo_empresa">Empresa ativa</Label>
+                  <Switch
+                    id="ativo_empresa"
+                    checked={ativoEmpresa}
+                    onCheckedChange={setAtivoEmpresa}
+                  />
+                </div>
                 
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>
