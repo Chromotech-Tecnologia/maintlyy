@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
 import { searchMatch } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Label } from "@/components/ui/label"
-import { Plus, Calendar, Edit, Trash2, FileText, Eye, Search } from "lucide-react"
+import { Plus, Calendar, Edit, Trash2, Eye, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
@@ -16,6 +16,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { tipoManutencaoSchema, type TipoManutencaoFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
+import { BulkActionsBar } from "@/components/BulkActionsBar"
+import { TablePagination } from "@/components/TablePagination"
 
 interface TipoManutencao {
   id: string
@@ -35,121 +37,95 @@ export default function TiposManutencao() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
   const form = useForm<TipoManutencaoFormData>({
     resolver: zodResolver(tipoManutencaoSchema),
-    defaultValues: {
-      nome_tipo_manutencao: "",
-      descricao: "",
-    },
+    defaultValues: { nome_tipo_manutencao: "", descricao: "" },
   })
 
   const fetchTipos = async () => {
     if (!user) return
-
     try {
-      const { data, error } = await supabase
-        .from('tipos_manutencao')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
+      const { data, error } = await supabase.from('tipos_manutencao').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       if (error) throw error
       setTipos(data || [])
-    } catch (error: any) {
-      toast.error(getGenericErrorMessage(error))
-    } finally {
-      setLoading(false)
-    }
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) } finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    fetchTipos()
-  }, [user])
+  useEffect(() => { fetchTipos() }, [user])
 
   const handleSubmit = async (data: TipoManutencaoFormData) => {
     if (!user) return
-
-    if (isRateLimited(`tipo_${user.id}`, 10, 60000)) {
-      toast.error("Muitas tentativas. Aguarde um minuto.")
-      return
-    }
-
+    if (isRateLimited(`tipo_${user.id}`, 10, 60000)) { toast.error("Muitas tentativas. Aguarde um minuto."); return }
     try {
       const sanitizedData = sanitizeFormData(data)
       if (editingId) {
-        const { error } = await supabase
-          .from('tipos_manutencao')
-          .update(sanitizedData)
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
+        const { error } = await supabase.from('tipos_manutencao').update(sanitizedData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
         toast.success("Tipo de manutenção atualizado com sucesso!")
       } else {
-        const { error } = await supabase
-          .from('tipos_manutencao')
-          .insert([{ ...sanitizedData, user_id: user.id }])
-
+        const { error } = await supabase.from('tipos_manutencao').insert([{ ...sanitizedData, user_id: user.id }])
         if (error) throw error
         toast.success("Tipo de manutenção criado com sucesso!")
       }
-
-      setOpen(false)
-      setEditingId(null)
-      form.reset()
-      fetchTipos()
-    } catch (error: any) {
-      toast.error(getGenericErrorMessage(error))
-    }
+      setOpen(false); setEditingId(null); form.reset(); fetchTipos()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
   const handleEdit = (tipo: TipoManutencao) => {
-    setEditingId(tipo.id)
-    form.reset({
-      nome_tipo_manutencao: tipo.nome_tipo_manutencao,
-      descricao: tipo.descricao || "",
-    })
-    setOpen(true)
+    setEditingId(tipo.id); form.reset({ nome_tipo_manutencao: tipo.nome_tipo_manutencao, descricao: tipo.descricao || "" }); setOpen(true)
   }
 
-  const handleView = (tipo: TipoManutencao) => {
-    setViewingTipo(tipo)
-    setViewDialogOpen(true)
-  }
+  const handleView = (tipo: TipoManutencao) => { setViewingTipo(tipo); setViewDialogOpen(true) }
 
   const handleDelete = async (id: string) => {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este tipo de manutenção?")) return
-
     try {
-      const { error } = await supabase
-        .from('tipos_manutencao')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
+      const { error } = await supabase.from('tipos_manutencao').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
-      toast.success("Tipo de manutenção excluído com sucesso!")
-      fetchTipos()
-    } catch (error: any) {
-      toast.error(getGenericErrorMessage(error))
-    }
+      toast.success("Tipo de manutenção excluído com sucesso!"); fetchTipos()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
-  const openNewDialog = () => {
-    setEditingId(null)
-    form.reset()
-    setOpen(true)
+  const openNewDialog = () => { setEditingId(null); form.reset(); setOpen(true) }
+
+  const filtered = tipos.filter(t => {
+    if (!searchTerm) return true
+    return searchMatch(t.nome_tipo_manutencao, searchTerm) || searchMatch(t.descricao, searchTerm)
+  })
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  useEffect(() => { setCurrentPage(1) }, [searchTerm, pageSize])
+
+  // Bulk actions
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  }
+  const selectAllFiltered = () => setSelectedIds(new Set(filtered.map(t => t.id)))
+
+  const handleBulkDelete = async () => {
+    if (!user) return
+    if (!confirm(`Excluir ${selectedIds.size} tipo(s)?`)) return
+    try {
+      for (const id of Array.from(selectedIds)) {
+        const { error } = await supabase.from('tipos_manutencao').delete().eq('id', id).eq('user_id', user.id)
+        if (error) throw error
+      }
+      toast.success(`${selectedIds.size} tipo(s) excluído(s)!`); setSelectedIds(new Set()); fetchTipos()
+    } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1,2,3].map(i => <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />)}
-        </div>
-      </div>
-    )
+    return (<div className="space-y-6 animate-fade-in"><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i => <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />)}</div></div>)
   }
 
   return (
@@ -163,62 +139,22 @@ export default function TiposManutencao() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Novo Tipo</span>
-                <span className="sm:hidden">Novo</span>
+                <Plus className="mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Tipo</span><span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId ? "Editar Tipo de Manutenção" : "Novo Tipo de Manutenção"}
-                </DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? "Editar Tipo de Manutenção" : "Novo Tipo de Manutenção"}</DialogTitle></DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="nome_tipo_manutencao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome do Tipo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Manutenção Preventiva" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="descricao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descrição</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Descrição detalhada do tipo de manutenção"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
+                  <FormField control={form.control} name="nome_tipo_manutencao" render={({ field }) => (
+                    <FormItem><FormLabel>Nome do Tipo</FormLabel><FormControl><Input placeholder="Ex: Manutenção Preventiva" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="descricao" render={({ field }) => (
+                    <FormItem><FormLabel>Descrição</FormLabel><FormControl><Textarea placeholder="Descrição detalhada do tipo de manutenção" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                   <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button type="submit" className="flex-1">
-                      {editingId ? "Atualizar" : "Criar"}
-                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancelar</Button>
+                    <Button type="submit" className="flex-1">{editingId ? "Atualizar" : "Criar"}</Button>
                   </div>
                 </form>
               </Form>
@@ -227,28 +163,15 @@ export default function TiposManutencao() {
         )}
       </div>
 
-      {/* Dialog de Visualização */}
+      {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Detalhes do Tipo de Manutenção</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Detalhes do Tipo de Manutenção</DialogTitle></DialogHeader>
           {viewingTipo && (
             <div className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Nome do Tipo</Label>
-                <p className="text-lg font-medium">{viewingTipo.nome_tipo_manutencao}</p>
-              </div>
-              {viewingTipo.descricao && (
-                <div>
-                  <Label className="text-muted-foreground">Descrição</Label>
-                  <p className="whitespace-pre-wrap">{viewingTipo.descricao}</p>
-                </div>
-              )}
-              <div>
-                <Label className="text-muted-foreground">Data de Criação</Label>
-                <p>{new Date(viewingTipo.created_at).toLocaleDateString('pt-BR')}</p>
-              </div>
+              <div><Label className="text-muted-foreground">Nome do Tipo</Label><p className="text-lg font-medium">{viewingTipo.nome_tipo_manutencao}</p></div>
+              {viewingTipo.descricao && (<div><Label className="text-muted-foreground">Descrição</Label><p className="whitespace-pre-wrap">{viewingTipo.descricao}</p></div>)}
+              <div><Label className="text-muted-foreground">Data de Criação</Label><p>{new Date(viewingTipo.created_at).toLocaleDateString('pt-BR')}</p></div>
             </div>
           )}
         </DialogContent>
@@ -257,21 +180,25 @@ export default function TiposManutencao() {
       {/* Search */}
       <div className="search-bar">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-        <Input
-          placeholder="Buscar por nome ou descrição..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm"
-        />
+        <Input placeholder="Buscar por nome ou descrição..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-11 bg-card/80 backdrop-blur border-border/50 rounded-xl shadow-sm" />
       </div>
 
+      {/* Bulk Actions */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        totalCount={filtered.length}
+        onSelectAll={selectAllFiltered}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkDelete={handleBulkDelete}
+        canDelete={isAdmin || canDeleteSystem('tipos_manutencao')}
+        canEdit={false}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {tipos.filter(t => {
-          if (!searchTerm) return true
-          return searchMatch(t.nome_tipo_manutencao, searchTerm) || searchMatch(t.descricao, searchTerm)
-        }).map((tipo) => (
-          <div key={tipo.id} className="glass-card p-4 space-y-3 hover:shadow-lg">
+        {paginatedData.map((tipo) => (
+          <div key={tipo.id} className={`glass-card p-4 space-y-3 hover:shadow-lg ${selectedIds.has(tipo.id) ? 'ring-2 ring-primary/30' : ''}`}>
             <div className="flex items-center gap-3">
+              <Checkbox checked={selectedIds.has(tipo.id)} onCheckedChange={() => toggleSelect(tipo.id)} />
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
@@ -302,15 +229,17 @@ export default function TiposManutencao() {
         ))}
       </div>
 
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <TablePagination currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} totalItems={filtered.length} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+      )}
+
       {tipos.length === 0 && (
         <div className="glass-card text-center py-12">
           <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
           <h3 className="font-display font-semibold mb-1">Nenhum tipo cadastrado</h3>
           <p className="text-sm text-muted-foreground mb-4">Comece criando seu primeiro tipo de manutenção.</p>
-          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Primeiro Tipo
-          </Button>
+          <Button onClick={openNewDialog} className="gradient-primary border-0 rounded-xl"><Plus className="mr-2 h-4 w-4" />Adicionar Primeiro Tipo</Button>
         </div>
       )}
     </div>
