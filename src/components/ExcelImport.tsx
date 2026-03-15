@@ -29,12 +29,50 @@ interface ManutencaoImport {
   solicitante?: string
 }
 
+function parseExcelDate(value: any): string | null {
+  if (!value) return null
+  // Excel serial date number
+  if (typeof value === 'number' && value > 1 && value < 100000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30))
+    const date = new Date(excelEpoch.getTime() + value * 86400000)
+    const y = date.getUTCFullYear()
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(date.getUTCDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  if (typeof value === 'string') {
+    // Already yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+    // dd/mm/yyyy
+    const brMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+    if (brMatch) return `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`
+  }
+  return String(value)
+}
+
+function parseExcelTime(value: any): string | null {
+  if (!value) return null
+  // Excel fractional day (e.g., 0.5 = 12:00)
+  if (typeof value === 'number' && value >= 0 && value < 1) {
+    const totalMinutes = Math.round(value * 24 * 60)
+    const h = String(Math.floor(totalMinutes / 60)).padStart(2, '0')
+    const m = String(totalMinutes % 60).padStart(2, '0')
+    return `${h}:${m}`
+  }
+  if (typeof value === 'string') {
+    // HH:MM or HH:MM:SS
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) return value.substring(0, 5)
+  }
+  return String(value)
+}
+
 export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [importErrors, setImportErrors] = useState<string[]>([])
 
   const downloadTemplate = () => {
     const template = [
@@ -85,6 +123,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
       if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
           selectedFile.type === 'application/vnd.ms-excel') {
         setFile(selectedFile)
+        setImportErrors([])
       } else {
         toast.error('Por favor, selecione um arquivo Excel (.xlsx ou .xls)')
       }
@@ -96,6 +135,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
 
     setImporting(true)
     setProgress(0)
+    setImportErrors([])
 
     try {
       const data = await file.arrayBuffer()
@@ -174,12 +214,27 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             equipe_id = equipe.id
           }
 
+          // Parse datas e horas (suporta serial Excel e strings)
+          const dataInicio = parseExcelDate(row.data_inicio)
+          const horaInicio = parseExcelTime(row.hora_inicio)
+          const dataFim = parseExcelDate(row.data_fim)
+          const horaFim = parseExcelTime(row.hora_fim)
+
+          if (!dataInicio || !/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)) {
+            errors.push(`Linha ${i + 2}: Data início inválida "${row.data_inicio}". Use o formato AAAA-MM-DD ou DD/MM/AAAA.`)
+            continue
+          }
+          if (!horaInicio || !/^\d{1,2}:\d{2}/.test(horaInicio)) {
+            errors.push(`Linha ${i + 2}: Hora início inválida "${row.hora_inicio}". Use o formato HH:MM.`)
+            continue
+          }
+
           // Calcular tempo total se ambas as datas/horas estiverem presentes
           let tempo_total = null
-          if (row.data_inicio && row.hora_inicio && row.data_fim && row.hora_fim) {
-            const inicio = new Date(`${row.data_inicio}T${row.hora_inicio}`)
-            const fim = new Date(`${row.data_fim}T${row.hora_fim}`)
-            tempo_total = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60)) // em minutos
+          if (dataInicio && horaInicio && dataFim && horaFim) {
+            const inicio = new Date(`${dataInicio}T${horaInicio}`)
+            const fim = new Date(`${dataFim}T${horaFim}`)
+            tempo_total = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60))
           }
 
           manutencoes.push({
@@ -188,10 +243,10 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             empresa_terceira_id,
             tipo_manutencao_id: tipo.id,
             equipe_id,
-            data_inicio: row.data_inicio,
-            hora_inicio: row.hora_inicio,
-            data_fim: row.data_fim || null,
-            hora_fim: row.hora_fim || null,
+            data_inicio: dataInicio,
+            hora_inicio: horaInicio,
+            data_fim: dataFim || null,
+            hora_fim: horaFim || null,
             descricao: row.descricao || null,
             status: row.status || 'Em andamento',
             responsavel: row.responsavel || null,
@@ -208,7 +263,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
 
       if (errors.length > 0) {
         console.error('Erros encontrados:', errors)
-        toast.error(`${errors.length} erro(s) encontrado(s). Verifique o console para detalhes.`)
+        setImportErrors(errors)
       }
 
       if (manutencoes.length === 0) {
@@ -302,6 +357,26 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
               )}
             </CardContent>
           </Card>
+
+          {importErrors.length > 0 && (
+            <Card className="border-destructive">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-destructive">
+                  {importErrors.length} erro(s) encontrado(s)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Corrija os dados na planilha e tente novamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {importErrors.map((err, idx) => (
+                    <p key={idx} className="text-xs text-destructive">{err}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {importing && (
             <Card>
