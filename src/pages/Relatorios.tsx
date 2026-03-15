@@ -152,6 +152,17 @@ export default function Relatorios() {
       const timestamp = new Date().toLocaleDateString('pt-BR')
       const config = REPORT_CONFIGS[selectedReport]
 
+      const buildContent = (headers: string[], rows: string[][]) => {
+        if (format === 'csv') {
+          return headers.join(',') + '\n' + rows.map(r => r.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(',')).join('\n')
+        } else {
+          let txt = `=== ${config.label} === ${timestamp}\n\n`
+          txt += headers.join(' | ') + '\n' + '-'.repeat(80) + '\n'
+          rows.forEach(r => { txt += r.join(' | ') + '\n' })
+          return txt
+        }
+      }
+
       if (selectedReport === 'senhas_inventario') {
         const { data, error } = await supabase.from('cofre_senhas')
           .select('nome_acesso, login, url_acesso, grupo, descricao, clientes(nome_cliente), empresas_terceiras(nome_empresa)')
@@ -170,13 +181,69 @@ export default function Relatorios() {
           if (selectedFields.has('descricao')) row.push(s.descricao || '')
           return row
         })
+        content = buildContent(headers, rows)
 
-        if (format === 'csv') {
-          content = headers.join(',') + '\n' + rows.map(r => r.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(',')).join('\n')
-        } else {
-          content = `=== ${config.label} === ${timestamp}\n\n`
-          rows.forEach(r => { content += r.join(' | ') + '\n' })
-        }
+      } else if (selectedReport === 'empresas') {
+        const { data, error } = await supabase.from('empresas_terceiras').select('*').order('nome_empresa')
+        if (error) throw error
+        const headers = config.fields.filter(f => selectedFields.has(f.key)).map(f => f.label)
+        const rows = (data || []).map(e => {
+          const row: string[] = []
+          if (selectedFields.has('nome_empresa')) row.push(e.nome_empresa || '')
+          if (selectedFields.has('created_at')) row.push(new Date(e.created_at).toLocaleDateString('pt-BR'))
+          return row
+        })
+        content = buildContent(headers, rows)
+
+      } else if (selectedReport === 'clientes') {
+        const { data, error } = await supabase.from('clientes')
+          .select('*, empresas_terceiras(nome_empresa)')
+          .order('nome_cliente')
+        if (error) throw error
+        const headers = config.fields.filter(f => selectedFields.has(f.key)).map(f => f.label)
+        const rows = (data || []).map(c => {
+          const row: string[] = []
+          if (selectedFields.has('nome_cliente')) row.push(c.nome_cliente || '')
+          if (selectedFields.has('email')) row.push(c.email || '')
+          if (selectedFields.has('telefone')) row.push(c.telefone || '')
+          if (selectedFields.has('cnpj')) row.push(c.cnpj || '')
+          if (selectedFields.has('endereco')) row.push(c.endereco || '')
+          if (selectedFields.has('empresa')) row.push((c as any).empresas_terceiras?.nome_empresa || '')
+          return row
+        })
+        content = buildContent(headers, rows)
+
+      } else if (selectedReport === 'usuarios') {
+        const { data, error } = await supabase.from('user_profiles')
+          .select('*, landing_plans(nome)')
+          .order('display_name')
+        if (error) throw error
+        const headers = config.fields.filter(f => selectedFields.has(f.key)).map(f => f.label)
+        const rows = (data || []).map(u => {
+          const row: string[] = []
+          if (selectedFields.has('display_name')) row.push(u.display_name || '')
+          if (selectedFields.has('email')) row.push(u.email || '')
+          if (selectedFields.has('phone')) row.push(u.phone || '')
+          if (selectedFields.has('is_admin')) row.push(u.is_admin ? 'Sim' : 'Não')
+          if (selectedFields.has('account_status')) row.push(u.account_status || 'active')
+          if (selectedFields.has('plan')) row.push((u as any).landing_plans?.nome || '')
+          return row
+        })
+        content = buildContent(headers, rows)
+
+      } else if (selectedReport === 'perfis') {
+        const { data, error } = await supabase.from('permission_profiles').select('*').order('nome_perfil')
+        if (error) throw error
+        const headers = config.fields.filter(f => selectedFields.has(f.key)).map(f => f.label)
+        const rows = (data || []).map(p => {
+          const row: string[] = []
+          if (selectedFields.has('nome_perfil')) row.push(p.nome_perfil || '')
+          if (selectedFields.has('is_admin_profile')) row.push(p.is_admin_profile ? 'Sim' : 'Não')
+          if (selectedFields.has('created_at')) row.push(new Date(p.created_at).toLocaleDateString('pt-BR'))
+          return row
+        })
+        content = buildContent(headers, rows)
+
       } else {
         let query = supabase.from('manutencoes')
           .select('*, clientes(nome_cliente), tipos_manutencao(nome_tipo_manutencao), equipes(nome_equipe), empresas_terceiras(nome_empresa)')
@@ -190,7 +257,6 @@ export default function Relatorios() {
         if (error) throw error
 
         if (selectedReport === 'horas_resumo') {
-          // Aggregate data
           const aggMap: Record<string, { horas: number; count: number; cliente: string; equipe: string; tipo: string }> = {}
           ;(data || []).forEach(m => {
             const key = `${(m as any).clientes?.nome_cliente || 'N/A'}|${(m as any).equipes?.nome_equipe || 'N/A'}|${(m as any).tipos_manutencao?.nome_tipo_manutencao || 'N/A'}`
@@ -209,14 +275,7 @@ export default function Relatorios() {
             if (selectedFields.has('total_manutencoes')) row.push(String(a.count))
             return row
           })
-
-          if (format === 'csv') {
-            content = headers.join(',') + '\n' + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
-          } else {
-            content = `=== ${config.label} === ${timestamp}\n\n`
-            content += headers.join(' | ') + '\n' + '-'.repeat(60) + '\n'
-            rows.forEach(r => { content += r.join(' | ') + '\n' })
-          }
+          content = buildContent(headers, rows)
         } else {
           const headers = config.fields.filter(f => selectedFields.has(f.key)).map(f => f.label)
           const rows = (data || []).map(m => {
@@ -234,14 +293,7 @@ export default function Relatorios() {
             if (selectedFields.has('descricao')) row.push(m.descricao || '')
             return row
           })
-
-          if (format === 'csv') {
-            content = headers.join(',') + '\n' + rows.map(r => r.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(',')).join('\n')
-          } else {
-            content = `=== ${config.label} === ${timestamp}\n\n`
-            content += headers.join(' | ') + '\n' + '-'.repeat(80) + '\n'
-            rows.forEach(r => { content += r.join(' | ') + '\n' })
-          }
+          content = buildContent(headers, rows)
         }
       }
 
