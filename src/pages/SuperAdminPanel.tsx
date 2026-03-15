@@ -50,6 +50,7 @@ interface AdminWithStats {
   trial_days: number | null
   trial_start: string | null
   is_permanent: boolean | null
+  plan_id: string | null
   created_at: string
   sub_users: { display_name: string | null; email: string | null }[]
   stats: {
