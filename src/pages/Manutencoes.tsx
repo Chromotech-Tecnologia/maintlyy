@@ -36,13 +36,14 @@ interface Manutencao {
   empresas_terceiras?: { nome_empresa: string }
   tipos_manutencao?: { nome_tipo_manutencao: string }
   equipes?: { nome_equipe: string }
+  manutencao_equipes?: { equipe_id: string; equipes: { nome_equipe: string } }[]
 }
 
 interface FormData {
   empresa_terceira_id: string
   cliente_id: string
   tipo_manutencao_id: string
-  equipe_id: string
+  equipe_ids: string[]
   data_inicio: string
   hora_inicio: string
   data_fim: string
@@ -82,7 +83,7 @@ export default function Manutencoes() {
     empresa_terceira_id: "",
     cliente_id: "",
     tipo_manutencao_id: "",
-    equipe_id: "",
+    equipe_ids: [],
     data_inicio: "",
     hora_inicio: "",
     data_fim: "",
@@ -105,7 +106,8 @@ export default function Manutencoes() {
             clientes(nome_cliente),
             empresas_terceiras(nome_empresa),
             tipos_manutencao(nome_tipo_manutencao),
-            equipes(nome_equipe)
+            equipes(nome_equipe),
+            manutencao_equipes(equipe_id, equipes(nome_equipe))
           `)
           .order('created_at', { ascending: false }),
         supabase.from('empresas_terceiras').select('*'),
@@ -157,10 +159,11 @@ export default function Manutencoes() {
         formData.hora_fim
       )
 
+      const { equipe_ids, ...rest } = formData
       const data = {
-        ...formData,
+        ...rest,
         user_id: user.id,
-        equipe_id: formData.equipe_id || null,
+        equipe_id: equipe_ids[0] || null,
         tempo_total
       }
 
@@ -171,13 +174,31 @@ export default function Manutencoes() {
           .eq('id', editingId)
         
         if (error) throw error
+
+        // Update junction table
+        await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
+        if (equipe_ids.length > 0) {
+          await supabase.from('manutencao_equipes').insert(
+            equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid }))
+          )
+        }
+
         toast.success("Manutenção atualizada!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('manutencoes')
           .insert([data])
+          .select('id')
+          .single()
         
         if (error) throw error
+
+        if (inserted && equipe_ids.length > 0) {
+          await supabase.from('manutencao_equipes').insert(
+            equipe_ids.map(eid => ({ manutencao_id: inserted.id, equipe_id: eid }))
+          )
+        }
+
         toast.success("Manutenção criada!")
       }
 
@@ -187,7 +208,7 @@ export default function Manutencoes() {
         empresa_terceira_id: "",
         cliente_id: "",
         tipo_manutencao_id: "",
-        equipe_id: "",
+        equipe_ids: [],
         data_inicio: "",
         hora_inicio: "",
         data_fim: "",
@@ -204,11 +225,15 @@ export default function Manutencoes() {
   }
 
   const handleEdit = (manutencao: Manutencao) => {
+    const equipeIds = (manutencao as any).manutencao_equipes?.map((me: any) => me.equipe_id) || []
+    const legacyEquipeId = manutencao.equipe_id
+    const finalEquipeIds = equipeIds.length > 0 ? equipeIds : (legacyEquipeId ? [legacyEquipeId] : [])
+    
     setFormData({
       empresa_terceira_id: manutencao.empresa_terceira_id,
       cliente_id: manutencao.cliente_id,
       tipo_manutencao_id: manutencao.tipo_manutencao_id,
-      equipe_id: manutencao.equipe_id || "",
+      equipe_ids: finalEquipeIds,
       data_inicio: manutencao.data_inicio,
       hora_inicio: manutencao.hora_inicio,
       data_fim: manutencao.data_fim || "",
@@ -240,6 +265,12 @@ export default function Manutencoes() {
     } catch (error: any) {
       toast.error(error.message)
     }
+  }
+
+  const getEquipeNames = (m: Manutencao) => {
+    const fromJunction = (m as any).manutencao_equipes?.map((me: any) => me.equipes?.nome_equipe).filter(Boolean)
+    if (fromJunction && fromJunction.length > 0) return fromJunction.join(', ')
+    return m.equipes?.nome_equipe || '-'
   }
 
   const formatTempo = (minutos?: number) => {
@@ -392,19 +423,27 @@ export default function Manutencoes() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Equipe</Label>
-                  <Select value={formData.equipe_id} onValueChange={(value) => setFormData({...formData, equipe_id: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipes.map((equipe: any) => (
-                        <SelectItem key={equipe.id} value={equipe.id}>
-                          {equipe.nome_equipe}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Equipes</Label>
+                  <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto bg-background">
+                    {equipes.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma equipe cadastrada</p>}
+                    {equipes.map((equipe: any) => (
+                      <label key={equipe.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.equipe_ids.includes(equipe.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({...formData, equipe_ids: [...formData.equipe_ids, equipe.id]})
+                            } else {
+                              setFormData({...formData, equipe_ids: formData.equipe_ids.filter(id => id !== equipe.id)})
+                            }
+                          }}
+                          className="rounded border-primary"
+                        />
+                        {equipe.nome_equipe}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
               
@@ -628,8 +667,8 @@ export default function Manutencoes() {
                   <p>{viewingManutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Equipe</Label>
-                  <p>{viewingManutencao.equipes?.nome_equipe || "-"}</p>
+                  <Label className="text-muted-foreground">Equipes</Label>
+                  <p>{getEquipeNames(viewingManutencao)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -718,7 +757,7 @@ export default function Manutencoes() {
                     {manutencao.status}
                   </span>
                 </TableCell>
-                <TableCell className="text-sm">{manutencao.equipes?.nome_equipe || "-"}</TableCell>
+                <TableCell className="text-sm">{getEquipeNames(manutencao)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {(isAdmin || canViewDetailsSystem('manutencoes')) && (
@@ -761,8 +800,8 @@ export default function Manutencoes() {
                 <p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p>
               </div>
               <div>
-                <p className="mobile-card-label">Equipe</p>
-                <p className="text-xs font-medium">{manutencao.equipes?.nome_equipe || "-"}</p>
+                <p className="mobile-card-label">Equipes</p>
+                <p className="text-xs font-medium">{getEquipeNames(manutencao)}</p>
               </div>
               <div>
                 <p className="mobile-card-label">Data</p>
