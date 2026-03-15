@@ -123,6 +123,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
       if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
           selectedFile.type === 'application/vnd.ms-excel') {
         setFile(selectedFile)
+        setImportErrors([])
       } else {
         toast.error('Por favor, selecione um arquivo Excel (.xlsx ou .xls)')
       }
