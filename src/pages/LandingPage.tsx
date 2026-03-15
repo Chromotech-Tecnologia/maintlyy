@@ -119,7 +119,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 sm:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 relative overflow-hidden">
+      <section className="pt-36 sm:pt-44 pb-16 sm:pb-24 px-4 sm:px-6 relative overflow-x-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none">
