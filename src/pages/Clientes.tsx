@@ -21,6 +21,7 @@ import { clienteSchema, type ClienteFormData } from "@/lib/validations"
 import { sanitizeFormData, getGenericErrorMessage, isRateLimited } from "@/lib/security"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
+import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 
 interface Cliente {
   id: string
@@ -188,7 +189,12 @@ export default function Clientes() {
         {(isAdmin || canCreateSystem('clientes')) && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5">
+              <Button 
+                onClick={openNewDialog} 
+                className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
+                disabled={empresas.length === 0}
+                title={empresas.length === 0 ? "Cadastre uma empresa primeiro" : undefined}
+              >
                 <Plus className="mr-2 h-4 w-4" /><span className="hidden sm:inline">Novo Cliente</span><span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
@@ -245,6 +251,14 @@ export default function Clientes() {
           </Dialog>
         )}
       </div>
+
+      {/* Prerequisite Warning */}
+      {empresas.length === 0 && (
+        <PrerequisiteWarning
+          context="um cliente"
+          missingItems={[{ label: "Empresas", route: "/empresas" }]}
+        />
+      )}
 
       {/* Search */}
       <div className="search-bar">

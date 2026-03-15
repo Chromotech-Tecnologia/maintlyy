@@ -24,6 +24,7 @@ import { cofreSenhaSchema, type CofreSenhaFormData } from "@/lib/validations"
 import { encryptPassword, decryptPassword, sanitizeFormData } from "@/lib/security"
 import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
+import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 
 interface CofreSenha {
   id: string
@@ -622,6 +623,12 @@ export default function CofreSenhas() {
     )
   }
 
+  const cofreMissingPrereqs = [
+    ...(empresas.length === 0 ? [{ label: "Empresas", route: "/empresas" }] : []),
+    ...(clientes.length === 0 ? [{ label: "Clientes", route: "/clientes" }] : []),
+  ]
+  const canCreateCofre = cofreMissingPrereqs.length === 0
+
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -758,7 +765,13 @@ export default function CofreSenhas() {
 
           <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
-              <Button onClick={openNewDialog} size="sm" className="bg-primary hover:bg-primary/90">
+              <Button 
+                onClick={openNewDialog} 
+                size="sm" 
+                className="bg-primary hover:bg-primary/90"
+                disabled={!canCreateCofre}
+                title={!canCreateCofre ? "Cadastre os itens necessários primeiro" : undefined}
+              >
                 <Plus className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Senha</span>
                 <span className="sm:hidden">Nova</span>
@@ -1007,6 +1020,11 @@ export default function CofreSenhas() {
           />
         </div>
       </div>
+
+      {/* Prerequisite Warning */}
+      {cofreMissingPrereqs.length > 0 && (
+        <PrerequisiteWarning context="uma senha" missingItems={cofreMissingPrereqs} />
+      )}
 
       {/* Filtros - Accordion no mobile, grid no desktop */}
       <div className="hidden md:block">

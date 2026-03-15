@@ -10,7 +10,8 @@ import { ptBR } from "date-fns/locale"
 import {
   Crown, Search, MoreHorizontal, Key, Clock, CheckCircle2,
   XCircle, Trash2, Shield, Phone, Mail, User, AlertTriangle, Settings,
-  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard, Ban
+  Users, KeyRound, Building2, Wrench, ChevronDown, ChevronUp, CreditCard, Ban,
+  Edit2
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -50,6 +51,7 @@ interface AdminWithStats {
   trial_days: number | null
   trial_start: string | null
   is_permanent: boolean | null
+  plan_id: string | null
   created_at: string
   sub_users: { display_name: string | null; email: string | null }[]
   stats: {
@@ -78,8 +80,14 @@ export default function SuperAdminPanel() {
   const [actionLoading, setActionLoading] = useState(false)
   const [activateDialog, setActivateDialog] = useState<{ open: boolean; userId: string; email: string }>({ open: false, userId: "", email: "" })
   const [selectedPlanId, setSelectedPlanId] = useState<string>("")
-  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string }[]>([])
+  const [availablePlans, setAvailablePlans] = useState<{ id: string; nome: string; tipo: string; max_usuarios: number; max_equipes: number; max_manutencoes: number; max_empresas: number; max_senhas: number }[]>([])
   const [plansLoading, setPlansLoading] = useState(false)
+
+  // Change plan dialog
+  const [changePlanDialog, setChangePlanDialog] = useState<{ open: boolean; userId: string; email: string; currentPlanId: string | null }>({ open: false, userId: "", email: "", currentPlanId: null })
+  const [changePlanId, setChangePlanId] = useState<string>("")
+  const [changePlanLimits, setChangePlanLimits] = useState({ max_usuarios: 0, max_equipes: 0, max_manutencoes: 0, max_empresas: 0, max_senhas: 0 })
+  const [changePlanLoading, setChangePlanLoading] = useState(false)
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -176,9 +184,46 @@ export default function SuperAdminPanel() {
     setActivateDialog({ open: true, userId, email })
     setSelectedPlanId("")
     setPlansLoading(true)
-    const { data } = await supabase.from('landing_plans').select('id, nome, tipo').eq('ativo', true).order('ordem')
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas').eq('ativo', true).order('ordem')
     setAvailablePlans((data || []) as any[])
     setPlansLoading(false)
+  }
+
+  const openChangePlanDialog = async (admin: AdminWithStats) => {
+    setChangePlanDialog({ open: true, userId: admin.user_id, email: admin.email || '', currentPlanId: admin.plan_id })
+    setChangePlanId(admin.plan_id || "")
+    setPlansLoading(true)
+    const { data } = await supabase.from('landing_plans').select('id, nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas').eq('ativo', true).order('ordem')
+    const plans = (data || []) as any[]
+    setAvailablePlans(plans)
+    // Set current plan limits
+    const currentPlan = plans.find(p => p.id === admin.plan_id)
+    if (currentPlan) {
+      setChangePlanLimits({
+        max_usuarios: currentPlan.max_usuarios || 0,
+        max_equipes: currentPlan.max_equipes || 0,
+        max_manutencoes: currentPlan.max_manutencoes || 0,
+        max_empresas: currentPlan.max_empresas || 0,
+        max_senhas: currentPlan.max_senhas || 0,
+      })
+    }
+    setPlansLoading(false)
+  }
+
+  const handleChangePlan = async () => {
+    if (!changePlanId) { toast.error("Selecione um plano"); return }
+    setChangePlanLoading(true)
+    try {
+      // Change the tenant's plan
+      await callAdminOp('changeTenantPlan', changePlanDialog.userId, { planId: changePlanId })
+      // Update the plan limits
+      await callAdminOp('updatePlanLimits', changePlanDialog.userId, { planId: changePlanId, limits: changePlanLimits })
+      toast.success("Plano e limites atualizados!")
+      setChangePlanDialog({ open: false, userId: "", email: "", currentPlanId: null })
+      fetchData()
+    } catch {} finally {
+      setChangePlanLoading(false)
+    }
   }
 
   const handleActivatePermanent = async () => {
@@ -299,6 +344,9 @@ export default function SuperAdminPanel() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => openActivateDialog(admin.user_id, admin.email || '')}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Ativar permanente
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => openChangePlanDialog(admin)}>
+          <Edit2 className="h-4 w-4 mr-2" /> Mudar Plano / Limites
         </DropdownMenuItem>
         {(admin.is_permanent || admin.account_status === 'active') && (
           <DropdownMenuItem onClick={() => handleCancelPlan(admin.user_id)} className="text-amber-500">
@@ -667,6 +715,81 @@ export default function SuperAdminPanel() {
             <Button variant="outline" onClick={() => setActivateDialog({ open: false, userId: "", email: "" })}>Cancelar</Button>
             <Button onClick={handleActivatePermanent} disabled={actionLoading || !selectedPlanId}>
               {actionLoading ? "Ativando..." : "Ativar Permanente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={changePlanDialog.open} onOpenChange={(open) => setChangePlanDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Mudar Plano e Limites</DialogTitle>
+            <DialogDescription>Altere o plano e os limites para {changePlanDialog.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {plansLoading ? (
+              <div className="text-center py-4 text-muted-foreground">Carregando planos...</div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Plano</Label>
+                  <Select value={changePlanId} onValueChange={(v) => {
+                    setChangePlanId(v)
+                    const plan = availablePlans.find(p => p.id === v)
+                    if (plan) {
+                      setChangePlanLimits({
+                        max_usuarios: plan.max_usuarios || 0,
+                        max_equipes: plan.max_equipes || 0,
+                        max_manutencoes: plan.max_manutencoes || 0,
+                        max_empresas: plan.max_empresas || 0,
+                        max_senhas: plan.max_senhas || 0,
+                      })
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                    <SelectContent>
+                      {availablePlans.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.nome} ({p.tipo})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {changePlanId && (
+                  <div className="space-y-3 p-4 border border-border/50 rounded-lg bg-muted/30">
+                    <p className="text-sm font-medium">Limites do Plano <span className="text-xs text-muted-foreground">(0 = ilimitado)</span></p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Máx. Usuários</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_usuarios} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_usuarios: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Equipes</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_equipes} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_equipes: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Manutenções/mês</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_manutencoes} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_manutencoes: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Empresas</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_empresas} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_empresas: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Máx. Senhas</Label>
+                        <Input type="number" min={0} value={changePlanLimits.max_senhas} onChange={(e) => setChangePlanLimits(p => ({ ...p, max_senhas: parseInt(e.target.value) || 0 }))} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangePlanDialog({ open: false, userId: "", email: "", currentPlanId: null })}>Cancelar</Button>
+            <Button onClick={handleChangePlan} disabled={changePlanLoading || !changePlanId}>
+              {changePlanLoading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>
