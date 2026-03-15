@@ -262,7 +262,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
 
       if (errors.length > 0) {
         console.error('Erros encontrados:', errors)
-        toast.error(`${errors.length} erro(s) encontrado(s). Verifique o console para detalhes.`)
+        setImportErrors(errors)
       }
 
       if (manutencoes.length === 0) {
