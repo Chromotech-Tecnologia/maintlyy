@@ -50,6 +50,26 @@ interface MonitorSchedule {
 
 const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "" }
 
+function translateErrorMessage(msg: string | null): string {
+  if (!msg) return '-'
+  const lower = msg.toLowerCase()
+  if (lower.includes('dns error') || lower.includes('failed to lookup address'))
+    return 'Erro de DNS: não foi possível resolver o endereço do site'
+  if (lower.includes('connection refused'))
+    return 'Conexão recusada: o servidor não está aceitando conexões'
+  if (lower.includes('connection reset'))
+    return 'Conexão resetada pelo servidor'
+  if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('aborted'))
+    return 'Tempo esgotado: o site não respondeu dentro do limite'
+  if (lower.includes('ssl') || lower.includes('certificate') || lower.includes('tls'))
+    return 'Erro de certificado SSL/TLS'
+  if (lower.includes('connection failed') || lower.includes('network'))
+    return 'Falha na conexão de rede'
+  if (lower.includes('too many redirects'))
+    return 'Muitos redirecionamentos'
+  return msg
+}
+
 export default function MonitoramentoSites() {
   const { user } = useAuth()
   const { isAdmin, canCreateSystem, canEditSystem, canDeleteSystem } = usePermissions()

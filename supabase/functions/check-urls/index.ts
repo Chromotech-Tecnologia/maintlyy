@@ -103,7 +103,7 @@ serve(async (req) => {
         // Consume body to avoid resource leak
         await response.text()
       } catch (err: any) {
-        errorMessage = err.message || 'Connection failed'
+        errorMessage = translateError(err.message || 'Falha na conexão')
         isOnline = false
       }
 
