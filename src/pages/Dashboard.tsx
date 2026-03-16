@@ -167,14 +167,16 @@ export default function Dashboard() {
       [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
-    // Monthly chart
+    // Monthly chart — use filter year range or current year
+    const filterYear = filterDataInicio ? new Date(filterDataInicio).getFullYear() : (filterDataFim ? new Date(filterDataFim).getFullYear() : currentYear)
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
-      const month = new Date(currentYear, i).toLocaleDateString('pt-BR', { month: 'short' })
+      const monthDate = new Date(filterYear, i)
+      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
       const monthItems = filtered.filter(m => {
         const d = new Date(m.data_inicio)
-        return d.getMonth() === i && d.getFullYear() === currentYear
+        return d.getMonth() === i && d.getFullYear() === filterYear
       })
-      return { name: month, manutenções: monthItems.length, horas: Math.round(monthItems.reduce((s, m) => s + (m.tempo_total || 0), 0) / 60) }
+      return { name: monthLabel, manutenções: monthItems.length, horas: Math.round(monthItems.reduce((s, m) => s + (m.tempo_total || 0), 0) / 60) }
     })
     setChartData(visaoMensal)
 
