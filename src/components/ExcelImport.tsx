@@ -237,6 +237,18 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             tempo_total = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60))
           }
 
+          // Normalizar status para valores aceitos pelo banco
+          const rawStatus = row.status || row.Status || ''
+          let normalizedStatus = 'Em andamento'
+          if (typeof rawStatus === 'string') {
+            const lower = rawStatus.trim().toLowerCase()
+            if (lower === 'finalizado') normalizedStatus = 'Finalizado'
+            else if (lower === 'em andamento') normalizedStatus = 'Em andamento'
+          }
+
+          // Suportar coluna "descrição" com acento
+          const descricao = row.descricao || (row as any)['descrição'] || (row as any)['descricão'] || null
+
           manutencoes.push({
             user_id: user.id,
             cliente_id: cliente.id,
@@ -247,8 +259,8 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
             hora_inicio: horaInicio,
             data_fim: dataFim || null,
             hora_fim: horaFim || null,
-            descricao: row.descricao || null,
-            status: row.status || 'Em andamento',
+            descricao: descricao,
+            status: normalizedStatus,
             responsavel: row.responsavel || null,
             solicitante: row.solicitante || null,
             tempo_total
