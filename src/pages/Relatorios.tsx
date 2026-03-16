@@ -129,6 +129,15 @@ export default function Relatorios() {
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
   const [pendingExportFormat, setPendingExportFormat] = useState<'csv' | 'txt'>('csv')
 
+  useEffect(() => {
+    if (selectedReport) {
+      const defaults = new Set(
+        REPORT_CONFIGS[selectedReport].fields.filter(f => f.default).map(f => f.key)
+      )
+      setSelectedFields(defaults)
+    }
+  }, [selectedReport])
+
   // If both relatorios_avancados and links_publicos are disabled, show blocked message
   if (!planLimits.loading && !planLimits.relatoriosAvancados && !planLimits.linksPublicos) {
     return (
@@ -151,15 +160,6 @@ export default function Relatorios() {
       </div>
     )
   }
-
-  useEffect(() => {
-    if (selectedReport) {
-      const defaults = new Set(
-        REPORT_CONFIGS[selectedReport].fields.filter(f => f.default).map(f => f.key)
-      )
-      setSelectedFields(defaults)
-    }
-  }, [selectedReport])
 
   const toggleField = (key: string) => {
     const next = new Set(selectedFields)
