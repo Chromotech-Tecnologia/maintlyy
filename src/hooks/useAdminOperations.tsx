@@ -83,6 +83,14 @@ export function useAdminOperations() {
     })
   }
 
+  const resendInvite = async (userId: string) => {
+    return callAdminOperation({
+      operation: 'resendInvite',
+      userId,
+      redirectTo: `${window.location.origin}/setup-password`,
+    })
+  }
+
   const sendPasswordReset = async (userId: string, redirectTo?: string) => {
     return callAdminOperation({
       operation: 'sendPasswordReset',
