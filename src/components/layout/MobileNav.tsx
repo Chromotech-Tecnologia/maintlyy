@@ -131,6 +131,38 @@ export function MobileNav() {
                       </div>
                     </div>
                   ))}
+                  {/* Support links */}
+                  {!planLimits.loading && (planLimits.suporteEmail || planLimits.suporteWhatsapp) && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2 px-1">Suporte</p>
+                      <div className="space-y-1">
+                        {planLimits.suporteEmail && planLimits.suporteEmailEndereco && (
+                          <a
+                            href={`mailto:${planLimits.suporteEmailEndereco}`}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-muted transition-all duration-200 no-underline"
+                            onClick={() => setDrawerOpen(false)}
+                          >
+                            <Mail className="h-5 w-5 shrink-0" />
+                            <span className="flex-1">Email</span>
+                            <ChevronRight className="h-4 w-4 opacity-40" />
+                          </a>
+                        )}
+                        {planLimits.suporteWhatsapp && planLimits.suporteWhatsappNumero && (
+                          <a
+                            href={`https://wa.me/${planLimits.suporteWhatsappNumero}?text=${encodeURIComponent('Olá! Preciso de suporte.')}`}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-muted transition-all duration-200 no-underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setDrawerOpen(false)}
+                          >
+                            <MessageCircle className="h-5 w-5 shrink-0" />
+                            <span className="flex-1">WhatsApp</span>
+                            <ChevronRight className="h-4 w-4 opacity-40" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </SheetContent>
