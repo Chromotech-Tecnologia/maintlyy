@@ -297,6 +297,7 @@ serve(async (req) => {
         if (limits.max_manutencoes !== undefined) updatePayload.max_manutencoes = limits.max_manutencoes
         if (limits.max_empresas !== undefined) updatePayload.max_empresas = limits.max_empresas
         if (limits.max_senhas !== undefined) updatePayload.max_senhas = limits.max_senhas
+        if (limits.max_urls !== undefined) updatePayload.max_urls = limits.max_urls
         
         const { error: limitsError } = await supabaseAdmin.from('landing_plans').update(updatePayload).eq('id', body.planId)
         

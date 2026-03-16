@@ -56,6 +56,7 @@ export function AppSidebar() {
     "Usuários": "perfis_usuarios",
     "Perfil": "permissoes",
     "Relatórios": "relatorios",
+    "Monitoramento": "monitoramento",
   }
   
   const filteredMainItems = mainItems.filter((item) => {

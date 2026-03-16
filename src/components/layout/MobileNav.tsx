@@ -40,6 +40,7 @@ export function MobileNav() {
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",
+    "Monitoramento": "monitoramento",
   }
 
   const systemItems = [

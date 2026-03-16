@@ -58,6 +58,7 @@ const App = () => (
                       <Route path="/super-admin" element={<SuperAdminPanel />} />
                       <Route path="/relatorios" element={<Relatorios />} />
                       <Route path="/assinaturas" element={<Assinaturas />} />
+                      <Route path="/monitoramento" element={<MonitoramentoSites />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

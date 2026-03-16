@@ -273,6 +273,10 @@ export function PlansManager() {
                 <Label>Máx. senhas</Label>
                 <Input type="number" value={form.max_senhas} onChange={(e) => setForm(f => ({ ...f, max_senhas: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
               </div>
+              <div>
+                <Label>Máx. URLs monitoradas</Label>
+                <Input type="number" value={form.max_urls} onChange={(e) => setForm(f => ({ ...f, max_urls: parseInt(e.target.value) || 0 }))} min={0} placeholder="0 = ilimitado" />
+              </div>
             </div>
             <div>
               <Label>Descrição</Label>

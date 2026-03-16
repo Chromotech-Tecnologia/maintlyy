@@ -4,3 +4,9 @@ project_id = "tbpzpktreehmleglmfqy"
 
 [functions.admin-operations]
 verify_jwt = true
+
+[functions.check-urls]
+verify_jwt = false
+
+[functions.send-monitor-report]
+verify_jwt = false

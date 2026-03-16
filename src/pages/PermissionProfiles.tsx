@@ -43,6 +43,7 @@ const SYSTEM_RESOURCES = [
   { key: 'cofre_senhas', label: 'Cofre de Senhas' },
   { key: 'perfis_usuarios', label: 'Usuários' },
   { key: 'permissoes', label: 'Perfil de Permissões' },
+  { key: 'monitoramento', label: 'Monitoramento' },
 ]
 
 const PERMISSION_TYPES = [
