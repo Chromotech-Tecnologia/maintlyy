@@ -141,7 +141,7 @@ export default function MonitoramentoSites() {
   }
 
   const openCreate = () => {
-    if (!isAdmin && !canCreate('monitoramento')) { toast.error("Sem permissão"); return }
+    if (!isAdmin && !canCreateSystem('monitoramento')) { toast.error("Sem permissão"); return }
     if (!planLimits.canCreateUrl) { toast.error("Limite de URLs monitoradas atingido no seu plano"); return }
     setEditingUrl(null)
     setForm(emptyUrl)
