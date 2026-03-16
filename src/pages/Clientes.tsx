@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search, Upload, Image } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuditLog } from "@/hooks/useAuditLog"
+import { createDetails, updateDetails, deleteDetails } from "@/lib/auditHelpers"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -109,13 +110,15 @@ export default function Clientes() {
     if (isRateLimited(`cliente_${user.id}`, 10, 60000)) { toast.error("Muitas tentativas. Aguarde um minuto."); return }
     try {
       const sanitizedData = sanitizeFormData(data)
+      const empresaMap = Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa]))
       if (editingId) {
+        const oldCliente = clientes.find(c => c.id === editingId)
         let logoUrl: string | null = null
         if (logoFile) logoUrl = await uploadLogo(editingId)
         const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
         const { error } = await supabase.from('clientes').update(updateData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
-        auditLog({ action: 'update', resourceType: 'cliente', resourceId: editingId, resourceName: sanitizedData.nome_cliente })
+        auditLog({ action: 'update', resourceType: 'cliente', resourceId: editingId, resourceName: sanitizedData.nome_cliente, details: updateDetails(oldCliente || {}, updateData, empresaMap) })
         toast.success("Cliente atualizado com sucesso!")
       } else {
         const { data: inserted, error } = await supabase.from('clientes').insert([{ ...sanitizedData, user_id: user.id }]).select('id').single()
@@ -124,7 +127,7 @@ export default function Clientes() {
           const logoUrl = await uploadLogo(inserted.id)
           if (logoUrl) await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
         }
-        auditLog({ action: 'create', resourceType: 'cliente', resourceId: inserted?.id, resourceName: sanitizedData.nome_cliente })
+        auditLog({ action: 'create', resourceType: 'cliente', resourceId: inserted?.id, resourceName: sanitizedData.nome_cliente, details: createDetails(sanitizedData, empresaMap) })
         toast.success("Cliente criado com sucesso!")
       }
       setOpen(false); setEditingId(null); setLogoFile(null); setLogoPreview(null); form.reset(); fetchData()
@@ -144,9 +147,10 @@ export default function Clientes() {
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return
     try {
       const cliente = clientes.find(c => c.id === id)
+      const empresaMap = Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa]))
       const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente })
+      auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente, details: deleteDetails(cliente || {}, empresaMap) })
       toast.success("Cliente excluído com sucesso!"); fetchData()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }

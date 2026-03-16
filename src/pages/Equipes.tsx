@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Plus, UserCog, Edit, Trash2, Users, Eye, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuditLog } from "@/hooks/useAuditLog"
+import { createDetails, updateDetails, deleteDetails } from "@/lib/auditHelpers"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -81,6 +82,7 @@ export default function Equipes() {
     try {
       const sanitizedData = sanitizeFormData(data)
       if (editingId) {
+        const oldEquipe = equipes.find(e => e.id === editingId)
         const { error } = await supabase
           .from('equipes')
           .update(sanitizedData)
@@ -88,7 +90,7 @@ export default function Equipes() {
           .eq('user_id', user.id)
 
         if (error) throw error
-        auditLog({ action: 'update', resourceType: 'equipe', resourceId: editingId, resourceName: sanitizedData.nome_equipe })
+        auditLog({ action: 'update', resourceType: 'equipe', resourceId: editingId, resourceName: sanitizedData.nome_equipe, details: updateDetails(oldEquipe || {}, sanitizedData) })
         toast.success("Equipe atualizada com sucesso!")
       } else {
         const { data: inserted, error } = await supabase
@@ -97,7 +99,7 @@ export default function Equipes() {
           .select('id').single()
 
         if (error) throw error
-        auditLog({ action: 'create', resourceType: 'equipe', resourceId: inserted?.id, resourceName: sanitizedData.nome_equipe })
+        auditLog({ action: 'create', resourceType: 'equipe', resourceId: inserted?.id, resourceName: sanitizedData.nome_equipe, details: createDetails(sanitizedData) })
         toast.success("Equipe criada com sucesso!")
       }
 
@@ -137,7 +139,7 @@ export default function Equipes() {
         .eq('user_id', user.id)
 
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe })
+      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe, details: deleteDetails(equipe || {}) })
       toast.success("Equipe excluída com sucesso!")
       fetchEquipes()
     } catch (error: any) {

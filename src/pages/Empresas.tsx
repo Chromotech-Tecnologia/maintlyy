@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuditLog } from "@/hooks/useAuditLog"
+import { createDetails, updateDetails, deleteDetails } from "@/lib/auditHelpers"
 import { usePermissions } from "@/hooks/usePermissions"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
@@ -67,14 +68,17 @@ export default function Empresas() {
     if (!user || !nomeEmpresa.trim()) return
     try {
       if (editingId) {
-        const { error } = await supabase.from('empresas_terceiras').update({ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa }).eq('id', editingId)
+        const oldEmpresa = empresas.find(e => e.id === editingId)
+        const newData = { nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa }
+        const { error } = await supabase.from('empresas_terceiras').update(newData).eq('id', editingId)
         if (error) throw error
-        auditLog({ action: 'update', resourceType: 'empresa', resourceId: editingId, resourceName: nomeEmpresa.trim() })
+        auditLog({ action: 'update', resourceType: 'empresa', resourceId: editingId, resourceName: nomeEmpresa.trim(), details: updateDetails(oldEmpresa || {}, newData) })
         toast.success("Empresa atualizada!")
       } else {
-        const { data: inserted, error } = await supabase.from('empresas_terceiras').insert([{ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa, user_id: user.id }]).select('id').single()
+        const newData = { nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa }
+        const { data: inserted, error } = await supabase.from('empresas_terceiras').insert([{ ...newData, user_id: user.id }]).select('id').single()
         if (error) throw error
-        auditLog({ action: 'create', resourceType: 'empresa', resourceId: inserted?.id, resourceName: nomeEmpresa.trim() })
+        auditLog({ action: 'create', resourceType: 'empresa', resourceId: inserted?.id, resourceName: nomeEmpresa.trim(), details: createDetails(newData) })
         toast.success("Empresa criada!")
       }
       setOpen(false); setEditingId(null); setNomeEmpresa(""); setAtivoEmpresa(true); fetchEmpresas()
@@ -92,7 +96,7 @@ export default function Empresas() {
       const empresa = empresas.find(e => e.id === id)
       const { error } = await supabase.from('empresas_terceiras').delete().eq('id', id)
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'empresa', resourceId: id, resourceName: empresa?.nome_empresa })
+      auditLog({ action: 'delete', resourceType: 'empresa', resourceId: id, resourceName: empresa?.nome_empresa, details: deleteDetails(empresa || {}) })
       toast.success("Empresa excluída!"); fetchEmpresas()
     } catch (error: any) { toast.error(error.message) }
   }
