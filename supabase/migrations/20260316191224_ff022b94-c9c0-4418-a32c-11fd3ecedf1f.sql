@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profile_data DROP CONSTRAINT IF EXISTS user_profile_data_user_id_fkey;
