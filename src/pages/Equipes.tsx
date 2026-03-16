@@ -129,6 +129,7 @@ export default function Equipes() {
     if (!confirm("Tem certeza que deseja excluir esta equipe?")) return
 
     try {
+      const equipe = equipes.find(e => e.id === id)
       const { error } = await supabase
         .from('equipes')
         .delete()
@@ -136,6 +137,7 @@ export default function Equipes() {
         .eq('user_id', user.id)
 
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe })
       toast.success("Equipe excluída com sucesso!")
       fetchEquipes()
     } catch (error: any) {
