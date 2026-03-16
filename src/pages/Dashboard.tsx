@@ -250,14 +250,16 @@ export default function Dashboard() {
           <p className="page-subtitle">Visão geral do sistema — {currentYear}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline"
-            className="rounded-xl h-11 px-4"
-            onClick={() => setReportOpen(true)}
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Relatório</span>
-          </Button>
+          {planLimits.relatoriosAvancados && (
+            <Button 
+              variant="outline"
+              className="rounded-xl h-11 px-4"
+              onClick={() => setReportOpen(true)}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Relatório</span>
+            </Button>
+          )}
           <Button 
             className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
             onClick={() => navigate('/manutencoes')}

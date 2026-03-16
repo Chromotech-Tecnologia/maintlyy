@@ -151,6 +151,41 @@ export function AppSidebar() {
         {renderSection("Segurança", filteredSecurityItems)}
         {renderSection("Sistema", filteredSystemItems)}
         
+        {/* Support Links */}
+        {!planLimits.loading && (planLimits.suporteEmail || planLimits.suporteWhatsapp) && (
+          <SidebarGroup className="px-3 py-1">
+            <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-bold uppercase tracking-[0.15em] mb-1 px-3">
+              Suporte
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <div className="space-y-0.5">
+                {planLimits.suporteEmail && planLimits.suporteEmailEndereco && (
+                  <a
+                    href={`mailto:${planLimits.suporteEmailEndereco}`}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent no-underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Mail className="h-[18px] w-[18px] shrink-0" />
+                    {!isCollapsed && <span>Email</span>}
+                  </a>
+                )}
+                {planLimits.suporteWhatsapp && planLimits.suporteWhatsappNumero && (
+                  <a
+                    href={`https://wa.me/${planLimits.suporteWhatsappNumero}?text=${encodeURIComponent('Olá! Preciso de suporte.')}`}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent no-underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="h-[18px] w-[18px] shrink-0" />
+                    {!isCollapsed && <span>WhatsApp</span>}
+                  </a>
+                )}
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Super Admin */}
         {isSuperAdmin && renderSection("Administração", [
           { title: "Painel Admin", url: "/super-admin", icon: Crown },

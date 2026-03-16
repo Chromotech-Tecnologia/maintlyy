@@ -120,6 +120,7 @@ const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {
 
 export default function Relatorios() {
   const { user } = useAuth()
+  const planLimits = usePlanLimits()
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null)
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   const [filterDataInicio, setFilterDataInicio] = useState("")
@@ -127,6 +128,29 @@ export default function Relatorios() {
   const [exporting, setExporting] = useState(false)
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
   const [pendingExportFormat, setPendingExportFormat] = useState<'csv' | 'txt'>('csv')
+
+  // If both relatorios_avancados and links_publicos are disabled, show blocked message
+  if (!planLimits.loading && !planLimits.relatoriosAvancados && !planLimits.linksPublicos) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title font-display">Relatórios</h1>
+            <p className="page-subtitle">Exportação de dados do sistema</p>
+          </div>
+        </div>
+        <Card className="glass-card border-0">
+          <CardContent className="p-8 text-center">
+            <FileBarChart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Relatórios não disponíveis</h3>
+            <p className="text-muted-foreground text-sm">
+              Seu plano atual não inclui relatórios avançados. Faça upgrade para acessar esta funcionalidade.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (selectedReport) {
