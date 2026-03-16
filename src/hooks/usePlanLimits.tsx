@@ -57,6 +57,13 @@ export function usePlanLimits(): PlanLimits {
     canCreateManutencao: true,
     canCreateSenha: true,
     canCreateUrl: true,
+    suporteEmail: false,
+    suporteWhatsapp: false,
+    relatoriosAvancados: false,
+    linksPublicos: false,
+    importacaoExcel: false,
+    suporteEmailEndereco: null,
+    suporteWhatsappNumero: null,
     loading: true,
   })
 
