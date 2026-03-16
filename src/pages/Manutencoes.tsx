@@ -227,11 +227,22 @@ export default function Manutencoes() {
     return m.equipes?.nome_equipe || '-'
   }
 
-  const formatTempo = (minutos?: number) => {
-    if (!minutos) return "-"
+  const formatTempo = (minutos?: number | null) => {
+    if (minutos === null || minutos === undefined) return "-"
+    if (minutos < 0) return "-"
     const horas = Math.floor(minutos / 60)
     const mins = minutos % 60
     return `${horas}h ${mins}m`
+  }
+
+  const getTempoDisplay = (m: any) => {
+    if (m.tempo_total !== null && m.tempo_total !== undefined) return formatTempo(m.tempo_total)
+    // Fallback: calculate from dates if available
+    if (m.data_inicio && m.hora_inicio && m.data_fim && m.hora_fim) {
+      const calc = calculateTempo(m.data_inicio, m.hora_inicio, m.data_fim, m.hora_fim)
+      return formatTempo(calc)
+    }
+    return "-"
   }
 
   // Filtered data
