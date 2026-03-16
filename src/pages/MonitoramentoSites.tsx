@@ -149,7 +149,7 @@ export default function MonitoramentoSites() {
   }
 
   const openEdit = (u: MonitoredUrl) => {
-    if (!isAdmin && !canEdit('monitoramento')) { toast.error("Sem permissão"); return }
+    if (!isAdmin && !canEditSystem('monitoramento')) { toast.error("Sem permissão"); return }
     setEditingUrl(u)
     setForm({
       url: u.url,
