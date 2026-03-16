@@ -170,7 +170,14 @@ export default function Manutencoes() {
       const { equipe_ids, ...rest } = formData
       const data = { ...rest, user_id: user.id, equipe_id: equipe_ids[0] || null, tempo_total }
 
+      const nameMap: Record<string, string> = {
+        ...Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa])),
+        ...Object.fromEntries(clientes.map(c => [c.id, c.nome_cliente])),
+        ...Object.fromEntries(tipos.map(t => [t.id, t.nome_tipo_manutencao])),
+        ...Object.fromEntries(equipesList.map(eq => [eq.id, eq.nome_equipe])),
+      }
       if (editingId) {
+        const oldManut = manutencoes.find(m => m.id === editingId)
         const { error } = await supabase.from('manutencoes').update(data).eq('id', editingId)
         if (error) throw error
         const { error: deleteError } = await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
@@ -179,7 +186,7 @@ export default function Manutencoes() {
           const { error: insertError } = await supabase.from('manutencao_equipes').insert(equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid })))
           if (insertError) { console.error('Error inserting manutencao_equipes:', insertError); toast.error("Erro ao salvar equipes: " + insertError.message) }
         }
-        auditLog({ action: 'update', resourceType: 'manutencao', resourceId: editingId, resourceName: formData.descricao || 'Manutenção' })
+        auditLog({ action: 'update', resourceType: 'manutencao', resourceId: editingId, resourceName: formData.descricao || 'Manutenção', details: updateDetails(oldManut || {}, { ...formData, equipe_ids }, nameMap) })
         toast.success("Manutenção atualizada!")
       } else {
         const { data: inserted, error } = await supabase.from('manutencoes').insert([data]).select('id').single()
@@ -187,7 +194,7 @@ export default function Manutencoes() {
         if (inserted && equipe_ids.length > 0) {
           await supabase.from('manutencao_equipes').insert(equipe_ids.map(eid => ({ manutencao_id: inserted.id, equipe_id: eid })))
         }
-        auditLog({ action: 'create', resourceType: 'manutencao', resourceId: inserted?.id, resourceName: formData.descricao || 'Manutenção' })
+        auditLog({ action: 'create', resourceType: 'manutencao', resourceId: inserted?.id, resourceName: formData.descricao || 'Manutenção', details: createDetails(formData, nameMap) })
         toast.success("Manutenção criada!")
       }
 
