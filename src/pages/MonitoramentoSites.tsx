@@ -533,6 +533,7 @@ export default function MonitoramentoSites() {
                       )}
                     </CardContent>
                   </Card>
+                )
               })}
             </div>
             )
