@@ -808,6 +808,16 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
             <span>{item.icon} {item.text}</span>
           </li>
         ))}
+        {featureToggleItems.map((item, i) => (
+          <li key={`feat-${i}`} className={`flex items-start gap-2 text-sm ${!item.enabled ? "text-muted-foreground/60 line-through" : "text-foreground"}`}>
+            {item.enabled ? (
+              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            ) : (
+              <XCircle className="h-4 w-4 text-destructive/60 mt-0.5 shrink-0" />
+            )}
+            <span>{item.icon} {item.text}</span>
+          </li>
+        ))}
         {plan.recursos.map((r, i) => {
           const isExcluded = r.startsWith("~")
           const label = isExcluded ? r.slice(1).trim() : r
