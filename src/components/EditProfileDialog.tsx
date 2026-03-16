@@ -32,7 +32,6 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     is_admin: false
   })
   const [profileData, setProfileData] = useState<any>(null)
-  const [authUser, setAuthUser] = useState<any>(null)
   const [showPasswordSection, setShowPasswordSection] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -51,9 +50,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
       setShowPasswordSection(false)
       setNewPassword("")
       setConfirmPassword("")
-      
+
       fetchProfileData(profile.user_id)
-      fetchAuthUser(profile.user_id)
     }
   }, [profile, open])
 
@@ -78,19 +76,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     }
   }
 
-  const fetchAuthUser = async (userId: string) => {
-    try {
-      const result = await adminOps.getUserById(userId)
-      setAuthUser(result?.data?.user || null)
-    } catch (error) {
-      console.error('Erro ao buscar usuário auth:', error)
-      setAuthUser(null)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       const canEdit = permissions.isAdmin || profile.user_id === user?.id
       if (!canEdit) {
@@ -158,7 +146,15 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
           const { error: pwError } = await supabase.auth.updateUser({ password: newPassword })
           if (pwError) throw new Error(pwError.message)
         } else if (permissions.isAdmin) {
-          await adminOps.updateUserById(profile.user_id, { password: newPassword } as any)
+          try {
+            await adminOps.updateUserById(profile.user_id, { password: newPassword })
+          } catch (pwErr: any) {
+            const pwMessage = pwErr?.message || ''
+            if (/user not found/i.test(pwMessage)) {
+              throw new Error('Usuário sem conta de autenticação ativa. Reenvie o convite para criar o acesso ou use o envio de recuperação de senha no painel.')
+            }
+            throw pwErr
+          }
         }
       }
 
@@ -185,7 +181,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             {canEditProfile ? "Edite as informações do perfil de usuário" : "Você não tem permissão para editar este perfil"}
           </DialogDescription>
         </DialogHeader>
-        
+
         {canEditProfile && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -198,7 +194,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 required
               />
             </div>
-            
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
