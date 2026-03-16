@@ -526,9 +526,12 @@ export default function MonitoramentoSites() {
                     </CardContent>
                   </Card>
                 )
+              {filtered.map((u) => {
+                // ... existing card rendering already above
               })}
             </div>
-          )}
+            )
+          })()}
         </TabsContent>
 
         <TabsContent value="agendamentos" className="mt-4">
