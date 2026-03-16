@@ -19,7 +19,7 @@ serve(async (req) => {
     )
 
     const body = await req.json().catch(() => ({}))
-    const reportType = body.report_type || 'daily' // 'daily' or 'alert'
+    const reportType = body.report_type || 'daily'
     const userId = body.user_id
 
     if (!userId) {
@@ -29,7 +29,6 @@ serve(async (req) => {
       })
     }
 
-    // Get all monitored URLs for this user
     const { data: urls } = await supabase
       .from('monitored_urls')
       .select('*')
@@ -42,7 +41,6 @@ serve(async (req) => {
       })
     }
 
-    // Get latest check for each URL
     const reportData: any[] = []
     for (const url of urls) {
       const { data: latestCheck } = await supabase
@@ -53,7 +51,6 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle()
 
-      // Get uptime stats for last 24h
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const { data: recentChecks } = await supabase
         .from('url_check_logs')
@@ -62,31 +59,29 @@ serve(async (req) => {
         .gte('checked_at', twentyFourHoursAgo)
 
       const totalChecks = recentChecks?.length || 0
-      const onlineChecks = recentChecks?.filter(c => c.is_online).length || 0
+      const onlineChecks = recentChecks?.filter((c: any) => c.is_online).length || 0
       const uptimePercent = totalChecks > 0 ? Math.round((onlineChecks / totalChecks) * 100) : 0
 
       const entry = {
         nome: url.nome,
         url: url.url,
+        tipo: url.tipo || 'url',
         is_online: latestCheck?.is_online ?? false,
         status_code: latestCheck?.status_code,
         response_time_ms: latestCheck?.response_time_ms,
         last_checked: latestCheck?.checked_at,
         uptime_24h: uptimePercent,
         error_message: latestCheck?.error_message,
+        test_results: latestCheck?.test_results || [],
       }
 
       if (reportType === 'alert') {
-        // Only include offline sites
-        if (!entry.is_online) {
-          reportData.push(entry)
-        }
+        if (!entry.is_online) reportData.push(entry)
       } else {
         reportData.push(entry)
       }
     }
 
-    // Build HTML report
     const reportTitle = reportType === 'alert' 
       ? '🚨 Alerta - Sites Fora do Ar' 
       : '📊 Relatório de Monitoramento'
@@ -97,7 +92,7 @@ serve(async (req) => {
 
     let reportHtml = `
       <html>
-      <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+      <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
         <h1 style="color: ${reportType === 'alert' ? '#dc2626' : '#1e40af'};">${reportTitle}</h1>
         <p style="color: #666;">Data: ${dateStr} às ${timeStr}</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
@@ -119,7 +114,7 @@ serve(async (req) => {
       reportHtml += `
         <tr>
           <td style="padding: 10px; border: 1px solid #e2e8f0;">
-            <strong>${site.nome}</strong><br>
+            <strong>${site.nome}</strong> ${site.tipo === 'ip' ? '🖥️' : '🌐'}<br>
             <small style="color: #666;">${site.url}</small>
           </td>
           <td style="padding: 10px; text-align: center; border: 1px solid #e2e8f0; color: ${statusColor}; font-weight: bold;">${statusText}</td>
@@ -127,6 +122,21 @@ serve(async (req) => {
           <td style="padding: 10px; text-align: center; border: 1px solid #e2e8f0;">${site.uptime_24h}%</td>
         </tr>
       `
+
+      // Detailed test results row
+      const tests = site.test_results || []
+      if (tests.length > 0) {
+        reportHtml += `
+        <tr>
+          <td colspan="4" style="padding: 8px 10px; border: 1px solid #e2e8f0; background: #f8fafc;">
+            <small style="color: #475569; font-weight: 600;">Detalhes dos testes:</small><br>
+        `
+        for (const t of tests) {
+          const icon = t.status === 'ok' ? '✅' : t.status === 'fail' ? '❌' : '⏭️'
+          reportHtml += `<small style="color: ${t.status === 'fail' ? '#dc2626' : '#475569'};">${icon} ${t.test}: ${t.detail}${t.time_ms > 0 ? ` (${t.time_ms}ms)` : ''}</small><br>`
+        }
+        reportHtml += `</td></tr>`
+      }
     }
 
     reportHtml += `
