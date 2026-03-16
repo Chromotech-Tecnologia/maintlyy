@@ -470,7 +470,7 @@ export default function Manutencoes() {
                 <Label>Status</Label>
                 <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({...prev, status: value}))}>
                   <SelectTrigger><SelectValue placeholder="Selecione o status" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent portal={false}>
                     <SelectItem value="Em andamento">Em andamento</SelectItem>
                     <SelectItem value="Finalizado">Finalizado</SelectItem>
                   </SelectContent>
