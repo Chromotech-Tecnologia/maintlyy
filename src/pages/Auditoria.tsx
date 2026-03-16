@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ClipboardList, Search, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ClipboardList, Search, X, ChevronLeft, ChevronRight, Info } from "lucide-react"
+import { generateSummary, getFieldLabel } from "@/lib/auditHelpers"
 
 interface AuditEntry {
   id: string
@@ -48,6 +50,107 @@ const RESOURCE_LABELS: Record<string, string> = {
 
 const PAGE_SIZE = 25
 
+function AuditDetailDialog({ log, open, onOpenChange }: { log: AuditEntry | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  if (!log || !log.details) return null
+  const details = log.details
+  const actionInfo = ACTION_LABELS[log.action] || { label: log.action, color: '' }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[550px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Detalhes da Auditoria
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <Label className="text-xs text-muted-foreground">Ação</Label>
+              <div><Badge variant="outline" className={`text-xs ${actionInfo.color}`}>{actionInfo.label}</Badge></div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Recurso</Label>
+              <p className="font-medium">{RESOURCE_LABELS[log.resource_type] || log.resource_type}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Nome</Label>
+              <p className="font-medium">{log.resource_name || '-'}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Data/Hora</Label>
+              <p>{new Date(log.created_at).toLocaleString('pt-BR')}</p>
+            </div>
+          </div>
+
+          {/* Detailed changes */}
+          {details.tipo === 'edicao' && details.alteracoes && Object.keys(details.alteracoes).length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground font-semibold">Campos Alterados</Label>
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs h-8">Campo</TableHead>
+                      <TableHead className="text-xs h-8">Antes</TableHead>
+                      <TableHead className="text-xs h-8">Depois</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(details.alteracoes).map(([field, change]: [string, any]) => (
+                      <TableRow key={field}>
+                        <TableCell className="text-xs font-medium py-2">{getFieldLabel(field)}</TableCell>
+                        <TableCell className="text-xs text-destructive/80 py-2 break-words max-w-[150px]">{change.de}</TableCell>
+                        <TableCell className="text-xs text-emerald-600 py-2 break-words max-w-[150px]">{change.para}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* Created or deleted fields */}
+          {(details.tipo === 'criacao' || details.tipo === 'exclusao') && details.campos && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground font-semibold">
+                {details.tipo === 'criacao' ? 'Campos do Registro Criado' : 'Campos do Registro Excluído'}
+              </Label>
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs h-8">Campo</TableHead>
+                      <TableHead className="text-xs h-8">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(details.campos).map(([field, value]: [string, any]) => (
+                      <TableRow key={field}>
+                        <TableCell className="text-xs font-medium py-2">{getFieldLabel(field)}</TableCell>
+                        <TableCell className="text-xs py-2 break-words max-w-[250px]">{String(value)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* Fallback for old format */}
+          {!details.tipo && Object.keys(details).length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground font-semibold">Detalhes</Label>
+              <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{JSON.stringify(details, null, 2)}</pre>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function Auditoria({ globalView = false }: { globalView?: boolean }) {
   const { user } = useAuth()
   const { isSuperAdmin } = usePermissions()
@@ -55,6 +158,8 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [selectedLog, setSelectedLog] = useState<AuditEntry | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   // Filters
   const [filterAction, setFilterAction] = useState("todos")
@@ -72,7 +177,6 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   }, [user, page, filterAction, filterResource, filterDateFrom, filterDateTo])
 
   useEffect(() => {
-    // Load user display names
     const loadUsers = async () => {
       const { data } = await supabase.from('user_profiles').select('user_id, display_name, email')
       const map: Record<string, string> = {}
@@ -105,7 +209,8 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const filteredLogs = filterSearch
     ? logs.filter(l =>
         (l.resource_name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
-        (usersMap[l.user_id] || '').toLowerCase().includes(filterSearch.toLowerCase())
+        (usersMap[l.user_id] || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        generateSummary(l.action, l.resource_type, l.details).toLowerCase().includes(filterSearch.toLowerCase())
       )
     : logs
 
@@ -121,6 +226,11 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const hasFilters = filterAction !== "todos" || filterResource !== "todos" || filterSearch || filterDateFrom || filterDateTo
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
+  const openDetail = (log: AuditEntry) => {
+    setSelectedLog(log)
+    setDetailOpen(true)
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="page-header">
@@ -134,6 +244,9 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
           </p>
         </div>
       </div>
+
+      {/* Detail Dialog */}
+      <AuditDetailDialog log={selectedLog} open={detailOpen} onOpenChange={setDetailOpen} />
 
       {/* Filters */}
       <Card className="glass-card border-0">
@@ -153,7 +266,7 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Buscar</Label>
-              <Input className="h-9" placeholder="Nome ou usuário..." value={filterSearch} onChange={e => setFilterSearch(e.target.value)} />
+              <Input className="h-9" placeholder="Nome, usuário ou resumo..." value={filterSearch} onChange={e => setFilterSearch(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Ação</Label>
@@ -203,17 +316,18 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
                   <TableHead className="text-xs">Ação</TableHead>
                   <TableHead className="text-xs">Recurso</TableHead>
                   <TableHead className="text-xs">Nome</TableHead>
-                  <TableHead className="text-xs">Detalhes</TableHead>
+                  <TableHead className="text-xs min-w-[250px]">Resumo</TableHead>
+                  <TableHead className="text-xs w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
                   </TableRow>
                 ) : filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       Nenhum registro de auditoria encontrado
                     </TableCell>
@@ -221,8 +335,10 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
                 ) : (
                   filteredLogs.map((log) => {
                     const actionInfo = ACTION_LABELS[log.action] || { label: log.action, color: 'bg-muted text-muted-foreground' }
+                    const summary = generateSummary(log.action, log.resource_type, log.details)
+                    const hasDetails = log.details && (log.details.tipo === 'edicao' || log.details.tipo === 'criacao' || log.details.tipo === 'exclusao')
                     return (
-                      <TableRow key={log.id}>
+                      <TableRow key={log.id} className={hasDetails ? 'cursor-pointer hover:bg-muted/60' : ''} onClick={() => hasDetails && openDetail(log)}>
                         <TableCell className="text-xs whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString('pt-BR')}
                         </TableCell>
@@ -240,10 +356,15 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
                         <TableCell className="text-xs truncate max-w-[180px]">
                           {log.resource_name || '-'}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {log.details && Object.keys(log.details).length > 0
-                            ? JSON.stringify(log.details).slice(0, 80)
-                            : '-'}
+                        <TableCell className="text-xs text-muted-foreground max-w-[300px]">
+                          <span className="line-clamp-2">{summary || '-'}</span>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {hasDetails && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openDetail(log) }}>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
