@@ -10,16 +10,19 @@ interface PlanLimits {
   maxEmpresas: number
   maxManutencoes: number
   maxSenhas: number
+  maxUrls: number
   currentUsers: number
   currentTeams: number
   currentEmpresas: number
   currentManutencoesMes: number
   currentSenhas: number
+  currentUrls: number
   canCreateUser: boolean
   canCreateTeam: boolean
   canCreateEmpresa: boolean
   canCreateManutencao: boolean
   canCreateSenha: boolean
+  canCreateUrl: boolean
   loading: boolean
 }
 

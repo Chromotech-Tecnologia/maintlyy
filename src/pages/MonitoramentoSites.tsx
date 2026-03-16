@@ -275,7 +275,7 @@ export default function MonitoramentoSites() {
             <RefreshCw className={`h-4 w-4 mr-1 ${checking ? 'animate-spin' : ''}`} />
             {checking ? "Verificando..." : "Verificar Agora"}
           </Button>
-          {(isAdmin || canCreate('monitoramento')) && (
+          {(isAdmin || canCreateSystem('monitoramento')) && (
             <Button onClick={openCreate} size="sm">
               <Plus className="h-4 w-4 mr-1" /> Nova URL
             </Button>
@@ -347,7 +347,7 @@ export default function MonitoramentoSites() {
                 <Globe className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                 <h3 className="font-semibold text-lg mb-2">Nenhum site monitorado</h3>
                 <p className="text-muted-foreground text-sm mb-4">Adicione URLs para começar a monitorar</p>
-                {(isAdmin || canCreate('monitoramento')) && (
+                {(isAdmin || canCreateSystem('monitoramento')) && (
                   <Button onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-1" /> Adicionar URL
                   </Button>
@@ -382,12 +382,12 @@ export default function MonitoramentoSites() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedUrl(u.id); fetchHistory(u.id) }}>
                             <Clock className="h-4 w-4" />
                           </Button>
-                          {(isAdmin || canEdit('monitoramento')) && (
+                          {(isAdmin || canEditSystem('monitoramento')) && (
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          {(isAdmin || canDelete('monitoramento')) && (
+                          {(isAdmin || canDeleteSystem('monitoramento')) && (
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => setDeleteDialog({ open: true, id: u.id, nome: u.nome })}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
