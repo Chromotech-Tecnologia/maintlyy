@@ -74,20 +74,41 @@ serve(async (req) => {
 
     let result
 
+    // Helper to safely extract error message from GoTrue AuthError (which doesn't serialize with JSON.stringify)
+    const safeAuthResult = (res: { data: any; error: any }) => {
+      if (res.error) {
+        const msg = res.error?.message || res.error?.msg || String(res.error)
+        return new Response(JSON.stringify({ error: msg }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      return null
+    }
+
     switch (body.operation) {
-      case 'getUserById':
+      case 'getUserById': {
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        result = await supabaseAdmin.auth.admin.getUserById(body.userId)
+        const getUserResult = await supabaseAdmin.auth.admin.getUserById(body.userId)
+        const getUserErr = safeAuthResult(getUserResult)
+        if (getUserErr) return getUserErr
+        result = { data: getUserResult.data }
         break
+      }
 
-      case 'updateUserById':
+      case 'updateUserById': {
         if (!body.userId || !body.updateData) return new Response(JSON.stringify({ error: 'userId and updateData are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        result = await supabaseAdmin.auth.admin.updateUserById(body.userId, body.updateData)
+        const updateResult = await supabaseAdmin.auth.admin.updateUserById(body.userId, body.updateData)
+        const updateErr = safeAuthResult(updateResult)
+        if (updateErr) return updateErr
+        result = { data: updateResult.data }
         break
+      }
 
-      case 'listUsers':
-        result = await supabaseAdmin.auth.admin.listUsers()
+      case 'listUsers': {
+        const listResult = await supabaseAdmin.auth.admin.listUsers()
+        const listErr = safeAuthResult(listResult)
+        if (listErr) return listErr
+        result = { data: listResult.data }
         break
+      }
 
       case 'inviteUser': {
         if (!body.email) return new Response(JSON.stringify({ error: 'email is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
