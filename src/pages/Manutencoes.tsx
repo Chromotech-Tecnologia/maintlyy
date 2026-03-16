@@ -178,6 +178,7 @@ export default function Manutencoes() {
           const { error: insertError } = await supabase.from('manutencao_equipes').insert(equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid })))
           if (insertError) { console.error('Error inserting manutencao_equipes:', insertError); toast.error("Erro ao salvar equipes: " + insertError.message) }
         }
+        auditLog({ action: 'update', resourceType: 'manutencao', resourceId: editingId, resourceName: formData.descricao || 'Manutenção' })
         toast.success("Manutenção atualizada!")
       } else {
         const { data: inserted, error } = await supabase.from('manutencoes').insert([data]).select('id').single()
@@ -185,6 +186,7 @@ export default function Manutencoes() {
         if (inserted && equipe_ids.length > 0) {
           await supabase.from('manutencao_equipes').insert(equipe_ids.map(eid => ({ manutencao_id: inserted.id, equipe_id: eid })))
         }
+        auditLog({ action: 'create', resourceType: 'manutencao', resourceId: inserted?.id, resourceName: formData.descricao || 'Manutenção' })
         toast.success("Manutenção criada!")
       }
 
