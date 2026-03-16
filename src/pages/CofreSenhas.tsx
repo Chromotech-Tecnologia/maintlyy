@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuditLog } from "@/hooks/useAuditLog"
+import { createDetails, updateDetails, deleteDetails } from "@/lib/auditHelpers"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
