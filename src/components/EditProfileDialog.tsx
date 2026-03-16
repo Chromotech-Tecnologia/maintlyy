@@ -145,18 +145,20 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       // Update email in auth if admin changed it
       if (permissions.isAdmin && formData.email !== profile.email) {
-        const result = await adminOps.updateUserById(profile.user_id, { email: formData.email })
-        if (result.error) throw result.error
+        try {
+          await adminOps.updateUserById(profile.user_id, { email: formData.email })
+        } catch (emailErr: any) {
+          console.warn('Não foi possível atualizar email no auth:', emailErr)
+        }
       }
 
       // Update password if provided
       if (showPasswordSection && newPassword) {
         if (profile.user_id === user?.id) {
           const { error: pwError } = await supabase.auth.updateUser({ password: newPassword })
-          if (pwError) throw pwError
+          if (pwError) throw new Error(pwError.message)
         } else if (permissions.isAdmin) {
-          const result = await adminOps.updateUserById(profile.user_id, { password: newPassword } as any)
-          if (result.error) throw result.error
+          await adminOps.updateUserById(profile.user_id, { password: newPassword } as any)
         }
       }
 
