@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Crown, FileBarChart, CreditCard, Activity, Mail, MessageCircle
+  KeyRound, Calendar, Crown, FileBarChart, CreditCard, Activity, Mail, MessageCircle, ClipboardList
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
