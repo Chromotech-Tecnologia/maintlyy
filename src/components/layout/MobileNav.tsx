@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, KeyRound, Menu, Building2,
-  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard
+  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard, Activity
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -23,6 +23,7 @@ const allNavItems = [
   { title: "Equipes", url: "/equipes", icon: UserCog, section: "Principal" },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar, section: "Principal" },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart, section: "Principal" },
+  { title: "Monitoramento", url: "/monitoramento", icon: Activity, section: "Principal" },
   { title: "Cofre de Senhas", url: "/cofre", icon: KeyRound, section: "Segurança" },
 ]
 
@@ -39,6 +40,7 @@ export function MobileNav() {
     "Equipes": "equipes",
     "Tipos de Manutenção": "tipos_manutencao",
     "Cofre de Senhas": "cofre_senhas",
+    "Monitoramento": "monitoramento",
   }
 
   const systemItems = [

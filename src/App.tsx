@@ -24,6 +24,7 @@ import SuperAdminPanel from "./pages/SuperAdminPanel";
 import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
 import Assinaturas from "./pages/Assinaturas";
+import MonitoramentoSites from "./pages/MonitoramentoSites";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                       <Route path="/super-admin" element={<SuperAdminPanel />} />
                       <Route path="/relatorios" element={<Relatorios />} />
                       <Route path="/assinaturas" element={<Assinaturas />} />
+                      <Route path="/monitoramento" element={<MonitoramentoSites />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

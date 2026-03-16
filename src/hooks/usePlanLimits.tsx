@@ -10,16 +10,19 @@ interface PlanLimits {
   maxEmpresas: number
   maxManutencoes: number
   maxSenhas: number
+  maxUrls: number
   currentUsers: number
   currentTeams: number
   currentEmpresas: number
   currentManutencoesMes: number
   currentSenhas: number
+  currentUrls: number
   canCreateUser: boolean
   canCreateTeam: boolean
   canCreateEmpresa: boolean
   canCreateManutencao: boolean
   canCreateSenha: boolean
+  canCreateUrl: boolean
   loading: boolean
 }
 
@@ -33,16 +36,19 @@ export function usePlanLimits(): PlanLimits {
     maxEmpresas: 0,
     maxManutencoes: 0,
     maxSenhas: 0,
+    maxUrls: 0,
     currentUsers: 0,
     currentTeams: 0,
     currentEmpresas: 0,
     currentManutencoesMes: 0,
     currentSenhas: 0,
+    currentUrls: 0,
     canCreateUser: true,
     canCreateTeam: true,
     canCreateEmpresa: true,
     canCreateManutencao: true,
     canCreateSenha: true,
+    canCreateUrl: true,
     loading: true,
   })
 
@@ -111,8 +117,14 @@ export function usePlanLimits(): PlanLimits {
         .eq('user_id', user.id)
       const currentSenhas = senhaCount || 0
 
+      // Count current monitored URLs
+      const { count: urlCount } = await supabase
+        .from('monitored_urls')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      const currentUrls = urlCount || 0
+
       if (!profile.plan_id) {
-        // No plan assigned - no creation allowed
         setLimits({
           planName: null,
           planTipo: null,
@@ -121,16 +133,19 @@ export function usePlanLimits(): PlanLimits {
           maxEmpresas: 0,
           maxManutencoes: 0,
           maxSenhas: 0,
+          maxUrls: 0,
           currentUsers,
           currentTeams,
           currentEmpresas,
           currentManutencoesMes,
           currentSenhas,
+          currentUrls,
           canCreateUser: false,
           canCreateTeam: false,
           canCreateEmpresa: false,
           canCreateManutencao: false,
           canCreateSenha: false,
+          canCreateUrl: false,
           loading: false,
         })
         return
@@ -139,7 +154,7 @@ export function usePlanLimits(): PlanLimits {
       // Fetch the plan details
       const { data: planRaw } = await supabase
         .from('landing_plans')
-        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas')
+        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, max_urls')
         .eq('id', profile.plan_id)
         .maybeSingle()
 
@@ -154,6 +169,7 @@ export function usePlanLimits(): PlanLimits {
       const maxEmpresas = plan.max_empresas || 0
       const maxManutencoes = plan.max_manutencoes || 0
       const maxSenhas = plan.max_senhas || 0
+      const maxUrls = plan.max_urls || 0
 
       let canCreateUser = true
       if (plan.tipo === 'individual') {
@@ -166,6 +182,7 @@ export function usePlanLimits(): PlanLimits {
       const canCreateEmpresa = maxEmpresas === 0 ? true : currentEmpresas < maxEmpresas
       const canCreateManutencao = maxManutencoes === 0 ? true : currentManutencoesMes < maxManutencoes
       const canCreateSenha = maxSenhas === 0 ? true : currentSenhas < maxSenhas
+      const canCreateUrl = maxUrls === 0 ? true : currentUrls < maxUrls
 
       setLimits({
         planName: plan.nome,
@@ -175,16 +192,19 @@ export function usePlanLimits(): PlanLimits {
         maxEmpresas,
         maxManutencoes,
         maxSenhas,
+        maxUrls,
         currentUsers,
         currentTeams,
         currentEmpresas,
         currentManutencoesMes,
         currentSenhas,
+        currentUrls,
         canCreateUser,
         canCreateTeam,
         canCreateEmpresa,
         canCreateManutencao,
         canCreateSenha,
+        canCreateUrl,
         loading: false,
       })
     }

@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Crown, FileBarChart, CreditCard
+  KeyRound, Calendar, Crown, FileBarChart, CreditCard, Activity
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -20,6 +20,7 @@ const mainItems = [
   { title: "Equipes", url: "/equipes", icon: UserCog },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
+  { title: "Monitoramento", url: "/monitoramento", icon: Activity },
 ]
 
 const securityItems = [
@@ -55,6 +56,7 @@ export function AppSidebar() {
     "Usuários": "perfis_usuarios",
     "Perfil": "permissoes",
     "Relatórios": "relatorios",
+    "Monitoramento": "monitoramento",
   }
   
   const filteredMainItems = mainItems.filter((item) => {
