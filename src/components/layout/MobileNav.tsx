@@ -1,9 +1,10 @@
 import { 
   LayoutDashboard, Wrench, Users, KeyRound, Menu, Building2,
-  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard, Activity
+  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard, Activity, Mail, MessageCircle
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
