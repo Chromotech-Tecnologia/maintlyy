@@ -104,6 +104,7 @@ export function useAdminOperations() {
     updateUserById,
     listUsers,
     inviteUser,
+    resendInvite,
     sendPasswordReset,
   }
 }

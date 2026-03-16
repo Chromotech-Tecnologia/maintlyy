@@ -189,6 +189,36 @@ serve(async (req) => {
         break
       }
 
+      case 'resendInvite': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        
+        // Get user email from profile
+        const { data: resendProfile, error: resendProfileError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('email')
+          .eq('user_id', body.userId)
+          .single()
+        
+        if (resendProfileError || !resendProfile?.email) {
+          return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const resendRedirectUrl = body.redirectTo || 'https://maintlyy.lovable.app/setup-password'
+        
+        const { data: resendData, error: resendError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          resendProfile.email,
+          { redirectTo: resendRedirectUrl }
+        )
+        
+        if (resendError) {
+          console.error('Resend invite error:', resendError)
+          return new Response(JSON.stringify({ error: 'Failed to resend invite: ' + resendError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        result = { data: { message: 'Invite resent successfully' } }
+        break
+      }
+
       case 'disableUser':
         if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         await supabaseAdmin.from('user_profiles').update({ account_status: 'disabled' }).eq('user_id', body.userId)
