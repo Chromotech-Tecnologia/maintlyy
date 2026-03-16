@@ -23,6 +23,14 @@ interface PlanLimits {
   canCreateManutencao: boolean
   canCreateSenha: boolean
   canCreateUrl: boolean
+  // Feature toggles
+  suporteEmail: boolean
+  suporteWhatsapp: boolean
+  relatoriosAvancados: boolean
+  linksPublicos: boolean
+  importacaoExcel: boolean
+  suporteEmailEndereco: string | null
+  suporteWhatsappNumero: string | null
   loading: boolean
 }
 
