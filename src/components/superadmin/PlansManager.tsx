@@ -68,6 +68,13 @@ const emptyPlan: Omit<Plan, "id"> = {
   destaque: false,
   ordem: 0,
   ativo: true,
+  suporte_email: false,
+  suporte_whatsapp: false,
+  relatorios_avancados: false,
+  links_publicos: false,
+  importacao_excel: false,
+  suporte_email_endereco: "",
+  suporte_whatsapp_numero: "",
 }
 
 export function PlansManager() {
