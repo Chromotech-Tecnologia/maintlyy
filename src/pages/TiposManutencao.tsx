@@ -70,10 +70,12 @@ export default function TiposManutencao() {
       if (editingId) {
         const { error } = await supabase.from('tipos_manutencao').update(sanitizedData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'tipo_manutencao', resourceId: editingId, resourceName: sanitizedData.nome_tipo_manutencao })
         toast.success("Tipo de manutenção atualizado com sucesso!")
       } else {
-        const { error } = await supabase.from('tipos_manutencao').insert([{ ...sanitizedData, user_id: user.id }])
+        const { data: inserted, error } = await supabase.from('tipos_manutencao').insert([{ ...sanitizedData, user_id: user.id }]).select('id').single()
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'tipo_manutencao', resourceId: inserted?.id, resourceName: sanitizedData.nome_tipo_manutencao })
         toast.success("Tipo de manutenção criado com sucesso!")
       }
       setOpen(false); setEditingId(null); form.reset(); fetchTipos()
