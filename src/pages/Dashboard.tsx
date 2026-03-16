@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface DashboardStats {
   totalManutencoes: number
