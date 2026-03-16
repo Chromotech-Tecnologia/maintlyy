@@ -254,7 +254,7 @@ export default function Dashboard() {
           <p className="page-subtitle">Visão geral do sistema — {currentYear}</p>
         </div>
         <div className="flex items-center gap-2">
-          {planLimits.relatoriosAvancados && (
+          {canGenerateDashboardReport && (
             <Button 
               variant="outline"
               className="rounded-xl h-11 px-4"
