@@ -200,7 +200,7 @@ export default function Manutencoes() {
     const equipeIds = (manutencao as any).manutencao_equipes?.map((me: any) => me.equipe_id) || []
     const legacyEquipeId = manutencao.equipe_id
     const finalEquipeIds = equipeIds.length > 0 ? equipeIds : (legacyEquipeId ? [legacyEquipeId] : [])
-    setFormData({ empresa_terceira_id: manutencao.empresa_terceira_id, cliente_id: manutencao.cliente_id, tipo_manutencao_id: manutencao.tipo_manutencao_id, equipe_ids: finalEquipeIds, data_inicio: manutencao.data_inicio, hora_inicio: manutencao.hora_inicio, data_fim: manutencao.data_fim || "", hora_fim: manutencao.hora_fim || "", descricao: manutencao.descricao || "", solicitante: manutencao.solicitante || "", status: manutencao.status, responsavel: manutencao.responsavel || "" })
+    setFormData({ empresa_terceira_id: manutencao.empresa_terceira_id, cliente_id: manutencao.cliente_id, tipo_manutencao_id: manutencao.tipo_manutencao_id, equipe_ids: finalEquipeIds, data_inicio: manutencao.data_inicio, hora_inicio: manutencao.hora_inicio, data_fim: manutencao.data_fim || "", hora_fim: manutencao.hora_fim || "", descricao: manutencao.descricao || "", solicitante: manutencao.solicitante || "", status: manutencao.status || "Em andamento", responsavel: manutencao.responsavel || "" })
     setEditingId(manutencao.id)
     setOpen(true)
   }
