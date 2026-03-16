@@ -290,18 +290,15 @@ serve(async (req) => {
           return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
         
-        // Generate recovery link
-        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'recovery',
-          email: resetUser.user.email,
-          options: {
-            redirectTo: body.redirectTo || undefined,
-          }
-        })
+        // Use resetPasswordForEmail which actually sends the email via Supabase built-in email
+        const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(
+          resetUser.user.email,
+          { redirectTo: body.redirectTo || undefined }
+        )
         
-        if (linkError) {
-          console.error('Error generating recovery link:', linkError)
-          return new Response(JSON.stringify({ error: 'Failed to send reset email: ' + linkError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        if (resetError) {
+          console.error('Error sending recovery email:', resetError)
+          return new Response(JSON.stringify({ error: 'Failed to send reset email: ' + resetError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
         }
         
         result = { data: { message: 'Password reset email sent' } }
