@@ -52,6 +52,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
 
       setUserProfile(profile)
 
+      let adminProfile = false
+
       if (profile?.permission_profile_id) {
         const { data: permProfile } = await supabase
           .from('permission_profiles')
@@ -60,7 +62,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
           .single()
 
         if (permProfile) {
-          setIsAdminProfile(permProfile.is_admin_profile || false)
+          adminProfile = permProfile.is_admin_profile || false
+          setIsAdminProfile(adminProfile)
           setProfilePermissions(
             typeof permProfile.system_permissions === 'object' && permProfile.system_permissions !== null
               ? (permProfile.system_permissions as Record<string, any>)
@@ -89,7 +92,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
 
       let clientPerms: any[] = []
       // Admin profile users get full access just like tenant owners
-      if (!profile?.is_admin && !isAdminProfileResolved) {
+      if (!profile?.is_admin && !adminProfile) {
         const { data } = await supabase
           .from('user_client_permissions')
           .select('*')
