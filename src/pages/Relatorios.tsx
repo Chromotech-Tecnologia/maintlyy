@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 type ReportType = 'manutencoes_cliente' | 'manutencoes_tipo' | 'horas_resumo' | 'senhas_inventario' | 'empresas' | 'clientes' | 'usuarios' | 'perfis'
 
