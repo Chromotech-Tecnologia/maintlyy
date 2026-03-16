@@ -534,10 +534,10 @@ export default function MonitoramentoSites() {
               </div>
               <div>
                 <Label>Empresa</Label>
-                <Select value={form.empresa_terceira_id} onValueChange={v => setForm(f => ({ ...f, empresa_terceira_id: v }))}>
+                <Select value={form.empresa_terceira_id || "none"} onValueChange={v => setForm(f => ({ ...f, empresa_terceira_id: v === "none" ? "" : v }))}>
                   <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
                   <SelectContent portal={false}>
-                    <SelectItem value="">Nenhuma</SelectItem>
+                    <SelectItem value="none">Nenhuma</SelectItem>
                     {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -545,10 +545,10 @@ export default function MonitoramentoSites() {
             </div>
             <div>
               <Label>Cliente</Label>
-              <Select value={form.cliente_id} onValueChange={v => setForm(f => ({ ...f, cliente_id: v }))}>
+              <Select value={form.cliente_id || "none"} onValueChange={v => setForm(f => ({ ...f, cliente_id: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent portal={false}>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
                 </SelectContent>
               </Select>
