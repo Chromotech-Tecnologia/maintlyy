@@ -174,7 +174,7 @@ export default function Manutencoes() {
         ...Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa])),
         ...Object.fromEntries(clientes.map(c => [c.id, c.nome_cliente])),
         ...Object.fromEntries(tipos.map(t => [t.id, t.nome_tipo_manutencao])),
-        ...Object.fromEntries(equipesList.map(eq => [eq.id, eq.nome_equipe])),
+        ...Object.fromEntries(equipes.map(eq => [eq.id, eq.nome_equipe])),
       }
       if (editingId) {
         const oldManut = manutencoes.find(m => m.id === editingId)
