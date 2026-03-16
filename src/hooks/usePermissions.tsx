@@ -110,8 +110,6 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
   // Helper: is this user effectively an admin (tenant owner OR admin profile subordinate)
   const isEffectiveAdmin = userProfile?.is_admin || isAdminProfile
 
-  // We need a workaround for the async nature - use a ref-like approach
-  let isAdminProfileResolved = isAdminProfile
 
   const canViewClient = (clienteId: string): boolean => {
     if (isEffectiveAdmin) return true
