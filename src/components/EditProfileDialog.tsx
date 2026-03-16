@@ -81,10 +81,10 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
   const fetchAuthUser = async (userId: string) => {
     try {
       const result = await adminOps.getUserById(userId)
-      if (result.error) throw result.error
-      setAuthUser(result.data?.user)
+      setAuthUser(result?.data?.user || null)
     } catch (error) {
       console.error('Erro ao buscar usuário auth:', error)
+      setAuthUser(null)
     }
   }
 
