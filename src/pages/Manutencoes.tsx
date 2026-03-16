@@ -382,7 +382,7 @@ export default function Manutencoes() {
                     setFormData({ ...formData, cliente_id: value, empresa_terceira_id: clienteSelecionado?.empresa_terceira_id || "" })
                   }}>
                     <SelectTrigger><SelectValue placeholder="Selecione o cliente..." /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {clientes.map((cliente: any) => (
                         <SelectItem key={cliente.id} value={cliente.id}>{cliente.nome_cliente || "Sem nome"}</SelectItem>
                       ))}
