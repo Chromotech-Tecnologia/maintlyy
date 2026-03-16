@@ -434,6 +434,23 @@ export default function PerfilUsuarios() {
                         </Select>
                       </div>
                     )}
+                    {permissions.isAdmin && profile.user_id !== user?.id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            await adminOps.resendInvite(profile.user_id)
+                            toast.success('Convite reenviado com sucesso!')
+                          } catch (error: any) {
+                            toast.error('Erro ao reenviar convite: ' + (error.message || 'Erro desconhecido'))
+                          }
+                        }}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Reenviar Convite
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
