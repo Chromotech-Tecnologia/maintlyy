@@ -96,7 +96,7 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
 
     const { data, count, error } = await query
     if (!error) {
-      setLogs((data || []) as AuditEntry[])
+      setLogs((data || []) as unknown as AuditEntry[])
       setTotal(count || 0)
     }
     setLoading(false)
