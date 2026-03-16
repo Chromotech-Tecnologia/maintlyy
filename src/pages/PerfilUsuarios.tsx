@@ -205,7 +205,7 @@ export default function PerfilUsuarios() {
       await adminOps.inviteUser({
         email: newUserData.email,
         displayName: newUserData.display_name,
-        isAdmin: selectedPermProfile?.is_admin_profile || false,
+        isAdmin: false, // Never set is_admin=true for subordinates
         permissionProfileId: newUserData.permission_profile_id || undefined,
       })
 
