@@ -534,7 +534,7 @@ export default function MonitoramentoSites() {
               </div>
               <div>
                 <Label>Empresa</Label>
-                <Select value={form.empresa_terceira_id} onValueChange={v => setForm(f => ({ ...f, empresa_terceira_id: v }))}>
+                <Select value={form.empresa_terceira_id || "none"} onValueChange={v => setForm(f => ({ ...f, empresa_terceira_id: v === "none" ? "" : v }))}>
                   <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
                   <SelectContent portal={false}>
                     <SelectItem value="none">Nenhuma</SelectItem>
