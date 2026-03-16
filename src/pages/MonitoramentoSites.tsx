@@ -415,7 +415,7 @@ export default function MonitoramentoSites() {
                         </div>
                       </div>
                       {log?.error_message && (
-                        <p className="text-xs text-red-500 mt-2 bg-red-50 dark:bg-red-950/30 p-2 rounded">⚠️ {log.error_message}</p>
+                        <p className="text-xs text-destructive mt-2 bg-destructive/10 p-2 rounded">⚠️ {translateErrorMessage(log.error_message)}</p>
                       )}
                     </CardContent>
                   </Card>
