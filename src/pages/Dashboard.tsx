@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts"
-import { 
-  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search, Building2
+import {
+  Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
@@ -44,6 +45,7 @@ interface ManutencaoRecente {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { isSuperAdmin } = usePermissions()
   const navigate = useNavigate()
   const planLimits = usePlanLimits()
   const [stats, setStats] = useState<DashboardStats>({
@@ -79,22 +81,24 @@ export default function Dashboard() {
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
 
   const currentYear = new Date().getFullYear()
-  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(280, 67%, 55%)', 'hsl(190, 80%, 45%)']
+  const canGenerateDashboardReport = planLimits.relatoriosAvancados || isSuperAdmin
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))']
+  const getSortDate = (m: ManutencaoRecente) => new Date(`${m.data_inicio}T00:00:00`).getTime() || new Date(m.created_at).getTime()
 
   useEffect(() => {
     if (!user) return
     const fetchData = async () => {
       try {
         const [mc, cc, pc, sc, cd, clientesRes, equipesRes, tiposRes, empresasRes] = await Promise.all([
-          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'Em andamento'),
-          supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`).eq('user_id', user.id),
-          supabase.from('clientes').select('id, nome_cliente, logo_url').eq('user_id', user.id),
-          supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
-          supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id),
-          supabase.from('empresas_terceiras').select('id, nome_empresa').eq('user_id', user.id),
+          supabase.from('manutencoes').select('id', { count: 'exact', head: true }),
+          supabase.from('clientes').select('id', { count: 'exact', head: true }),
+          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('status', 'Em andamento'),
+          supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }),
+          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`),
+          supabase.from('clientes').select('id, nome_cliente, logo_url'),
+          supabase.from('equipes').select('id, nome_equipe'),
+          supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao'),
+          supabase.from('empresas_terceiras').select('id, nome_empresa'),
         ])
 
         const totalHoras = (cd.data || []).reduce((sum, m) => sum + (m.tempo_total || 0), 0)
@@ -107,7 +111,7 @@ export default function Dashboard() {
           totalHoras: Math.round(totalHoras / 60),
         })
         setRecentManutencoes(
-          [...(cd.data || [])].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+          [...(cd.data || [])].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
         )
         setAllManutencoes(cd.data || [])
         setClientes(clientesRes.data || [])
@@ -160,7 +164,7 @@ export default function Dashboard() {
     }
 
     setRecentManutencoes(
-      [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+      [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
     // Monthly chart
@@ -250,7 +254,7 @@ export default function Dashboard() {
           <p className="page-subtitle">Visão geral do sistema — {currentYear}</p>
         </div>
         <div className="flex items-center gap-2">
-          {planLimits.relatoriosAvancados && (
+          {canGenerateDashboardReport && (
             <Button 
               variant="outline"
               className="rounded-xl h-11 px-4"
@@ -447,7 +451,7 @@ export default function Dashboard() {
                         {m.status}
                       </span>
                       <p className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(m.created_at).toLocaleDateString('pt-BR')}
+                        {new Date(m.data_inicio).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </div>

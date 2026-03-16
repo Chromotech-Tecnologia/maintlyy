@@ -1,8 +1,10 @@
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 
+type AdminOperation = 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser' | 'sendPasswordReset'
+
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser'
+  operation: AdminOperation
   userId?: string
   updateData?: {
     email?: string
@@ -37,7 +39,15 @@ export function useAdminOperations() {
     })
 
     if (response.error) {
-      throw response.error
+      const fnError = response.error as any
+      let message = fnError?.message || 'Erro ao executar operação administrativa'
+
+      if (fnError?.context && typeof fnError.context.json === 'function') {
+        const errorBody = await fnError.context.json().catch(() => null)
+        message = errorBody?.error || errorBody?.message || message
+      }
+
+      throw new Error(message)
     }
 
     return response.data
@@ -73,10 +83,19 @@ export function useAdminOperations() {
     })
   }
 
+  const sendPasswordReset = async (userId: string, redirectTo?: string) => {
+    return callAdminOperation({
+      operation: 'sendPasswordReset',
+      userId,
+      redirectTo,
+    })
+  }
+
   return {
     getUserById,
     updateUserById,
     listUsers,
-    inviteUser
+    inviteUser,
+    sendPasswordReset,
   }
 }
