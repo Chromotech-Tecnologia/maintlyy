@@ -36,6 +36,11 @@ interface LandingPlan {
   destaque: boolean
   ordem: number
   offer_free_signup: boolean
+  suporte_email: boolean
+  suporte_whatsapp: boolean
+  relatorios_avancados: boolean
+  links_publicos: boolean
+  importacao_excel: boolean
 }
 
 const features = [
