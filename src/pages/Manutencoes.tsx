@@ -411,7 +411,7 @@ export default function Manutencoes() {
                   <Label>Tipo de Manutenção *</Label>
                   <Select value={formData.tipo_manutencao_id} onValueChange={(value) => setFormData({...formData, tipo_manutencao_id: value})}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {tipos.map((tipo: any) => (
                         <SelectItem key={tipo.id} value={tipo.id}>{tipo.nome_tipo_manutencao}</SelectItem>
                       ))}
