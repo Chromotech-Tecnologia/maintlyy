@@ -28,6 +28,7 @@ interface Equipe {
 
 export default function Equipes() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const planLimits = usePlanLimits()
   const [equipes, setEquipes] = useState<Equipe[]>([])
