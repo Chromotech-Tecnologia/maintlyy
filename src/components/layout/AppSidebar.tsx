@@ -45,6 +45,7 @@ export function AppSidebar() {
   const currentPath = location.pathname
   const isCollapsed = state === "collapsed"
   const { isAdmin, isSuperAdmin, canViewSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   
   const menuResourceMap: Record<string, string> = {
     "Dashboard": "dashboard",
