@@ -23,8 +23,11 @@ interface LandingPlan {
   categoria: string
   preco: string | null
   max_usuarios: number
+  max_equipes: number
   max_empresas: number
   max_manutencoes: number
+  max_senhas: number
+  max_urls: number
   descricao: string | null
   recursos: string[]
   whatsapp_numero: string | null
