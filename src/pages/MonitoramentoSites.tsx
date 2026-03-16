@@ -52,7 +52,7 @@ const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, c
 
 export default function MonitoramentoSites() {
   const { user } = useAuth()
-  const { isAdmin, canCreate, canEdit, canDelete } = usePermissions()
+  const { isAdmin, canCreateSystem, canEditSystem, canDeleteSystem } = usePermissions()
   const planLimits = usePlanLimits()
 
   const [urls, setUrls] = useState<MonitoredUrl[]>([])
