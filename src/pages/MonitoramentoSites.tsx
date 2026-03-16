@@ -528,8 +528,7 @@ export default function MonitoramentoSites() {
                 )
               })}
             </div>
-            )
-          })()}
+          )}
         </TabsContent>
 
         <TabsContent value="agendamentos" className="mt-4">
