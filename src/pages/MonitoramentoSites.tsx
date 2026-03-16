@@ -199,7 +199,7 @@ export default function MonitoramentoSites() {
       .eq('monitored_url_id', urlId)
       .order('checked_at', { ascending: false })
       .limit(50)
-    setLogs(prev => ({ ...prev, [urlId]: (data || []) as CheckLog[] }))
+    setLogs(prev => ({ ...prev, [urlId]: (data || []) as unknown as CheckLog[] }))
   }
 
   const openCreate = () => {
