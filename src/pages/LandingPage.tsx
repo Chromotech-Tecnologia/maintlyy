@@ -11,7 +11,7 @@ import testimonial5 from "@/assets/testimonial-5.png"
 import { Button } from "@/components/ui/button"
 import {
   Wrench, Shield, Users, FileBarChart, KeyRound, Building2,
-  CheckCircle2, ArrowRight, Sparkles, Zap, Star, Lock,
+  CheckCircle2, XCircle, ArrowRight, Sparkles, Zap, Star, Lock,
   Clock, BarChart3, UserPlus, Settings, MonitorSmartphone,
   ShieldCheck, Database, Headphones, ChevronRight, ChevronLeft
 } from "lucide-react"
