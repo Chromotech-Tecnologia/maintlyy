@@ -45,6 +45,7 @@ interface ManutencaoRecente {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { isSuperAdmin } = usePermissions()
   const navigate = useNavigate()
   const planLimits = usePlanLimits()
   const [stats, setStats] = useState<DashboardStats>({
@@ -80,7 +81,9 @@ export default function Dashboard() {
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
 
   const currentYear = new Date().getFullYear()
-  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(280, 67%, 55%)', 'hsl(190, 80%, 45%)']
+  const canGenerateDashboardReport = planLimits.relatoriosAvancados || isSuperAdmin
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))']
+  const getSortDate = (m: ManutencaoRecente) => new Date(`${m.data_inicio}T00:00:00`).getTime() || new Date(m.created_at).getTime()
 
   useEffect(() => {
     if (!user) return
