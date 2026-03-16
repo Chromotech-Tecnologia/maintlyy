@@ -1,0 +1,275 @@
+import { useState, useEffect } from "react"
+import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
+import { supabase } from "@/integrations/supabase/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ClipboardList, Search, X, ChevronLeft, ChevronRight } from "lucide-react"
+
+interface AuditEntry {
+  id: string
+  user_id: string
+  tenant_admin_id: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  resource_name: string | null
+  details: any
+  created_at: string
+}
+
+const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  create: { label: 'Criação', color: 'bg-emerald-500/15 text-emerald-700 border-emerald-300' },
+  update: { label: 'Edição', color: 'bg-amber-500/15 text-amber-700 border-amber-300' },
+  delete: { label: 'Exclusão', color: 'bg-destructive/15 text-destructive border-destructive/30' },
+}
+
+const RESOURCE_LABELS: Record<string, string> = {
+  manutencao: 'Manutenção',
+  cliente: 'Cliente',
+  empresa: 'Empresa',
+  equipe: 'Equipe',
+  cofre_senha: 'Senha',
+  tipo_manutencao: 'Tipo Manutenção',
+  usuario: 'Usuário',
+  monitoramento: 'Monitoramento',
+  permissao: 'Permissão',
+  grupo_cofre: 'Grupo Cofre',
+  pacote: 'Pacote',
+  relatorio: 'Relatório',
+  agendamento: 'Agendamento',
+}
+
+const PAGE_SIZE = 25
+
+export default function Auditoria({ globalView = false }: { globalView?: boolean }) {
+  const { user } = useAuth()
+  const { isSuperAdmin } = usePermissions()
+  const [logs, setLogs] = useState<AuditEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+
+  // Filters
+  const [filterAction, setFilterAction] = useState("todos")
+  const [filterResource, setFilterResource] = useState("todos")
+  const [filterSearch, setFilterSearch] = useState("")
+  const [filterDateFrom, setFilterDateFrom] = useState("")
+  const [filterDateTo, setFilterDateTo] = useState("")
+
+  // Users map for display names
+  const [usersMap, setUsersMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!user) return
+    fetchLogs()
+  }, [user, page, filterAction, filterResource, filterDateFrom, filterDateTo])
+
+  useEffect(() => {
+    // Load user display names
+    const loadUsers = async () => {
+      const { data } = await supabase.from('user_profiles').select('user_id, display_name, email')
+      const map: Record<string, string> = {}
+      ;(data || []).forEach((u: any) => { map[u.user_id] = u.display_name || u.email || u.user_id })
+      setUsersMap(map)
+    }
+    loadUsers()
+  }, [])
+
+  const fetchLogs = async () => {
+    setLoading(true)
+    let query = supabase.from('audit_logs' as any).select('*', { count: 'exact' })
+
+    if (filterAction !== "todos") query = query.eq('action', filterAction)
+    if (filterResource !== "todos") query = query.eq('resource_type', filterResource)
+    if (filterDateFrom) query = query.gte('created_at', `${filterDateFrom}T00:00:00`)
+    if (filterDateTo) query = query.lte('created_at', `${filterDateTo}T23:59:59`)
+
+    query = query.order('created_at', { ascending: false })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
+    const { data, count, error } = await query
+    if (!error) {
+      setLogs((data || []) as AuditEntry[])
+      setTotal(count || 0)
+    }
+    setLoading(false)
+  }
+
+  const filteredLogs = filterSearch
+    ? logs.filter(l =>
+        (l.resource_name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (usersMap[l.user_id] || '').toLowerCase().includes(filterSearch.toLowerCase())
+      )
+    : logs
+
+  const clearFilters = () => {
+    setFilterAction("todos")
+    setFilterResource("todos")
+    setFilterSearch("")
+    setFilterDateFrom("")
+    setFilterDateTo("")
+    setPage(0)
+  }
+
+  const hasFilters = filterAction !== "todos" || filterResource !== "todos" || filterSearch || filterDateFrom || filterDateTo
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title font-display flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            {globalView ? "Auditoria Global" : "Auditoria"}
+          </h1>
+          <p className="page-subtitle">
+            {globalView ? "Logs de todas as operações de todos os tenants" : "Histórico de operações do seu tenant"}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <Card className="glass-card border-0">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros</span>
+              {hasFilters && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Ativos</span>}
+            </div>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearFilters}>
+                <X className="h-3 w-3 mr-1" /> Limpar
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Buscar</Label>
+              <Input className="h-9" placeholder="Nome ou usuário..." value={filterSearch} onChange={e => setFilterSearch(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Ação</Label>
+              <Select value={filterAction} onValueChange={v => { setFilterAction(v); setPage(0) }}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas</SelectItem>
+                  <SelectItem value="create">Criação</SelectItem>
+                  <SelectItem value="update">Edição</SelectItem>
+                  <SelectItem value="delete">Exclusão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Recurso</Label>
+              <Select value={filterResource} onValueChange={v => { setFilterResource(v); setPage(0) }}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {Object.entries(RESOURCE_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">De</Label>
+              <Input type="date" className="h-9" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setPage(0) }} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Até</Label>
+              <Input type="date" className="h-9" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setPage(0) }} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Logs Table */}
+      <Card className="glass-card border-0">
+        <CardContent className="p-0">
+          <ScrollArea className="w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Data/Hora</TableHead>
+                  <TableHead className="text-xs">Usuário</TableHead>
+                  <TableHead className="text-xs">Ação</TableHead>
+                  <TableHead className="text-xs">Recurso</TableHead>
+                  <TableHead className="text-xs">Nome</TableHead>
+                  <TableHead className="text-xs">Detalhes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                  </TableRow>
+                ) : filteredLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      Nenhum registro de auditoria encontrado
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredLogs.map((log) => {
+                    const actionInfo = ACTION_LABELS[log.action] || { label: log.action, color: 'bg-muted text-muted-foreground' }
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {new Date(log.created_at).toLocaleString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className="truncate max-w-[150px] block">{usersMap[log.user_id] || log.user_id.slice(0, 8)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] ${actionInfo.color}`}>
+                            {actionInfo.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {RESOURCE_LABELS[log.resource_type] || log.resource_type}
+                        </TableCell>
+                        <TableCell className="text-xs truncate max-w-[180px]">
+                          {log.resource_name || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {log.details && Object.keys(log.details).length > 0
+                            ? JSON.stringify(log.details).slice(0, 80)
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+              <span className="text-xs text-muted-foreground">{total} registros</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs">{page + 1} / {totalPages}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

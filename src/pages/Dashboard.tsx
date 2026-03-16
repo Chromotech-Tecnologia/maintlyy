@@ -473,17 +473,26 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tipoData.length > 0 && (
           <ChartCard title="Por Tipo" description="Distribuição de manutenções" icon={Wrench}>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={tipoData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
-                  {tipoData.map((entry: any, index: number) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
-                <Legend wrapperStyle={{ fontSize: '10px' }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value" label={false}>
+                    {tipoData.map((entry: any, index: number) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 px-2">
+                {tipoData.map((entry: any, index: number) => (
+                  <div key={index} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                    <span className="truncate max-w-[100px]">{entry.name} ({entry.value})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </ChartCard>
         )}
 
