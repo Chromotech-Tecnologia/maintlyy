@@ -115,6 +115,7 @@ export function PlansManager() {
       max_manutencoes: form.max_manutencoes,
       max_empresas: form.max_empresas,
       max_senhas: form.max_senhas,
+      max_urls: form.max_urls,
       descricao: form.descricao || null,
       recursos,
       whatsapp_numero: form.whatsapp_numero || null,
