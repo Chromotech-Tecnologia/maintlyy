@@ -88,13 +88,16 @@ export default function Equipes() {
           .eq('user_id', user.id)
 
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'equipe', resourceId: editingId, resourceName: sanitizedData.nome_equipe })
         toast.success("Equipe atualizada com sucesso!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('equipes')
           .insert([{ ...sanitizedData, user_id: user.id }])
+          .select('id').single()
 
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'equipe', resourceId: inserted?.id, resourceName: sanitizedData.nome_equipe })
         toast.success("Equipe criada com sucesso!")
       }
 
