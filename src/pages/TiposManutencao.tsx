@@ -29,6 +29,7 @@ interface TipoManutencao {
 
 export default function TiposManutencao() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [tipos, setTipos] = useState<TipoManutencao[]>([])
   const [loading, setLoading] = useState(true)
