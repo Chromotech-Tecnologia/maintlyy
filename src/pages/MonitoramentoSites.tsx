@@ -533,9 +533,6 @@ export default function MonitoramentoSites() {
                       )}
                     </CardContent>
                   </Card>
-                )
-              {filtered.map((u) => {
-                // ... existing card rendering already above
               })}
             </div>
             )
