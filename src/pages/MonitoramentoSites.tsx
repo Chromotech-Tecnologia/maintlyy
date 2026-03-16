@@ -118,6 +118,8 @@ export default function MonitoramentoSites() {
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
   const [detailUrl, setDetailUrl] = useState<string | null>(null)
   const [expandedCycles, setExpandedCycles] = useState<Record<string, boolean>>({})
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'online' | 'offline'>('todos')
 
   // Schedule form
   const [scheduleDialog, setScheduleDialog] = useState(false)
