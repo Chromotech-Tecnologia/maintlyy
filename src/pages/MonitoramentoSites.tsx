@@ -144,7 +144,7 @@ export default function MonitoramentoSites() {
         .order('checked_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (log) latestMap[u.id] = log as CheckLog
+      if (log) latestMap[u.id] = log as unknown as CheckLog
     }
     setLatestLogs(latestMap)
   }, [])
