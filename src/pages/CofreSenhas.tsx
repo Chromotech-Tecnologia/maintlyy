@@ -259,8 +259,15 @@ export default function CofreSenhas() {
         url_acesso: sanitizedData.url_acesso || null,
       }
 
+      // Prepare audit data (without sensitive password field)
+      const auditFields = { nome_acesso: cleanData.nome_acesso, login: cleanData.login, url_acesso: cleanData.url_acesso, grupo: cleanData.grupo, cliente_id: cleanData.cliente_id, empresa_terceira_id: cleanData.empresa_terceira_id, descricao: cleanData.descricao }
+      const nameMap: Record<string, string> = {
+        ...Object.fromEntries((clientes || []).map((c: any) => [c.id, c.nome_cliente])),
+        ...Object.fromEntries((empresas || []).map((e: any) => [e.id, e.nome_empresa])),
+      }
       if (editingId) {
-        console.log('Updating password with id:', editingId)
+        const oldSenha = senhasEncriptadas.find(s => s.id === editingId)
+        const oldAudit = { nome_acesso: oldSenha?.nome_acesso, login: oldSenha?.login, url_acesso: oldSenha?.url_acesso, grupo: oldSenha?.grupo, cliente_id: oldSenha?.cliente_id, empresa_terceira_id: oldSenha?.empresa_terceira_id, descricao: oldSenha?.descricao }
         const { error } = await supabase
           .from('cofre_senhas')
           .update(cleanData)
@@ -268,17 +275,16 @@ export default function CofreSenhas() {
           .eq('user_id', user.id)
 
         if (error) throw error
-        auditLog({ action: 'update', resourceType: 'cofre_senha', resourceId: editingId, resourceName: cleanData.nome_acesso })
+        auditLog({ action: 'update', resourceType: 'cofre_senha', resourceId: editingId, resourceName: cleanData.nome_acesso, details: updateDetails(oldAudit, auditFields, nameMap) })
         toast.success("Senha atualizada com sucesso!")
       } else {
-        console.log('Creating new password')
         const { data: inserted, error } = await supabase
           .from('cofre_senhas')
           .insert([{ ...cleanData, user_id: user.id }])
           .select('id').single()
 
         if (error) throw error
-        auditLog({ action: 'create', resourceType: 'cofre_senha', resourceId: inserted?.id, resourceName: cleanData.nome_acesso })
+        auditLog({ action: 'create', resourceType: 'cofre_senha', resourceId: inserted?.id, resourceName: cleanData.nome_acesso, details: createDetails(auditFields, nameMap) })
         toast.success("Senha adicionada com sucesso!")
       }
 
