@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search, Upload, Image } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"

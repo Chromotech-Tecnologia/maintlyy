@@ -15,6 +15,7 @@ import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"

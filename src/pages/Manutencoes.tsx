@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Clock, Calendar, Eye, Search, Filter, X, Wrench } f
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ExcelImport } from "@/components/ExcelImport"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
