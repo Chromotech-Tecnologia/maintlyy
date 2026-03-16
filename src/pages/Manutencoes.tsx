@@ -177,7 +177,10 @@ export default function Manutencoes() {
         ...Object.fromEntries(equipes.map(eq => [eq.id, eq.nome_equipe])),
       }
       if (editingId) {
-        const oldManut = manutencoes.find(m => m.id === editingId)
+        const oldManutRaw = manutencoes.find(m => m.id === editingId)
+        // Build old record with equipe_ids extracted from manutencao_equipes for proper diff
+        const oldEquipeIds = oldManutRaw?.manutencao_equipes?.map((me: any) => me.equipe_id) || []
+        const oldManut = { ...oldManutRaw, equipe_ids: oldEquipeIds }
         const { error } = await supabase.from('manutencoes').update(data).eq('id', editingId)
         if (error) throw error
         const { error: deleteError } = await supabase.from('manutencao_equipes').delete().eq('manutencao_id', editingId)
@@ -186,7 +189,7 @@ export default function Manutencoes() {
           const { error: insertError } = await supabase.from('manutencao_equipes').insert(equipe_ids.map(eid => ({ manutencao_id: editingId, equipe_id: eid })))
           if (insertError) { console.error('Error inserting manutencao_equipes:', insertError); toast.error("Erro ao salvar equipes: " + insertError.message) }
         }
-        auditLog({ action: 'update', resourceType: 'manutencao', resourceId: editingId, resourceName: formData.descricao || 'Manutenção', details: updateDetails(oldManut || {}, { ...formData, equipe_ids }, nameMap) })
+        auditLog({ action: 'update', resourceType: 'manutencao', resourceId: editingId, resourceName: formData.descricao || 'Manutenção', details: updateDetails(oldManut, { ...formData, equipe_ids }, nameMap) })
         toast.success("Manutenção atualizada!")
       } else {
         const { data: inserted, error } = await supabase.from('manutencoes').insert([data]).select('id').single()
