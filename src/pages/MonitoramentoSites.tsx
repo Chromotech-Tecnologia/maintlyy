@@ -50,6 +50,26 @@ interface MonitorSchedule {
 
 const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "" }
 
+function translateErrorMessage(msg: string | null): string {
+  if (!msg) return '-'
+  const lower = msg.toLowerCase()
+  if (lower.includes('dns error') || lower.includes('failed to lookup address'))
+    return 'Erro de DNS: não foi possível resolver o endereço do site'
+  if (lower.includes('connection refused'))
+    return 'Conexão recusada: o servidor não está aceitando conexões'
+  if (lower.includes('connection reset'))
+    return 'Conexão resetada pelo servidor'
+  if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('aborted'))
+    return 'Tempo esgotado: o site não respondeu dentro do limite'
+  if (lower.includes('ssl') || lower.includes('certificate') || lower.includes('tls'))
+    return 'Erro de certificado SSL/TLS'
+  if (lower.includes('connection failed') || lower.includes('network'))
+    return 'Falha na conexão de rede'
+  if (lower.includes('too many redirects'))
+    return 'Muitos redirecionamentos'
+  return msg
+}
+
 export default function MonitoramentoSites() {
   const { user } = useAuth()
   const { isAdmin, canCreateSystem, canEditSystem, canDeleteSystem } = usePermissions()
@@ -395,7 +415,7 @@ export default function MonitoramentoSites() {
                         </div>
                       </div>
                       {log?.error_message && (
-                        <p className="text-xs text-red-500 mt-2 bg-red-50 dark:bg-red-950/30 p-2 rounded">⚠️ {log.error_message}</p>
+                        <p className="text-xs text-destructive mt-2 bg-destructive/10 p-2 rounded">⚠️ {translateErrorMessage(log.error_message)}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -484,7 +504,7 @@ export default function MonitoramentoSites() {
                           <TableCell>{getStatusBadge(log.is_online)}</TableCell>
                           <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
                           <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
-                          <TableCell className="text-xs text-red-500 max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                          <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
                         </TableRow>
                       ))}
                       {(!logs[selectedUrl] || logs[selectedUrl].length === 0) && (

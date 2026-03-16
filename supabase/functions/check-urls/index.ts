@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function translateError(msg: string): string {
+  if (!msg) return msg
+  const lower = msg.toLowerCase()
+  if (lower.includes('dns error') || lower.includes('failed to lookup address'))
+    return 'Erro de DNS: não foi possível resolver o endereço do site'
+  if (lower.includes('connection refused'))
+    return 'Conexão recusada: o servidor não está aceitando conexões'
+  if (lower.includes('connection reset'))
+    return 'Conexão resetada pelo servidor'
+  if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('aborted'))
+    return 'Tempo esgotado: o site não respondeu dentro do limite'
+  if (lower.includes('ssl') || lower.includes('certificate') || lower.includes('tls'))
+    return 'Erro de certificado SSL/TLS'
+  if (lower.includes('connection failed') || lower.includes('network'))
+    return 'Falha na conexão de rede'
+  if (lower.includes('too many redirects'))
+    return 'Muitos redirecionamentos'
+  return msg
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -83,7 +103,7 @@ serve(async (req) => {
         // Consume body to avoid resource leak
         await response.text()
       } catch (err: any) {
-        errorMessage = err.message || 'Connection failed'
+        errorMessage = translateError(err.message || 'Falha na conexão')
         isOnline = false
       }
 
