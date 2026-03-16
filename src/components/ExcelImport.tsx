@@ -238,7 +238,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
           }
 
           // Normalizar status para valores aceitos pelo banco
-          const rawStatus = row.status || row.Status || ''
+          const rawStatus = row.status || (row as any).Status || ''
           let normalizedStatus = 'Em andamento'
           if (typeof rawStatus === 'string') {
             const lower = rawStatus.trim().toLowerCase()
