@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, KeyRound, Menu, Building2,
-  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard
+  UserCog, Calendar, Shield, Settings, ChevronRight, Crown, FileBarChart, CreditCard, Activity
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
