@@ -84,7 +84,7 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
 
   const fetchLogs = async () => {
     setLoading(true)
-    let query = supabase.from('audit_logs' as any).select('*', { count: 'exact' })
+    let query = (supabase.from('audit_logs' as any) as any).select('*', { count: 'exact' })
 
     if (filterAction !== "todos") query = query.eq('action', filterAction)
     if (filterResource !== "todos") query = query.eq('resource_type', filterResource)
