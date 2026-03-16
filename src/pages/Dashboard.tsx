@@ -111,7 +111,7 @@ export default function Dashboard() {
           totalHoras: Math.round(totalHoras / 60),
         })
         setRecentManutencoes(
-          [...(cd.data || [])].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5)
+          [...(cd.data || [])].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
         )
         setAllManutencoes(cd.data || [])
         setClientes(clientesRes.data || [])
