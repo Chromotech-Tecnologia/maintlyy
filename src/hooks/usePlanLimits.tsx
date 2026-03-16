@@ -169,7 +169,7 @@ export function usePlanLimits(): PlanLimits {
       // Fetch the plan details
       const { data: planRaw } = await supabase
         .from('landing_plans')
-        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, max_urls')
+        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, max_urls, suporte_email, suporte_whatsapp, relatorios_avancados, links_publicos, importacao_excel, suporte_email_endereco, suporte_whatsapp_numero')
         .eq('id', profile.plan_id)
         .maybeSingle()
 
