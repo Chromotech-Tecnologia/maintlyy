@@ -220,6 +220,13 @@ export function usePlanLimits(): PlanLimits {
         canCreateManutencao,
         canCreateSenha,
         canCreateUrl,
+        suporteEmail: plan.suporte_email ?? false,
+        suporteWhatsapp: plan.suporte_whatsapp ?? false,
+        relatoriosAvancados: plan.relatorios_avancados ?? false,
+        linksPublicos: plan.links_publicos ?? false,
+        importacaoExcel: plan.importacao_excel ?? false,
+        suporteEmailEndereco: plan.suporte_email_endereco ?? null,
+        suporteWhatsappNumero: plan.suporte_whatsapp_numero ?? null,
         loading: false,
       })
     }
