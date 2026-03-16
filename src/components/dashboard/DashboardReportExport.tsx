@@ -329,7 +329,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
             {/* Resumo Mensal - full width */}
             <div className="mb-8">
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal — {currentYear}</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal</h3>
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={data.chartData}>
                     <defs>
@@ -396,47 +396,8 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               )}
             </div>
 
-            {/* Total Horas e Manutenções por Cliente - full width */}
-            {(() => {
-              const clienteChartData = filters.clientes.map(cli => {
-                const cliManutencoes = allManutencoes.filter(m => m.cliente_id === cli.id)
-                const totalHoras = Math.round(cliManutencoes.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60 * 10) / 10
-                return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHoras }
-              }).filter(e => e.manutenções > 0)
-              
-              return clienteChartData.length > 0 ? (
-                <div className="mb-8">
-                  <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4">👤 Total de Horas e Manutenções por Cliente</h3>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={clienteChartData}>
-                        <defs>
-                          <linearGradient id="barGradEmp1" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
-                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                          </linearGradient>
-                          <linearGradient id="barGradEmp2" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9} />
-                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.4} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                        <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
-                        <Tooltip />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Bar dataKey="manutenções" fill="url(#barGradEmp1)" radius={[6, 6, 0, 0]}>
-                          <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#8b5cf6' }} />
-                        </Bar>
-                        <Bar dataKey="horas" fill="url(#barGradEmp2)" radius={[6, 6, 0, 0]}>
-                          <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: '#f59e0b' }} />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              ) : null
-            })()}
+
+
 
 
             {/* Detailed Analytical Table */}
@@ -463,16 +424,23 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   <tbody>
                     {analyticalData.length > 0 ? analyticalData.map((m: any, i: number) => {
                       const d = new Date(m.data_inicio)
-                      const tempoMin = m.tempo_total || 0
+                      let tempoMin = m.tempo_total || 0
+                      // Calculate from hora_inicio/hora_fim if tempo_total is 0
+                      if (tempoMin === 0 && m.hora_inicio && m.hora_fim) {
+                        const [hi, mi] = m.hora_inicio.split(':').map(Number)
+                        const [hf, mf] = m.hora_fim.split(':').map(Number)
+                        tempoMin = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                      }
                       const horas = Math.floor(tempoMin / 60)
                       const mins = tempoMin % 60
+                      const tempoLabel = tempoMin === 0 ? '0h' : `${horas > 0 ? `${horas}h` : ''}${mins > 0 ? `${mins}m` : ''}`
                       return (
                         <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="p-2 border border-gray-200">{m.tipos_manutencao?.nome_tipo_manutencao || '—'}</td>
                           <td className="p-2 border border-gray-200 text-center">{MONTHS_PT[d.getMonth()]}</td>
                           <td className="p-2 border border-gray-200 text-center">{d.getFullYear()}</td>
                           <td className="p-2 border border-gray-200 text-center">{d.toLocaleDateString('pt-BR')}</td>
-                          <td className="p-2 border border-gray-200 text-center">{horas}h{mins > 0 ? `${mins}m` : ''}</td>
+                          <td className="p-2 border border-gray-200 text-center">{tempoLabel}</td>
                           <td className="p-2 border border-gray-200 whitespace-pre-wrap break-words">{m.descricao || '—'}</td>
                           <td className="p-2 border border-gray-200 text-center">{m.status || 'Em andamento'}</td>
                         </tr>
@@ -482,16 +450,29 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                         <td colSpan={7} className="p-4 text-center text-gray-400 border border-gray-200">Nenhuma manutenção encontrada para o período selecionado</td>
                       </tr>
                     )}
-                    {analyticalData.length > 0 && (
-                      <tr className="bg-gray-100 font-bold">
-                        <td className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
-                        <td colSpan={3} className="p-2 border border-gray-200"></td>
-                        <td className="p-2 border border-gray-200 text-center">
-                          {Math.floor(analyticalData.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60)}h
-                        </td>
-                        <td colSpan={2} className="p-2 border border-gray-200"></td>
-                      </tr>
-                    )}
+                    {analyticalData.length > 0 && (() => {
+                      const totalMin = analyticalData.reduce((s: number, m: any) => {
+                        let t = m.tempo_total || 0
+                        if (t === 0 && m.hora_inicio && m.hora_fim) {
+                          const [hi, mi] = m.hora_inicio.split(':').map(Number)
+                          const [hf, mf] = m.hora_fim.split(':').map(Number)
+                          t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                        }
+                        return s + t
+                      }, 0)
+                      const totalH = Math.floor(totalMin / 60)
+                      const totalM = totalMin % 60
+                      return (
+                        <tr className="bg-gray-100 font-bold">
+                          <td className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
+                          <td colSpan={3} className="p-2 border border-gray-200"></td>
+                          <td className="p-2 border border-gray-200 text-center">
+                            {totalH}h{totalM > 0 ? `${totalM}m` : ''}
+                          </td>
+                          <td colSpan={2} className="p-2 border border-gray-200"></td>
+                        </tr>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>

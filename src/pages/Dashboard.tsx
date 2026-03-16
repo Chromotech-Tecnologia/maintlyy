@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList } from "recharts"
 import {
   Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search
 } from "lucide-react"
@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [statusData, setStatusData] = useState<any[]>([])
   const [teamData, setTeamData] = useState<any[]>([])
   const [weeklyData, setWeeklyData] = useState<any[]>([])
+  const [clienteChartData, setClienteChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Filters
@@ -219,7 +220,16 @@ export default function Dashboard() {
       weeks.push({ name: `S${8 - w}`, value: count })
     }
     setWeeklyData(weeks)
-  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
+
+    // Client chart data (hours + maintenances per client)
+    const cliData = clientes.map(cli => {
+      const cliManutencoes = filtered.filter(m => m.cliente_id === cli.id)
+      const totalMin = cliManutencoes.reduce((s, m) => s + (m.tempo_total || 0), 0)
+      const totalHorasDecimal = Math.round(totalMin / 60 * 10) / 10
+      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHorasDecimal }
+    }).filter(e => e.manutenções > 0)
+    setClienteChartData(cliData)
+  }, [allManutencoes, clientes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -525,6 +535,26 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
+      {/* Client Hours Chart */}
+      {clienteChartData.length > 0 && (
+        <ChartCard title="Total de Horas e Manutenções por Cliente" description="Visão consolidada por cliente" icon={Users}>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={clienteChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: 'hsl(var(--primary))' }} />
+              </Bar>
+              <Bar dataKey="horas" fill="hsl(38, 92%, 50%)" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: 'hsl(38, 92%, 50%)' }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
       {/* Team Hours + Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
         {teamData.length > 0 && (
