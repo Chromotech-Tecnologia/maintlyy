@@ -205,7 +205,8 @@ serve(async (req) => {
 
         const resendRedirectUrl = body.redirectTo || 'https://maintlyy.lovable.app/setup-password'
         
-        const { data: resendData, error: resendError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        // Use resetPasswordForEmail which actually sends the email via Supabase built-in email
+        const { error: resendError } = await supabaseAdmin.auth.resetPasswordForEmail(
           resendProfile.email,
           { redirectTo: resendRedirectUrl }
         )
