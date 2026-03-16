@@ -33,7 +33,7 @@ export function useAuditLog() {
       if (pp) tenantAdminId = pp.user_id
     }
 
-    await supabase.from('audit_logs' as any).insert({
+    await supabase.from('audit_logs').insert({
       user_id: user.id,
       tenant_admin_id: tenantAdminId,
       action: params.action,
@@ -41,7 +41,7 @@ export function useAuditLog() {
       resource_id: params.resourceId || null,
       resource_name: params.resourceName || null,
       details: params.details || {},
-    } as any)
+    })
   }, [user])
 
   return { log }
