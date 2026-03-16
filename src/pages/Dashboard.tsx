@@ -220,7 +220,16 @@ export default function Dashboard() {
       weeks.push({ name: `S${8 - w}`, value: count })
     }
     setWeeklyData(weeks)
-  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
+
+    // Client chart data (hours + maintenances per client)
+    const cliData = clientes.map(cli => {
+      const cliManutencoes = filtered.filter(m => m.cliente_id === cli.id)
+      const totalMin = cliManutencoes.reduce((s, m) => s + (m.tempo_total || 0), 0)
+      const totalHorasDecimal = Math.round(totalMin / 60 * 10) / 10
+      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHorasDecimal }
+    }).filter(e => e.manutenções > 0)
+    setClienteChartData(cliData)
+  }, [allManutencoes, clientes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
