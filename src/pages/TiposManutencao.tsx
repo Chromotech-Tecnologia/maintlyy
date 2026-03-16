@@ -92,8 +92,10 @@ export default function TiposManutencao() {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este tipo de manutenção?")) return
     try {
+      const tipo = tipos.find(t => t.id === id)
       const { error } = await supabase.from('tipos_manutencao').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'tipo_manutencao', resourceId: id, resourceName: tipo?.nome_tipo_manutencao })
       toast.success("Tipo de manutenção excluído com sucesso!"); fetchTipos()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }
