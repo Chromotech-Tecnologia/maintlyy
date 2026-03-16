@@ -190,6 +190,7 @@ export function AppSidebar() {
         {/* Super Admin */}
         {isSuperAdmin && renderSection("Administração", [
           { title: "Painel Admin", url: "/super-admin", icon: Crown },
+          { title: "Auditoria Global", url: "/auditoria-global", icon: ClipboardList },
         ])}
       </SidebarContent>
     </Sidebar>
