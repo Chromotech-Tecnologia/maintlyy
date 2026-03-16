@@ -247,6 +247,7 @@ export type Database = {
           max_equipes: number | null
           max_manutencoes: number | null
           max_senhas: number | null
+          max_urls: number | null
           max_usuarios: number | null
           nome: string
           offer_free_signup: boolean | null
@@ -270,6 +271,7 @@ export type Database = {
           max_equipes?: number | null
           max_manutencoes?: number | null
           max_senhas?: number | null
+          max_urls?: number | null
           max_usuarios?: number | null
           nome: string
           offer_free_signup?: boolean | null
@@ -293,6 +295,7 @@ export type Database = {
           max_equipes?: number | null
           max_manutencoes?: number | null
           max_senhas?: number | null
+          max_urls?: number | null
           max_usuarios?: number | null
           nome?: string
           offer_free_signup?: boolean | null
@@ -428,6 +431,96 @@ export type Database = {
             columns: ["tipo_manutencao_id"]
             isOneToOne: false
             referencedRelation: "tipos_manutencao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitor_schedules: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email_destinatario: string
+          frequency_minutes: number
+          id: string
+          report_time: string | null
+          report_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email_destinatario: string
+          frequency_minutes?: number
+          id?: string
+          report_time?: string | null
+          report_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email_destinatario?: string
+          frequency_minutes?: number
+          id?: string
+          report_time?: string | null
+          report_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monitored_urls: {
+        Row: {
+          ativo: boolean
+          check_interval_minutes: number
+          cliente_id: string | null
+          created_at: string
+          empresa_terceira_id: string | null
+          id: string
+          nome: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          check_interval_minutes?: number
+          cliente_id?: string | null
+          created_at?: string
+          empresa_terceira_id?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          check_interval_minutes?: number
+          cliente_id?: string | null
+          created_at?: string
+          empresa_terceira_id?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitored_urls_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitored_urls_empresa_terceira_id_fkey"
+            columns: ["empresa_terceira_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_terceiras"
             referencedColumns: ["id"]
           },
         ]
@@ -574,6 +667,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      url_check_logs: {
+        Row: {
+          checked_at: string
+          error_message: string | null
+          id: string
+          is_online: boolean
+          monitored_url_id: string
+          response_time_ms: number | null
+          screenshot_url: string | null
+          status_code: number | null
+        }
+        Insert: {
+          checked_at?: string
+          error_message?: string | null
+          id?: string
+          is_online?: boolean
+          monitored_url_id: string
+          response_time_ms?: number | null
+          screenshot_url?: string | null
+          status_code?: number | null
+        }
+        Update: {
+          checked_at?: string
+          error_message?: string | null
+          id?: string
+          is_online?: boolean
+          monitored_url_id?: string
+          response_time_ms?: number | null
+          screenshot_url?: string | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "url_check_logs_monitored_url_id_fkey"
+            columns: ["monitored_url_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_urls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_client_permissions: {
         Row: {
