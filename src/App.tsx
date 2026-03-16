@@ -59,6 +59,8 @@ const App = () => (
                       <Route path="/relatorios" element={<Relatorios />} />
                       <Route path="/assinaturas" element={<Assinaturas />} />
                       <Route path="/monitoramento" element={<MonitoramentoSites />} />
+                      <Route path="/auditoria" element={<Auditoria />} />
+                      <Route path="/auditoria-global" element={<Auditoria globalView />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>
