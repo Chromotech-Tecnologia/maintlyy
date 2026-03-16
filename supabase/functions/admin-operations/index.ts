@@ -105,7 +105,7 @@ serve(async (req) => {
         }
 
         // Create user_profiles record
-        const { error: profileInsertError } = await supabaseAdmin.from('user_profiles').insert({
+        const { error: profileInsertError } = await supabaseAdmin.from('user_profiles').upsert({
           user_id: inviteData.user.id,
           email: body.email,
           display_name: body.displayName || null,
@@ -113,7 +113,7 @@ serve(async (req) => {
           is_admin: body.isAdmin || false,
           permission_profile_id: body.permissionProfileId || null,
           account_status: 'pending_invite',
-        })
+        }, { onConflict: 'user_id' })
 
         if (profileInsertError) {
           console.error('Profile insert error:', profileInsertError)
