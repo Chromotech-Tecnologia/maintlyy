@@ -158,7 +158,7 @@ export default function MonitoramentoSites() {
   }, [user])
 
   const fetchClientes = useCallback(async () => {
-    const { data } = await supabase.from('clientes').select('id, nome_cliente')
+    const { data } = await supabase.from('clientes').select('id, nome_cliente, empresa_terceira_id')
     setClientes(data || [])
   }, [])
 
