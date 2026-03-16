@@ -335,7 +335,8 @@ export default function CofreSenhas() {
 
       if (error) throw error
       const senhaItem = senhasEncriptadas.find(s => s.id === id)
-      auditLog({ action: 'delete', resourceType: 'cofre_senha', resourceId: id, resourceName: senhaItem?.nome_acesso })
+      const deleteAudit = { nome_acesso: senhaItem?.nome_acesso, login: senhaItem?.login, url_acesso: senhaItem?.url_acesso, grupo: senhaItem?.grupo }
+      auditLog({ action: 'delete', resourceType: 'cofre_senha', resourceId: id, resourceName: senhaItem?.nome_acesso, details: deleteDetails(deleteAudit) })
       toast.success("Senha excluída com sucesso!")
       fetchData()
     } catch (error: any) {

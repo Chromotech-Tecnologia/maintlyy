@@ -139,7 +139,7 @@ export default function Equipes() {
         .eq('user_id', user.id)
 
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe })
+      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe, details: deleteDetails(equipe || {}) })
       toast.success("Equipe excluída com sucesso!")
       fetchEquipes()
     } catch (error: any) {

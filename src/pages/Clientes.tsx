@@ -147,9 +147,10 @@ export default function Clientes() {
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return
     try {
       const cliente = clientes.find(c => c.id === id)
+      const empresaMap = Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa]))
       const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente })
+      auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente, details: deleteDetails(cliente || {}, empresaMap) })
       toast.success("Cliente excluído com sucesso!"); fetchData()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }

@@ -96,7 +96,7 @@ export default function Empresas() {
       const empresa = empresas.find(e => e.id === id)
       const { error } = await supabase.from('empresas_terceiras').delete().eq('id', id)
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'empresa', resourceId: id, resourceName: empresa?.nome_empresa })
+      auditLog({ action: 'delete', resourceType: 'empresa', resourceId: id, resourceName: empresa?.nome_empresa, details: deleteDetails(empresa || {}) })
       toast.success("Empresa excluída!"); fetchEmpresas()
     } catch (error: any) { toast.error(error.message) }
   }

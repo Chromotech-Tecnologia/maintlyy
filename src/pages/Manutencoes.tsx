@@ -224,9 +224,15 @@ export default function Manutencoes() {
 
   const handleDelete = async (id: string) => {
     try {
+      const manut = manutencoes.find(m => m.id === id)
+      const nameMap: Record<string, string> = {
+        ...Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa])),
+        ...Object.fromEntries(clientes.map(c => [c.id, c.nome_cliente])),
+        ...Object.fromEntries(tipos.map(t => [t.id, t.nome_tipo_manutencao])),
+      }
       const { error } = await supabase.from('manutencoes').delete().eq('id', id)
       if (error) throw error
-      auditLog({ action: 'delete', resourceType: 'manutencao', resourceId: id })
+      auditLog({ action: 'delete', resourceType: 'manutencao', resourceId: id, resourceName: manut?.descricao || 'Manutenção', details: deleteDetails(manut || {}, nameMap) })
       toast.success("Manutenção excluída!")
       fetchData()
     } catch (error: any) {
