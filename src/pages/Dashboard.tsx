@@ -90,15 +90,15 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [mc, cc, pc, sc, cd, clientesRes, equipesRes, tiposRes, empresasRes] = await Promise.all([
-          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'Em andamento'),
-          supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`).eq('user_id', user.id),
-          supabase.from('clientes').select('id, nome_cliente, logo_url').eq('user_id', user.id),
-          supabase.from('equipes').select('id, nome_equipe').eq('user_id', user.id),
-          supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao').eq('user_id', user.id),
-          supabase.from('empresas_terceiras').select('id, nome_empresa').eq('user_id', user.id),
+          supabase.from('manutencoes').select('id', { count: 'exact', head: true }),
+          supabase.from('clientes').select('id', { count: 'exact', head: true }),
+          supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('status', 'Em andamento'),
+          supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }),
+          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`),
+          supabase.from('clientes').select('id, nome_cliente, logo_url'),
+          supabase.from('equipes').select('id, nome_equipe'),
+          supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao'),
+          supabase.from('empresas_terceiras').select('id, nome_empresa'),
         ])
 
         const totalHoras = (cd.data || []).reduce((sum, m) => sum + (m.tempo_total || 0), 0)
