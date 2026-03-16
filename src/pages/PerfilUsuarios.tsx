@@ -122,7 +122,8 @@ export default function PerfilUsuarios() {
         .from('user_profiles')
         .update({ 
           permission_profile_id: permissionProfileId,
-          is_admin: profileData?.is_admin_profile || false
+          // Never set is_admin=true for subordinates - use is_admin_profile from permission_profiles instead
+          is_admin: false
         })
         .eq('user_id', userId)
 
@@ -204,7 +205,7 @@ export default function PerfilUsuarios() {
       await adminOps.inviteUser({
         email: newUserData.email,
         displayName: newUserData.display_name,
-        isAdmin: selectedPermProfile?.is_admin_profile || false,
+        isAdmin: false, // Never set is_admin=true for subordinates
         permissionProfileId: newUserData.permission_profile_id || undefined,
       })
 

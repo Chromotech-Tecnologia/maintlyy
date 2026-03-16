@@ -24,6 +24,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
   const [clientPermissions, setClientPermissions] = useState<any[]>([])
   const [userProfile, setUserProfile] = useState<any>(null)
   const [profilePermissions, setProfilePermissions] = useState<Record<string, any>>({})
+  const [isAdminProfile, setIsAdminProfile] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
       setUserProfile(null)
       setClientPermissions([])
       setProfilePermissions({})
+      setIsAdminProfile(false)
       setLoading(false)
     }
   }, [user])
@@ -50,6 +52,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
 
       setUserProfile(profile)
 
+      let adminProfile = false
+
       if (profile?.permission_profile_id) {
         const { data: permProfile } = await supabase
           .from('permission_profiles')
@@ -58,6 +62,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
           .single()
 
         if (permProfile) {
+          adminProfile = permProfile.is_admin_profile || false
+          setIsAdminProfile(adminProfile)
           setProfilePermissions(
             typeof permProfile.system_permissions === 'object' && permProfile.system_permissions !== null
               ? (permProfile.system_permissions as Record<string, any>)
@@ -65,6 +71,7 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
           )
         }
       } else {
+        setIsAdminProfile(false)
         const { data: systemPerms } = await supabase
           .from('user_system_permissions')
           .select('*')
@@ -84,7 +91,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
       }
 
       let clientPerms: any[] = []
-      if (!profile?.is_admin) {
+      // Admin profile users get full access just like tenant owners
+      if (!profile?.is_admin && !adminProfile) {
         const { data } = await supabase
           .from('user_client_permissions')
           .select('*')
@@ -99,40 +107,44 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
     }
   }
 
+  // Helper: is this user effectively an admin (tenant owner OR admin profile subordinate)
+  const isEffectiveAdmin = userProfile?.is_admin || isAdminProfile
+
+
   const canViewClient = (clienteId: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_view)
   }
   const canEditClient = (clienteId: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_edit)
   }
   const canCreateClient = (clienteId: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_create)
   }
   const canDeleteClient = (clienteId: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return clientPermissions.some(p => p.cliente_id === clienteId && p.can_delete)
   }
   const canViewSystem = (resource: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return profilePermissions[resource]?.can_view === true
   }
   const canViewDetailsSystem = (resource: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return profilePermissions[resource]?.can_view_details === true
   }
   const canEditSystem = (resource: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return profilePermissions[resource]?.can_edit === true
   }
   const canCreateSystem = (resource: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return profilePermissions[resource]?.can_create === true
   }
   const canDeleteSystem = (resource: string): boolean => {
-    if (userProfile?.is_admin) return true
+    if (isEffectiveAdmin) return true
     return profilePermissions[resource]?.can_delete === true
   }
 
@@ -144,8 +156,8 @@ export function usePermissions(): UserPermissions & { canViewDetailsSystem: (res
   return {
     canViewClient, canEditClient, canCreateClient, canDeleteClient,
     canViewSystem, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem,
-    hasAnyClientView: userProfile?.is_admin || clientPermissions.some(p => p.can_view),
-    isAdmin: userProfile?.is_admin || false,
+    hasAnyClientView: isEffectiveAdmin || clientPermissions.some(p => p.can_view),
+    isAdmin: isEffectiveAdmin,
     isSuperAdmin: userProfile?.is_super_admin || false,
     loading,
     clientPermissions,
