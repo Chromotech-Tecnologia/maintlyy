@@ -167,7 +167,8 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
       onProfileUpdated()
     } catch (error: any) {
       console.error('Erro ao atualizar perfil:', error)
-      toast.error('Erro ao atualizar perfil: ' + error.message)
+      const msg = error?.message || error?.error || 'Erro desconhecido'
+      toast.error('Erro ao atualizar perfil: ' + msg)
     }
   }
 
