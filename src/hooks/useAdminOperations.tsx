@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 
-type AdminOperation = 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser' | 'sendPasswordReset'
+type AdminOperation = 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser' | 'resendInvite' | 'sendPasswordReset'
 
 interface AdminOperationRequest {
   operation: AdminOperation
