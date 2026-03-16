@@ -47,7 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirectUrl }
+      options: { 
+        emailRedirectTo: redirectUrl,
+        data: { display_name: displayName, phone: phone }
+      }
     })
 
     if (error) return { error }
@@ -60,7 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // If session exists (autoconfirm), create profile as tenant admin with free plan
     if (data.session && data.user) {
       try {
-        // Find default free plan
         let planId: string | null = null
         const { data: freePlan } = await supabase
           .from('landing_plans')
@@ -71,9 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .limit(1)
           .maybeSingle()
 
-        if (freePlan) {
-          planId = freePlan.id
-        }
+        if (freePlan) planId = freePlan.id
 
         await supabase.from('user_profiles').insert([{
           user_id: data.user.id,
