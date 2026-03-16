@@ -45,6 +45,7 @@ interface ManutencaoRecente {
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const planLimits = usePlanLimits()
   const [stats, setStats] = useState<DashboardStats>({
     totalManutencoes: 0, totalClientes: 0, manutencoesPendentes: 0, totalSenhas: 0, totalHoras: 0
   })
