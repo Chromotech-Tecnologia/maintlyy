@@ -139,6 +139,13 @@ export function PlansManager() {
       ordem: form.ordem,
       ativo: form.ativo,
       offer_free_signup: form.offer_free_signup,
+      suporte_email: form.suporte_email,
+      suporte_whatsapp: form.suporte_whatsapp,
+      relatorios_avancados: form.relatorios_avancados,
+      links_publicos: form.links_publicos,
+      importacao_excel: form.importacao_excel,
+      suporte_email_endereco: form.suporte_email_endereco || null,
+      suporte_whatsapp_numero: form.suporte_whatsapp_numero || null,
     }
 
     let error
