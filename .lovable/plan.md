@@ -1,108 +1,99 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+# Módulo de Monitoramento de Sites (Uptime Monitor)
 
-### Problemas Identificados e Corrigidos
+## Visão Geral
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
+Novo módulo completo para monitorar URLs, verificar status online/offline, medir tempo de resposta, e enviar relatórios por email. Inclui integração com permissões e planos.
 
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
+## Estrutura do Módulo
 
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
+### 1. Banco de Dados — Novas Tabelas
 
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
+**`monitored_urls`** — URLs cadastradas para monitoramento
+- `id`, `user_id`, `url`, `nome`, `cliente_id` (opcional), `empresa_terceira_id` (opcional)
+- `check_interval_minutes` (frequência de check, ex: 60 = 1x por hora)
+- `ativo` (boolean), `created_at`, `updated_at`
 
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
+**`url_check_logs`** — Histórico de cada verificação
+- `id`, `monitored_url_id`, `status_code` (int), `response_time_ms` (int)
+- `is_online` (boolean), `error_message` (text), `screenshot_url` (text, nullable)
+- `checked_at` (timestamptz)
 
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
+**`monitor_schedules`** — Configuração de agendamento de relatórios
+- `id`, `user_id`
+- `report_type`: `'daily'` (relatório completo) ou `'alert'` (apenas NOK)
+- `frequency_minutes` (frequência de checks para alertas)
+- `report_time` (time — horário de envio do relatório diário)
+- `email_destinatario`, `ativo`, `created_at`
 
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
+### 2. Coluna no Plano
 
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+- Adicionar `max_urls` (integer, default 0) na tabela `landing_plans`
 
----
+### 3. Edge Function: `check-urls`
 
-## Arquivos Modificados
+- Executada via pg_cron (a cada 5 minutos)
+- Busca URLs ativas cujo último check foi há mais tempo que `check_interval_minutes`
+- Para cada URL: faz `fetch` e registra `status_code`, `response_time_ms`, `is_online`
+- Se site estava online e agora está offline → marca para alerta
+- Screenshots: captura via API externa (ex: `https://api.screenshotmachine.com` ou similar) — requer API key; pode ser implementado como fase 2
+- Classificação de velocidade: `< 500ms` = Rápido, `500-2000ms` = Normal, `> 2000ms` = Lento
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+### 4. Edge Function: `send-monitor-report`
 
----
+- Executada via pg_cron (a cada minuto, verifica se há relatórios agendados para enviar)
+- **Relatório Diário**: envia todos os sites com status, tempo de resposta, último check
+- **Alerta Emergencial**: envia imediatamente quando um site cai (apenas NOK)
+- Usa o sistema de email existente (se configurado) ou registra para envio
 
-## Fluxo de Permissões Implementado
+### 5. Página Frontend: `/monitoramento`
 
-```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
+- CRUD de URLs monitoradas (nome, URL, cliente associado, frequência de check)
+- Dashboard com status atual de cada site (badge verde/vermelho/amarelo)
+- Tempo de resposta com indicador visual (Rápido/Normal/Lento)
+- Histórico de uptime por URL (últimas 24h, 7 dias)
+- Configuração de agendamento de relatórios (horário, frequência, email)
+- Configuração de alertas emergenciais (frequência de check, email)
 
-## Mapeamento Resource x Menu
+### 6. Integrações no Sistema Existente
 
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
+**Permissões** (`PermissionProfiles.tsx`):
+- Adicionar `{ key: 'monitoramento', label: 'Monitoramento' }` em `SYSTEM_RESOURCES`
 
-## Estrutura de Permissões Atualizada
+**Sidebar** (`AppSidebar.tsx` e `MobileNav.tsx`):
+- Novo item "Monitoramento" com ícone `Activity` ou `Globe`
 
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
+**Planos** (`PlansManager.tsx`):
+- Campo "Máx. URLs monitoradas" no formulário
 
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
+**Plan Limits** (`usePlanLimits.tsx`):
+- Adicionar `maxUrls`, `currentUrls`, `canCreateUrl`
 
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
+**Rotas** (`App.tsx`):
+- Adicionar `/monitoramento` → `MonitoramentoSites`
 
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
+## Arquivos a Criar/Editar
+
+### Criar
+- `src/pages/MonitoramentoSites.tsx` — Página principal do módulo
+- `supabase/functions/check-urls/index.ts` — Edge function de verificação
+- `supabase/functions/send-monitor-report/index.ts` — Edge function de relatórios
+- Migration SQL para as 3 tabelas + coluna `max_urls` em `landing_plans`
+
+### Editar
+- `src/App.tsx` — Nova rota
+- `src/components/layout/AppSidebar.tsx` — Novo item no menu
+- `src/components/layout/MobileNav.tsx` — Novo item no menu mobile
+- `src/pages/PermissionProfiles.tsx` — Novo recurso de permissão
+- `src/components/superadmin/PlansManager.tsx` — Campo max_urls
+- `src/hooks/usePlanLimits.tsx` — Limite de URLs
+- `supabase/config.toml` — Registrar novas edge functions
+- `supabase/functions/admin-operations/index.ts` — Suporte a max_urls no updatePlanLimits
+
+## Observações Importantes
+
+- **Screenshots**: A captura de tela requer uma API externa (ex: ScreenshotMachine, URLBox). Na primeira versão, o sistema registra status + tempo de resposta. Screenshots podem ser adicionados quando uma API key for configurada.
+- **Email**: O envio de relatórios depende da infraestrutura de email estar configurada. Na primeira versão, os dados ficam disponíveis na UI e o sistema prepara o conteúdo para envio.
+- **pg_cron**: Necessário para agendar as verificações automáticas. Será configurado via SQL insert.
+
