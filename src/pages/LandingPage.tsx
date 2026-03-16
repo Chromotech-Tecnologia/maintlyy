@@ -11,7 +11,7 @@ import testimonial5 from "@/assets/testimonial-5.png"
 import { Button } from "@/components/ui/button"
 import {
   Wrench, Shield, Users, FileBarChart, KeyRound, Building2,
-  CheckCircle2, ArrowRight, Sparkles, Zap, Star, Lock,
+  CheckCircle2, XCircle, ArrowRight, Sparkles, Zap, Star, Lock,
   Clock, BarChart3, UserPlus, Settings, MonitorSmartphone,
   ShieldCheck, Database, Headphones, ChevronRight, ChevronLeft
 } from "lucide-react"
@@ -738,6 +738,27 @@ function PlansCarousel({ plans, onPlanClick }: { plans: LandingPlan[]; onPlanCli
 }
 
 function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void }) {
+  // Build limit items as checklist entries
+  const limitItems: { icon: string; text: string }[] = []
+  if (plan.max_usuarios > 0) {
+    limitItems.push({ icon: "👤", text: plan.max_usuarios >= 999 ? "Usuários ilimitados" : `Até ${plan.max_usuarios} usuário${plan.max_usuarios > 1 ? "s" : ""}` })
+  }
+  if (plan.max_empresas > 0) {
+    limitItems.push({ icon: "🏢", text: plan.max_empresas >= 999 ? "Empresas ilimitadas" : `Até ${plan.max_empresas} empresa${plan.max_empresas > 1 ? "s" : ""}` })
+  }
+  if (plan.max_manutencoes > 0 || (plan.max_manutencoes === 0 && plan.categoria === "pago")) {
+    limitItems.push({ icon: "🔧", text: plan.max_manutencoes >= 999 || (plan.max_manutencoes === 0 && plan.categoria === "pago") ? "Manutenções ilimitadas" : `${plan.max_manutencoes} manutenções/mês` })
+  }
+  if (plan.max_equipes > 0) {
+    limitItems.push({ icon: "👥", text: plan.max_equipes >= 999 ? "Equipes ilimitadas" : `Até ${plan.max_equipes} equipe${plan.max_equipes > 1 ? "s" : ""}` })
+  }
+  if (plan.max_senhas > 0) {
+    limitItems.push({ icon: "🔑", text: plan.max_senhas >= 999 ? "Senhas ilimitadas" : `Até ${plan.max_senhas} senha${plan.max_senhas > 1 ? "s" : ""}` })
+  }
+  if (plan.max_urls > 0) {
+    limitItems.push({ icon: "🌐", text: plan.max_urls >= 999 ? "URLs ilimitadas" : `Até ${plan.max_urls} URL${plan.max_urls > 1 ? "s" : ""} monitorada${plan.max_urls > 1 ? "s" : ""}` })
+  }
+
   return (
     <div
       className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
@@ -762,27 +783,31 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
         {plan.preco ? (
           <span className="text-3xl font-display font-bold text-foreground">{plan.preco}</span>
         ) : (
-          <div>
-            <span className="text-3xl font-display font-bold text-foreground">Grátis</span>
-          </div>
+          <span className="text-3xl font-display font-bold text-foreground">Grátis</span>
         )}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-foreground/50">
-          {plan.max_usuarios > 0 && <span>👤 {plan.max_usuarios >= 999 ? "Ilimitados" : `Até ${plan.max_usuarios}`} usuário{plan.max_usuarios > 1 ? "s" : ""}</span>}
-          {plan.max_empresas > 0 && <span>🏢 {plan.max_empresas >= 999 ? "Ilimitadas" : `Até ${plan.max_empresas}`} empresa{plan.max_empresas > 1 ? "s" : ""}</span>}
-          {plan.max_manutencoes > 0 && <span>🔧 {plan.max_manutencoes >= 999 ? "Ilimitadas" : `${plan.max_manutencoes}/mês`}</span>}
-          {plan.max_manutencoes === 0 && plan.categoria === "pago" && <span>🔧 Ilimitadas</span>}
-          {plan.max_equipes > 0 && <span>👥 {plan.max_equipes >= 999 ? "Ilimitadas" : `${plan.max_equipes}`} equipe{plan.max_equipes > 1 ? "s" : ""}</span>}
-          {plan.max_senhas > 0 && <span>🔑 {plan.max_senhas >= 999 ? "Ilimitadas" : `${plan.max_senhas}`} senha{plan.max_senhas > 1 ? "s" : ""}</span>}
-          {plan.max_urls > 0 && <span>🌐 {plan.max_urls >= 999 ? "Ilimitadas" : `${plan.max_urls}`} URL{plan.max_urls > 1 ? "s" : ""}</span>}
-        </div>
       </div>
+      {/* Unified checklist: limits + recursos */}
       <ul className="space-y-2.5 flex-1">
-        {plan.recursos.map((r, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+        {limitItems.map((item, i) => (
+          <li key={`limit-${i}`} className="flex items-start gap-2 text-sm text-foreground">
             <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <span>{r}</span>
+            <span>{item.icon} {item.text}</span>
           </li>
         ))}
+        {plan.recursos.map((r, i) => {
+          const isExcluded = r.startsWith("~")
+          const label = isExcluded ? r.slice(1).trim() : r
+          return (
+            <li key={`rec-${i}`} className={`flex items-start gap-2 text-sm ${isExcluded ? "text-muted-foreground/60 line-through" : "text-foreground"}`}>
+              {isExcluded ? (
+                <XCircle className="h-4 w-4 text-destructive/60 mt-0.5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              )}
+              <span>{label}</span>
+            </li>
+          )
+        })}
       </ul>
       <div className="mt-auto pt-6">
         <div className="border-t border-border/30 pt-4">
