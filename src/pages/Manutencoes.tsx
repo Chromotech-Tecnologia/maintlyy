@@ -396,7 +396,7 @@ export default function Manutencoes() {
                     <SelectTrigger className="opacity-60">
                       <SelectValue placeholder={formData.empresa_terceira_id ? empresas.find((e: any) => e.id === formData.empresa_terceira_id)?.nome_empresa || "Empresa selecionada" : "Selecione um cliente primeiro"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {empresas.map((empresa: any) => (
                         <SelectItem key={empresa.id} value={empresa.id}>{empresa.nome_empresa}</SelectItem>
                       ))}
