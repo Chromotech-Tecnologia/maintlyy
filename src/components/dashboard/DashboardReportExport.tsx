@@ -424,16 +424,23 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   <tbody>
                     {analyticalData.length > 0 ? analyticalData.map((m: any, i: number) => {
                       const d = new Date(m.data_inicio)
-                      const tempoMin = m.tempo_total || 0
+                      let tempoMin = m.tempo_total || 0
+                      // Calculate from hora_inicio/hora_fim if tempo_total is 0
+                      if (tempoMin === 0 && m.hora_inicio && m.hora_fim) {
+                        const [hi, mi] = m.hora_inicio.split(':').map(Number)
+                        const [hf, mf] = m.hora_fim.split(':').map(Number)
+                        tempoMin = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                      }
                       const horas = Math.floor(tempoMin / 60)
                       const mins = tempoMin % 60
+                      const tempoLabel = tempoMin === 0 ? '0h' : `${horas > 0 ? `${horas}h` : ''}${mins > 0 ? `${mins}m` : ''}`
                       return (
                         <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="p-2 border border-gray-200">{m.tipos_manutencao?.nome_tipo_manutencao || '—'}</td>
                           <td className="p-2 border border-gray-200 text-center">{MONTHS_PT[d.getMonth()]}</td>
                           <td className="p-2 border border-gray-200 text-center">{d.getFullYear()}</td>
                           <td className="p-2 border border-gray-200 text-center">{d.toLocaleDateString('pt-BR')}</td>
-                          <td className="p-2 border border-gray-200 text-center">{horas}h{mins > 0 ? `${mins}m` : ''}</td>
+                          <td className="p-2 border border-gray-200 text-center">{tempoLabel}</td>
                           <td className="p-2 border border-gray-200 whitespace-pre-wrap break-words">{m.descricao || '—'}</td>
                           <td className="p-2 border border-gray-200 text-center">{m.status || 'Em andamento'}</td>
                         </tr>
@@ -443,16 +450,29 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                         <td colSpan={7} className="p-4 text-center text-gray-400 border border-gray-200">Nenhuma manutenção encontrada para o período selecionado</td>
                       </tr>
                     )}
-                    {analyticalData.length > 0 && (
-                      <tr className="bg-gray-100 font-bold">
-                        <td className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
-                        <td colSpan={3} className="p-2 border border-gray-200"></td>
-                        <td className="p-2 border border-gray-200 text-center">
-                          {Math.floor(analyticalData.reduce((s: number, m: any) => s + (m.tempo_total || 0), 0) / 60)}h
-                        </td>
-                        <td colSpan={2} className="p-2 border border-gray-200"></td>
-                      </tr>
-                    )}
+                    {analyticalData.length > 0 && (() => {
+                      const totalMin = analyticalData.reduce((s: number, m: any) => {
+                        let t = m.tempo_total || 0
+                        if (t === 0 && m.hora_inicio && m.hora_fim) {
+                          const [hi, mi] = m.hora_inicio.split(':').map(Number)
+                          const [hf, mf] = m.hora_fim.split(':').map(Number)
+                          t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                        }
+                        return s + t
+                      }, 0)
+                      const totalH = Math.floor(totalMin / 60)
+                      const totalM = totalMin % 60
+                      return (
+                        <tr className="bg-gray-100 font-bold">
+                          <td className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
+                          <td colSpan={3} className="p-2 border border-gray-200"></td>
+                          <td className="p-2 border border-gray-200 text-center">
+                            {totalH}h{totalM > 0 ? `${totalM}m` : ''}
+                          </td>
+                          <td colSpan={2} className="p-2 border border-gray-200"></td>
+                        </tr>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>
