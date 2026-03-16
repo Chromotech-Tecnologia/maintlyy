@@ -539,7 +539,9 @@ export type Database = {
           created_at: string
           empresa_terceira_id: string | null
           id: string
+          keyword: string | null
           nome: string
+          tipo: string | null
           updated_at: string
           url: string
           user_id: string
@@ -551,7 +553,9 @@ export type Database = {
           created_at?: string
           empresa_terceira_id?: string | null
           id?: string
+          keyword?: string | null
           nome: string
+          tipo?: string | null
           updated_at?: string
           url: string
           user_id: string
@@ -563,7 +567,9 @@ export type Database = {
           created_at?: string
           empresa_terceira_id?: string | null
           id?: string
+          keyword?: string | null
           nome?: string
+          tipo?: string | null
           updated_at?: string
           url?: string
           user_id?: string
@@ -738,6 +744,7 @@ export type Database = {
           response_time_ms: number | null
           screenshot_url: string | null
           status_code: number | null
+          test_results: Json | null
         }
         Insert: {
           checked_at?: string
@@ -748,6 +755,7 @@ export type Database = {
           response_time_ms?: number | null
           screenshot_url?: string | null
           status_code?: number | null
+          test_results?: Json | null
         }
         Update: {
           checked_at?: string
@@ -758,6 +766,7 @@ export type Database = {
           response_time_ms?: number | null
           screenshot_url?: string | null
           status_code?: number | null
+          test_results?: Json | null
         }
         Relationships: [
           {
