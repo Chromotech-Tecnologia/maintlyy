@@ -25,7 +25,7 @@ import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
 import Assinaturas from "./pages/Assinaturas";
 import MonitoramentoSites from "./pages/MonitoramentoSites";
-
+import Auditoria from "./pages/Auditoria";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -59,6 +59,8 @@ const App = () => (
                       <Route path="/relatorios" element={<Relatorios />} />
                       <Route path="/assinaturas" element={<Assinaturas />} />
                       <Route path="/monitoramento" element={<MonitoramentoSites />} />
+                      <Route path="/auditoria" element={<Auditoria />} />
+                      <Route path="/auditoria-global" element={<Auditoria globalView />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

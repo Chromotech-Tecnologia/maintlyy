@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Wrench, Users, Building2, Shield, Settings, UserCog,
-  KeyRound, Calendar, Crown, FileBarChart, CreditCard, Activity, Mail, MessageCircle
+  KeyRound, Calendar, Crown, FileBarChart, CreditCard, Activity, Mail, MessageCircle, ClipboardList
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -29,12 +29,13 @@ const securityItems = [
 ]
 
 const getSystemItems = (isAdmin: boolean) => {
-  const items = [
+  const items: { title: string; url: string; icon: any }[] = [
     { title: isAdmin ? "Usuários" : "Minha Conta", url: "/perfil-usuarios", icon: Settings },
     { title: "Assinatura", url: "/assinaturas", icon: CreditCard },
   ]
   if (isAdmin) {
     items.push({ title: "Perfil", url: "/permissoes", icon: Shield })
+    items.push({ title: "Auditoria", url: "/auditoria", icon: ClipboardList })
   }
   return items
 }
@@ -189,6 +190,7 @@ export function AppSidebar() {
         {/* Super Admin */}
         {isSuperAdmin && renderSection("Administração", [
           { title: "Painel Admin", url: "/super-admin", icon: Crown },
+          { title: "Auditoria Global", url: "/auditoria-global", icon: ClipboardList },
         ])}
       </SidebarContent>
     </Sidebar>

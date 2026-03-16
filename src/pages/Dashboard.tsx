@@ -167,14 +167,16 @@ export default function Dashboard() {
       [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
-    // Monthly chart
+    // Monthly chart — use filter year range or current year
+    const filterYear = filterDataInicio ? new Date(filterDataInicio).getFullYear() : (filterDataFim ? new Date(filterDataFim).getFullYear() : currentYear)
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
-      const month = new Date(currentYear, i).toLocaleDateString('pt-BR', { month: 'short' })
+      const monthDate = new Date(filterYear, i)
+      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
       const monthItems = filtered.filter(m => {
         const d = new Date(m.data_inicio)
-        return d.getMonth() === i && d.getFullYear() === currentYear
+        return d.getMonth() === i && d.getFullYear() === filterYear
       })
-      return { name: month, manutenções: monthItems.length, horas: Math.round(monthItems.reduce((s, m) => s + (m.tempo_total || 0), 0) / 60) }
+      return { name: monthLabel, manutenções: monthItems.length, horas: Math.round(monthItems.reduce((s, m) => s + (m.tempo_total || 0), 0) / 60) }
     })
     setChartData(visaoMensal)
 
@@ -407,7 +409,7 @@ export default function Dashboard() {
       {/* Main Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
         <div className="lg:col-span-4">
-          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${currentYear}`} icon={Calendar}>
+          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${filterDataInicio ? new Date(filterDataInicio).getFullYear() : currentYear}`} icon={Calendar}>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -471,17 +473,26 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tipoData.length > 0 && (
           <ChartCard title="Por Tipo" description="Distribuição de manutenções" icon={Wrench}>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={tipoData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
-                  {tipoData.map((entry: any, index: number) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
-                <Legend wrapperStyle={{ fontSize: '10px' }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value" label={false}>
+                    {tipoData.map((entry: any, index: number) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 px-2">
+                {tipoData.map((entry: any, index: number) => (
+                  <div key={index} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                    <span className="truncate max-w-[100px]">{entry.name} ({entry.value})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </ChartCard>
         )}
 
