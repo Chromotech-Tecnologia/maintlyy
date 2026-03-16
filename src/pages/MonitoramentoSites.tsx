@@ -118,6 +118,8 @@ export default function MonitoramentoSites() {
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
   const [detailUrl, setDetailUrl] = useState<string | null>(null)
   const [expandedCycles, setExpandedCycles] = useState<Record<string, boolean>>({})
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'online' | 'offline'>('todos')
 
   // Schedule form
   const [scheduleDialog, setScheduleDialog] = useState(false)
@@ -329,6 +331,14 @@ export default function MonitoramentoSites() {
     setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
   }
 
+  const filteredUrls = urls.filter(u => {
+    const term = searchTerm.toLowerCase()
+    if (term && !u.nome.toLowerCase().includes(term) && !u.url.toLowerCase().includes(term)) return false
+    if (statusFilter === 'online' && !latestLogs[u.id]?.is_online) return false
+    if (statusFilter === 'offline' && (latestLogs[u.id]?.is_online !== false)) return false
+    return true
+  })
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -406,6 +416,35 @@ export default function MonitoramentoSites() {
         </TabsList>
 
         <TabsContent value="sites" className="mt-4">
+          {/* Search & Filter Bar */}
+          {!loading && urls.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou URL..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+                <SelectTrigger className="h-9 w-full sm:w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="online">
+                    <span className="flex items-center gap-1.5"><Wifi className="h-3 w-3 text-emerald-600" /> Online</span>
+                  </SelectItem>
+                  <SelectItem value="offline">
+                    <span className="flex items-center gap-1.5"><WifiOff className="h-3 w-3 text-destructive" /> Offline</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Carregando...</div>
           ) : urls.length === 0 ? (
@@ -419,9 +458,11 @@ export default function MonitoramentoSites() {
                 )}
               </CardContent>
             </Card>
+          ) : filteredUrls.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Nenhum resultado encontrado</div>
           ) : (
             <div className="space-y-3">
-              {urls.map((u) => {
+              {filteredUrls.map((u) => {
                 const log = latestLogs[u.id]
                 const tests = (log?.test_results || []) as TestResult[]
                 const testsOk = tests.filter(t => t.status === 'ok').length
