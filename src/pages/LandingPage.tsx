@@ -764,6 +764,15 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
     limitItems.push({ icon: "🌐", text: plan.max_urls >= 999 ? "URLs ilimitadas" : `Até ${plan.max_urls} URL${plan.max_urls > 1 ? "s" : ""} monitorada${plan.max_urls > 1 ? "s" : ""}` })
   }
 
+  // Feature toggle items
+  const featureToggleItems: { icon: string; text: string; enabled: boolean }[] = [
+    { icon: "📧", text: "Suporte por email", enabled: plan.suporte_email },
+    { icon: "💬", text: "Suporte exclusivo pelo WhatsApp", enabled: plan.suporte_whatsapp },
+    { icon: "📊", text: "Relatórios avançados com PDF", enabled: plan.relatorios_avancados },
+    { icon: "🔗", text: "Links públicos de relatórios", enabled: plan.links_publicos },
+    { icon: "📥", text: "Importação via Excel", enabled: plan.importacao_excel },
+  ]
+
   return (
     <div
       className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
