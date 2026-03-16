@@ -382,7 +382,7 @@ export default function Manutencoes() {
                     setFormData({ ...formData, cliente_id: value, empresa_terceira_id: clienteSelecionado?.empresa_terceira_id || "" })
                   }}>
                     <SelectTrigger><SelectValue placeholder="Selecione o cliente..." /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {clientes.map((cliente: any) => (
                         <SelectItem key={cliente.id} value={cliente.id}>{cliente.nome_cliente || "Sem nome"}</SelectItem>
                       ))}
@@ -396,7 +396,7 @@ export default function Manutencoes() {
                     <SelectTrigger className="opacity-60">
                       <SelectValue placeholder={formData.empresa_terceira_id ? empresas.find((e: any) => e.id === formData.empresa_terceira_id)?.nome_empresa || "Empresa selecionada" : "Selecione um cliente primeiro"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {empresas.map((empresa: any) => (
                         <SelectItem key={empresa.id} value={empresa.id}>{empresa.nome_empresa}</SelectItem>
                       ))}
@@ -411,7 +411,7 @@ export default function Manutencoes() {
                   <Label>Tipo de Manutenção *</Label>
                   <Select value={formData.tipo_manutencao_id} onValueChange={(value) => setFormData({...formData, tipo_manutencao_id: value})}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portal={false}>
                       {tipos.map((tipo: any) => (
                         <SelectItem key={tipo.id} value={tipo.id}>{tipo.nome_tipo_manutencao}</SelectItem>
                       ))}
@@ -470,7 +470,7 @@ export default function Manutencoes() {
                 <Label>Status</Label>
                 <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({...prev, status: value}))}>
                   <SelectTrigger><SelectValue placeholder="Selecione o status" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent portal={false}>
                     <SelectItem value="Em andamento">Em andamento</SelectItem>
                     <SelectItem value="Finalizado">Finalizado</SelectItem>
                   </SelectContent>
