@@ -39,6 +39,13 @@ interface Plan {
   destaque: boolean
   ordem: number
   ativo: boolean
+  suporte_email: boolean
+  suporte_whatsapp: boolean
+  relatorios_avancados: boolean
+  links_publicos: boolean
+  importacao_excel: boolean
+  suporte_email_endereco: string | null
+  suporte_whatsapp_numero: string | null
 }
 
 const emptyPlan: Omit<Plan, "id"> = {
