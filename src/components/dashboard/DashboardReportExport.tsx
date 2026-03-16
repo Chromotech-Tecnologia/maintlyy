@@ -329,7 +329,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
             {/* Resumo Mensal - full width */}
             <div className="mb-8">
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal — {currentYear}</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal</h3>
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={data.chartData}>
                     <defs>
