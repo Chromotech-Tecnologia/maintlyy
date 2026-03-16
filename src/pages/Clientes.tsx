@@ -44,6 +44,7 @@ interface EmpresaTerceira {
 
 export default function Clientes() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const permissions = usePermissions()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = permissions
   const [clientes, setClientes] = useState<Cliente[]>([])
