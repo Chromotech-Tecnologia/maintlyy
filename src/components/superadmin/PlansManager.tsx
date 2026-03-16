@@ -321,6 +321,49 @@ export function PlansManager() {
               <Label>Mensagem WhatsApp</Label>
               <Textarea value={form.whatsapp_mensagem || ""} onChange={(e) => setForm(f => ({ ...f, whatsapp_mensagem: e.target.value }))} rows={2} placeholder="Olá! Tenho interesse no plano..." />
             </div>
+            {/* Feature Toggles */}
+            <div className="space-y-3 border-t pt-4 mt-2">
+              <Label className="text-sm font-semibold">Funcionalidades do Plano</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.suporte_email} onCheckedChange={(v) => setForm(f => ({ ...f, suporte_email: v }))} />
+                  <Label className="text-sm">Suporte por Email</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.suporte_whatsapp} onCheckedChange={(v) => setForm(f => ({ ...f, suporte_whatsapp: v }))} />
+                  <Label className="text-sm">Suporte por WhatsApp</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.relatorios_avancados} onCheckedChange={(v) => setForm(f => ({ ...f, relatorios_avancados: v }))} />
+                  <Label className="text-sm">Relatórios avançados (PDF)</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.links_publicos} onCheckedChange={(v) => setForm(f => ({ ...f, links_publicos: v }))} />
+                  <Label className="text-sm">Links públicos de relatórios</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.importacao_excel} onCheckedChange={(v) => setForm(f => ({ ...f, importacao_excel: v }))} />
+                  <Label className="text-sm">Importação via Excel</Label>
+                </div>
+              </div>
+            </div>
+            {/* Support contacts per plan */}
+            {(form.suporte_email || form.suporte_whatsapp) && (
+              <div className="grid grid-cols-2 gap-3">
+                {form.suporte_email && (
+                  <div>
+                    <Label>Email de suporte</Label>
+                    <Input value={form.suporte_email_endereco || ""} onChange={(e) => setForm(f => ({ ...f, suporte_email_endereco: e.target.value }))} placeholder="suporte@empresa.com" />
+                  </div>
+                )}
+                {form.suporte_whatsapp && (
+                  <div>
+                    <Label>WhatsApp de suporte</Label>
+                    <Input value={form.suporte_whatsapp_numero || ""} onChange={(e) => setForm(f => ({ ...f, suporte_whatsapp_numero: e.target.value }))} placeholder="5511999999999" />
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch checked={form.offer_free_signup} onCheckedChange={(v) => setForm(f => ({ ...f, offer_free_signup: v }))} />
