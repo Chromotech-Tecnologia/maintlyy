@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 interface AdminOperationRequest {
-  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'sendPasswordReset' | 'cancelPlan' | 'changeTenantPlan' | 'updatePlanLimits'
+  operation: 'getUserById' | 'updateUserById' | 'listUsers' | 'disableUser' | 'enableUser' | 'deleteUser' | 'setTrialPeriod' | 'activatePermanent' | 'getAdminStats' | 'inviteUser' | 'resendInvite' | 'sendPasswordReset' | 'cancelPlan' | 'changeTenantPlan' | 'updatePlanLimits'
   userId?: string
   updateData?: {
     email?: string
@@ -186,6 +186,36 @@ serve(async (req) => {
         }
 
         result = { data: inviteData }
+        break
+      }
+
+      case 'resendInvite': {
+        if (!body.userId) return new Response(JSON.stringify({ error: 'userId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        
+        // Get user email from profile
+        const { data: resendProfile, error: resendProfileError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('email')
+          .eq('user_id', body.userId)
+          .single()
+        
+        if (resendProfileError || !resendProfile?.email) {
+          return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        const resendRedirectUrl = body.redirectTo || 'https://maintlyy.lovable.app/setup-password'
+        
+        const { data: resendData, error: resendError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          resendProfile.email,
+          { redirectTo: resendRedirectUrl }
+        )
+        
+        if (resendError) {
+          console.error('Resend invite error:', resendError)
+          return new Response(JSON.stringify({ error: 'Failed to resend invite: ' + resendError.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+
+        result = { data: { message: 'Invite resent successfully' } }
         break
       }
 

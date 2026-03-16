@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 
-type AdminOperation = 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser' | 'sendPasswordReset'
+type AdminOperation = 'getUserById' | 'updateUserById' | 'listUsers' | 'inviteUser' | 'resendInvite' | 'sendPasswordReset'
 
 interface AdminOperationRequest {
   operation: AdminOperation
@@ -83,6 +83,14 @@ export function useAdminOperations() {
     })
   }
 
+  const resendInvite = async (userId: string) => {
+    return callAdminOperation({
+      operation: 'resendInvite',
+      userId,
+      redirectTo: `${window.location.origin}/setup-password`,
+    })
+  }
+
   const sendPasswordReset = async (userId: string, redirectTo?: string) => {
     return callAdminOperation({
       operation: 'sendPasswordReset',
@@ -96,6 +104,7 @@ export function useAdminOperations() {
     updateUserById,
     listUsers,
     inviteUser,
+    resendInvite,
     sendPasswordReset,
   }
 }
