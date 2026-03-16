@@ -32,6 +32,7 @@ export function MobileNav() {
   const location = useLocation()
   const currentPath = location.pathname
   const { isAdmin, isSuperAdmin, canViewSystem } = usePermissions()
+  const planLimits = usePlanLimits()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const menuResourceMap: Record<string, string> = {
