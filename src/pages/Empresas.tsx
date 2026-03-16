@@ -27,6 +27,7 @@ interface EmpresaTerceira {
 
 export default function Empresas() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const planLimits = usePlanLimits()
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
