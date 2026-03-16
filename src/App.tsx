@@ -24,6 +24,7 @@ import SuperAdminPanel from "./pages/SuperAdminPanel";
 import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
 import Assinaturas from "./pages/Assinaturas";
+import MonitoramentoSites from "./pages/MonitoramentoSites";
 
 const queryClient = new QueryClient();
 
