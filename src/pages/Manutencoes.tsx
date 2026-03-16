@@ -684,7 +684,7 @@ export default function Manutencoes() {
                   <div className="text-sm">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}</div>
                   <div className="text-xs text-muted-foreground">{manutencao.hora_inicio}</div>
                 </TableCell>
-                <TableCell className="text-sm">{formatTempo(manutencao.tempo_total)}</TableCell>
+                <TableCell className="text-sm">{getTempoDisplay(manutencao)}</TableCell>
                 <TableCell>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${manutencao.status === "Finalizado" ? "bg-success/15 text-success border border-success/20" : "bg-warning/15 text-warning border border-warning/20"}`}>
                     {manutencao.status}
