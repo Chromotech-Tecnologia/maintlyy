@@ -616,7 +616,7 @@ export default function Manutencoes() {
                 <div><Label className="text-muted-foreground">Data/Hora Fim</Label><p>{viewingManutencao.data_fim ? `${new Date(viewingManutencao.data_fim).toLocaleDateString()} ${viewingManutencao.hora_fim || ''}` : '-'}</p></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label className="text-muted-foreground">Tempo Total</Label><p>{formatTempo(viewingManutencao.tempo_total)}</p></div>
+                <div><Label className="text-muted-foreground">Tempo Total</Label><p>{getTempoDisplay(viewingManutencao)}</p></div>
                 <div><Label className="text-muted-foreground">Status</Label><Badge variant={viewingManutencao.status === "Finalizado" ? "default" : "secondary"}>{viewingManutencao.status}</Badge></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
