@@ -23,6 +23,7 @@ const allNavItems = [
   { title: "Equipes", url: "/equipes", icon: UserCog, section: "Principal" },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar, section: "Principal" },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart, section: "Principal" },
+  { title: "Monitoramento", url: "/monitoramento", icon: Activity, section: "Principal" },
   { title: "Cofre de Senhas", url: "/cofre", icon: KeyRound, section: "Segurança" },
 ]
 
