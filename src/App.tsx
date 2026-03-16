@@ -25,7 +25,7 @@ import Relatorios from "./pages/Relatorios";
 import RelatorioPublico from "./pages/RelatorioPublico";
 import Assinaturas from "./pages/Assinaturas";
 import MonitoramentoSites from "./pages/MonitoramentoSites";
-
+import Auditoria from "./pages/Auditoria";
 const queryClient = new QueryClient();
 
 const App = () => (
