@@ -76,6 +76,7 @@ interface Manutencao {
 
 export default function CofreSenhas() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const permissions = usePermissions()
   const planLimits = usePlanLimits()
   
