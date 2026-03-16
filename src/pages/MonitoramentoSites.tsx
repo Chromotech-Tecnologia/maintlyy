@@ -331,6 +331,14 @@ export default function MonitoramentoSites() {
     setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
   }
 
+  const filteredUrls = urls.filter(u => {
+    const term = searchTerm.toLowerCase()
+    if (term && !u.nome.toLowerCase().includes(term) && !u.url.toLowerCase().includes(term)) return false
+    if (statusFilter === 'online' && !latestLogs[u.id]?.is_online) return false
+    if (statusFilter === 'offline' && (latestLogs[u.id]?.is_online !== false)) return false
+    return true
+  })
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
