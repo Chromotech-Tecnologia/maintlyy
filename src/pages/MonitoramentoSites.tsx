@@ -158,7 +158,7 @@ export default function MonitoramentoSites() {
   }, [user])
 
   const fetchClientes = useCallback(async () => {
-    const { data } = await supabase.from('clientes').select('id, nome_cliente')
+    const { data } = await supabase.from('clientes').select('id, nome_cliente, empresa_terceira_id')
     setClientes(data || [])
   }, [])
 
@@ -785,6 +785,33 @@ export default function MonitoramentoSites() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <Label>Cliente</Label>
+                <Select value={form.cliente_id || "none"} onValueChange={v => {
+                  const clienteId = v === "none" ? "" : v
+                  const cliente = clientes.find(c => c.id === clienteId)
+                  setForm(f => ({ ...f, cliente_id: clienteId, empresa_terceira_id: cliente?.empresa_terceira_id || "" }))
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                  <SelectContent portal={false}>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Empresa</Label>
+                <Select value={form.empresa_terceira_id || "none"} disabled>
+                  <SelectTrigger className="opacity-60"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                  <SelectContent portal={false}>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">Preenchida automaticamente pelo cliente</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <Label>Nome</Label>
                 <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Meu Site" />
               </div>
@@ -824,30 +851,10 @@ export default function MonitoramentoSites() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Empresa</Label>
-                <Select value={form.empresa_terceira_id || "none"} onValueChange={v => setForm(f => ({ ...f, empresa_terceira_id: v === "none" ? "" : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                  <SelectContent portal={false}>
-                    <SelectItem value="none">Nenhuma</SelectItem>
-                    {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-2 pt-6">
+                <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
+                <Label>Ativo</Label>
               </div>
-            </div>
-            <div>
-              <Label>Cliente</Label>
-              <Select value={form.cliente_id || "none"} onValueChange={v => setForm(f => ({ ...f, cliente_id: v === "none" ? "" : v }))}>
-                <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                <SelectContent portal={false}>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
-              <Label>Ativo</Label>
             </div>
           </div>
           <DialogFooter>
