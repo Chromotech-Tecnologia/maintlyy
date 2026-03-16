@@ -1,108 +1,103 @@
 
-# Plano: Sistema de Permissões Granulares com Visibilidade de Menu e Botões
 
-## ✅ CONCLUÍDO
+## Plano: Monitoramento Avançado com Testes Completos
 
-### Problemas Identificados e Corrigidos
+### Contexto
+Atualmente o módulo faz apenas um `fetch GET` simples. Vamos expandir para executar uma bateria completa de testes por ciclo, salvar resultados detalhados, e exibir um relatório rico na UI.
 
-#### 1. ✅ Senhas exibidas incorretamente
-- Corrigido em `CofreSenhas.tsx` - Agora usa `getDecryptedPassword(senha.id)` ao exibir senha visível
-
-#### 2. ✅ Permissões não refletem nos menus
-- Atualizado `AppSidebar.tsx` - Agora filtra itens do menu usando `canViewSystem` baseado no mapeamento resource_type
-
-#### 3. ✅ Botões de ação não respeitam permissões
-- Adicionado botão "Ver" (ícone Eye) em todas as páginas
-- Botões Editar/Criar/Excluir agora respeitam permissões `canEditSystem`, `canCreateSystem`, `canDeleteSystem`
-
-#### 4. ✅ Estrutura de permissões expandida
-Nova coluna `can_view_details` adicionada à tabela `user_system_permissions`:
-- `can_view` = **Ver Menu** (controla visibilidade no sidebar)
-- `can_view_details` = **Ver Detalhes** (permite abrir e visualizar registros)
-- `can_edit` = **Editar**
-- `can_create` = **Criar**
-- `can_delete` = **Excluir**
-
-#### 5. ✅ Criação e edição de usuários
-- Adicionadas policies RLS para permitir admins criarem e atualizarem user_profiles:
-  - `Admins can insert any profile` (INSERT)
-  - `Admins can update any profile` (UPDATE)
-
-#### 6. ✅ Formulário de Manutenções - Cliente Primeiro
-- Invertida ordem dos campos: Cliente primeiro, Empresa Terceira segundo
-- Empresa Terceira é selecionada automaticamente com base no cliente escolhido
-- Campo Empresa Terceira fica desabilitado quando cliente selecionado
-
-#### 7. ✅ Permissões de Empresas Terceiras
-- Adicionadas colunas `can_edit` e `can_delete` em `user_empresa_permissions`
-- Criado componente `EmpresaPermissionsTab` para gerenciar permissões por empresa
-- Adicionada nova aba "Empresas" no dialog de permissões
-- Usuários com permissão de criar clientes podem ver lista de empresas
-
-#### 8. ✅ Permissões Granulares de Senhas por Cliente
-- Criado componente `PasswordPermissionsTab` com interface expandida
-- Para cada cliente, lista todas as senhas com checkboxes individuais (Ver, Editar)
-- Usa tabela `user_password_permissions` para controle granular
-- Interface colapsível por cliente com carregamento sob demanda
+### Limitações Técnicas Importantes
+- **ICMP Ping**: Impossivel em Edge Functions (Deno não tem socket raw). Alternativa: TCP connect test nas portas 80/443 (simulado via fetch com timeout curto).
+- **Tempo real**: Edge Functions não suportam WebSockets persistentes. A melhor opção é usar **Supabase Realtime** (subscription na tabela `url_check_logs`) para que a UI atualize instantaneamente quando novos logs são inseridos, combinado com polling frequente (mínimo 1 min via pg_cron). Isso dá experiência "quase tempo real".
+- **IPs/modems/routers**: Supabase Edge Functions rodam na cloud, então só conseguem testar IPs públicos acessíveis pela internet (não IPs de rede local).
 
 ---
 
-## Arquivos Modificados
+### 1. Migração de Banco de Dados
 
-1. **Migração SQL** - Nova coluna `can_view_details` + função `has_system_permission` atualizada
-2. **Migração SQL 2** - Policies para admins em user_profiles + colunas em user_empresa_permissions
-3. **src/hooks/usePermissions.tsx** - Adicionado `canViewDetailsSystem()`
-4. **src/components/layout/AppSidebar.tsx** - Filtro de menus por `canViewSystem`
-5. **src/pages/PerfilUsuarios.tsx** - UI de permissões com 4 abas (Clientes, Empresas, Sistema, Senhas)
-6. **src/pages/CofreSenhas.tsx** - Fix exibição de senha + botões condicionais
-7. **src/pages/Clientes.tsx** - Botões condicionais + dialog de visualização
-8. **src/pages/Manutencoes.tsx** - Cliente primeiro + empresa auto-selecionada
-9. **src/pages/Empresas.tsx** - Botões condicionais + dialog de visualização
-10. **src/pages/Equipes.tsx** - Botões condicionais + dialog de visualização
-11. **src/pages/TiposManutencao.tsx** - Botões condicionais + dialog de visualização
-12. **src/components/permissions/PasswordPermissionsTab.tsx** - NOVO - Aba de permissões de senhas
-13. **src/components/permissions/EmpresaPermissionsTab.tsx** - NOVO - Aba de permissões de empresas
+Adicionar coluna `test_results` (JSONB) na tabela `url_check_logs` para armazenar todos os testes detalhados de cada ciclo:
+
+```sql
+ALTER TABLE url_check_logs 
+ADD COLUMN IF NOT EXISTS test_results jsonb DEFAULT '[]'::jsonb;
+
+-- Adicionar campo keyword na monitored_urls para verificação de conteúdo
+ALTER TABLE monitored_urls 
+ADD COLUMN IF NOT EXISTS keyword text DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS tipo text DEFAULT 'url'; -- 'url' ou 'ip'
+```
+
+Estrutura do `test_results` (array de objetos):
+```json
+[
+  {"test": "http_get", "status": "ok", "value": "200", "time_ms": 342, "detail": "HTTP 200 OK"},
+  {"test": "http_head", "status": "ok", "value": "200", "time_ms": 120, "detail": "HEAD 200"},
+  {"test": "ssl_check", "status": "ok", "value": "45 dias", "time_ms": 15, "detail": "Expira em 2026-04-30"},
+  {"test": "dns_resolve", "status": "ok", "value": "resolved", "time_ms": 23, "detail": "DNS resolvido com sucesso"},
+  {"test": "tcp_80", "status": "ok", "value": "open", "time_ms": 45, "detail": "Porta 80 aberta"},
+  {"test": "tcp_443", "status": "ok", "value": "open", "time_ms": 52, "detail": "Porta 443 aberta"},
+  {"test": "keyword", "status": "fail", "value": "not found", "time_ms": 0, "detail": "Palavra 'login' não encontrada"},
+  {"test": "redirect_check", "status": "ok", "value": "1 redirect", "time_ms": 0, "detail": "Redirecionou para https://..."}
+]
+```
+
+### 2. Edge Function `check-urls` Expandida
+
+Reescrever para executar por URL a seguinte bateria de testes:
+
+| Teste | Método | O que mede |
+|-------|--------|------------|
+| **HTTP GET** | fetch GET | Status code + response time + conteúdo |
+| **HTTP HEAD** | fetch HEAD | Tempo de resposta sem body |
+| **TCP Port 80** | fetch com timeout curto para http://host:80 | Porta aberta |
+| **TCP Port 443** | fetch com timeout curto para https://host:443 | Porta aberta |
+| **DNS Resolve** | Tentar fetch e capturar erros de DNS | Resolução DNS ok |
+| **SSL Check** | Extrair info do certificado via resposta HTTPS | Validade SSL |
+| **Keyword Check** | Buscar palavra-chave no body (se configurada) | Conteúdo esperado presente |
+| **Redirect Check** | Verificar se houve redirects | Quantos e para onde |
+| **Content-Type** | Verificar header content-type | Tipo de conteúdo retornado |
+
+Para IPs: executar apenas TCP 80/443 + HTTP GET (sem SSL/DNS check).
+
+Cada teste é executado individualmente com try/catch e tempo medido. Todos os resultados vão no array `test_results`.
+
+### 3. Frontend - Nova Aba "Detalhes" + Link Externo
+
+**Mudanças na UI:**
+
+- **Botão "Abrir Site"**: Link externo (`target="_blank"`) ao lado de cada URL na lista
+- **Nova aba "Detalhes do Monitoramento"**: Ao clicar em um site, mostra:
+  - Resumo do último ciclo com todos os testes em cards/tabela colorida (OK verde, FAIL vermelho)
+  - Cada teste: nome, resultado, tempo, status, timestamp
+  - Histórico dos últimos N ciclos (configurável, default 10)
+  - Expandir cada ciclo para ver todos os testes daquela rodada
+- **Campo "Palavra-chave"** no dialog de criação/edição de URL
+- **Campo "Tipo"**: URL ou IP (para modems/routers/servers)
+- **Supabase Realtime**: Subscription na tabela `url_check_logs` para atualizar a UI automaticamente quando novos logs chegam
+
+### 4. Monitoramento "Tempo Real"
+
+Implementar Supabase Realtime listener:
+```typescript
+supabase.channel('url-checks')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'url_check_logs' }, 
+    payload => { /* atualizar estado local */ })
+  .subscribe()
+```
+Isso faz com que quando o cron/scheduler insere um novo log, a UI atualiza instantaneamente sem refresh. Combinado com intervalo mínimo de 1 minuto no pg_cron, é o mais próximo de "tempo real" possível no nosso stack.
+
+### 5. Relatório por Email Atualizado
+
+Atualizar `send-monitor-report` para incluir os resultados detalhados dos testes na tabela HTML do email.
 
 ---
 
-## Fluxo de Permissões Implementado
+### Arquivos a Modificar/Criar
 
-```
-1. Usuário sem "Ver Menu" -> Menu NÃO aparece
-2. Usuário com "Ver Menu" apenas -> Menu aparece, vê lista, não pode abrir/editar
-3. Usuário com "Ver Detalhes" -> Pode abrir e ver detalhes (botão Ver)
-4. Usuário com "Editar" -> Botão Editar aparece
-5. Usuário com "Criar" -> Botão Criar/Novo aparece  
-6. Usuário com "Excluir" -> Botão Excluir aparece
-```
+1. **Migration SQL** - Adicionar `test_results`, `keyword`, `tipo`
+2. **`supabase/functions/check-urls/index.ts`** - Reescrever com bateria completa de testes
+3. **`src/pages/MonitoramentoSites.tsx`** - Nova aba Detalhes, botão abrir site, campo keyword/tipo, Realtime subscription
+4. **`supabase/functions/send-monitor-report/index.ts`** - Incluir detalhes dos testes no relatório
+5. **`src/integrations/supabase/types.ts`** - Atualizado automaticamente após migration
 
-## Mapeamento Resource x Menu
+### Estimativa: ~5 tarefas principais
 
-| Menu                  | resource_type       |
-|-----------------------|---------------------|
-| Dashboard             | dashboard           |
-| Manutenções           | manutencoes         |
-| Clientes              | clientes            |
-| Empresas Terceiras    | empresas_terceiras  |
-| Equipes               | equipes             |
-| Tipos de Manutenção   | tipos_manutencao    |
-| Cofre de Senhas       | cofre_senhas        |
-| Perfis de Usuários    | perfis_usuarios     |
-| Permissões            | permissoes          |
-
-## Estrutura de Permissões Atualizada
-
-```
-Módulo Sistema (user_system_permissions):
-  - Ver Menu, Ver Detalhes, Editar, Criar, Excluir
-
-Clientes (user_client_permissions):
-  - Por cliente: Ver, Editar, Criar, Excluir
-
-Empresas Terceiras (user_empresa_permissions):
-  - Por empresa: Ver, Editar, Criar Manutenção, Excluir
-
-Senhas (user_password_permissions):
-  - Por senha individual: Ver, Editar
-  - Agrupadas por cliente na interface
-```
