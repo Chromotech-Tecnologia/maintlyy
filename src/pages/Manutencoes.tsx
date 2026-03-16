@@ -730,7 +730,7 @@ export default function Manutencoes() {
                   <div><p className="mobile-card-label">Tipo</p><p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p></div>
                   <div><p className="mobile-card-label">Equipes</p><p className="text-xs font-medium">{getEquipeNames(manutencao)}</p></div>
                   <div><p className="mobile-card-label">Data</p><p className="text-xs font-medium">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')} {manutencao.hora_inicio}</p></div>
-                  <div><p className="mobile-card-label">Tempo</p><p className="text-xs font-medium">{formatTempo(manutencao.tempo_total)}</p></div>
+                  <div><p className="mobile-card-label">Tempo</p><p className="text-xs font-medium">{getTempoDisplay(manutencao)}</p></div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   {(isAdmin || canViewDetailsSystem('manutencoes')) && (
