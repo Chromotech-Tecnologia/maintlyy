@@ -73,11 +73,47 @@ export function usePlanLimits(): PlanLimits {
       // Get admin's profile with plan_id
       const { data: profileRaw } = await supabase
         .from('user_profiles')
-        .select('plan_id, is_admin')
+        .select('plan_id, is_admin, is_super_admin')
         .eq('user_id', user.id)
         .maybeSingle()
 
       const profile = profileRaw as any
+
+      // Super admin always has full access
+      if (profile?.is_super_admin) {
+        setLimits({
+          planName: 'Super Admin',
+          planTipo: 'super_admin',
+          maxUsers: 0,
+          maxTeams: 0,
+          maxEmpresas: 0,
+          maxManutencoes: 0,
+          maxSenhas: 0,
+          maxUrls: 0,
+          currentUsers: 0,
+          currentTeams: 0,
+          currentEmpresas: 0,
+          currentManutencoesMes: 0,
+          currentSenhas: 0,
+          currentUrls: 0,
+          canCreateUser: true,
+          canCreateTeam: true,
+          canCreateEmpresa: true,
+          canCreateManutencao: true,
+          canCreateSenha: true,
+          canCreateUrl: true,
+          suporteEmail: true,
+          suporteWhatsapp: true,
+          relatoriosAvancados: true,
+          linksPublicos: true,
+          importacaoExcel: true,
+          suporteEmailEndereco: null,
+          suporteWhatsappNumero: null,
+          loading: false,
+        })
+        return
+      }
+
       if (!profile || !profile.is_admin) {
         setLimits(prev => ({ ...prev, loading: false }))
         return
