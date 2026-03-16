@@ -458,19 +458,11 @@ export default function MonitoramentoSites() {
                 )}
               </CardContent>
             </Card>
-          ) : (() => {
-            const filtered = urls.filter(u => {
-              const term = searchTerm.toLowerCase()
-              if (term && !u.nome.toLowerCase().includes(term) && !u.url.toLowerCase().includes(term)) return false
-              if (statusFilter === 'online' && !latestLogs[u.id]?.is_online) return false
-              if (statusFilter === 'offline' && (latestLogs[u.id]?.is_online !== false)) return false
-              return true
-            })
-            return filtered.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">Nenhum resultado encontrado</div>
-            ) : (
+          ) : filteredUrls.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Nenhum resultado encontrado</div>
+          ) : (
             <div className="space-y-3">
-              {filtered.map((u) => {
+              {filteredUrls.map((u) => {
                 const log = latestLogs[u.id]
                 const tests = (log?.test_results || []) as TestResult[]
                 const testsOk = tests.filter(t => t.status === 'ok').length
