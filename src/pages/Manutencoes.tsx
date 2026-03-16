@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
-import { ExcelImport } from "@/components/ExcelImport"
+  const _auditImport = null // useAuditLog imported above
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
