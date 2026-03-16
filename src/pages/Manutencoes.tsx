@@ -356,7 +356,7 @@ export default function Manutencoes() {
         </div>
         
         <div className="flex gap-2">
-          <ExcelImport onImportComplete={fetchData} />
+          {planLimits.importacaoExcel && <ExcelImport onImportComplete={fetchData} />}
           {(isAdmin || canCreateSystem('manutencoes')) && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>

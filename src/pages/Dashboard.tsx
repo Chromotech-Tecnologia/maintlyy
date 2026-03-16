@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 
 interface DashboardStats {
   totalManutencoes: number
@@ -44,6 +45,7 @@ interface ManutencaoRecente {
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const planLimits = usePlanLimits()
   const [stats, setStats] = useState<DashboardStats>({
     totalManutencoes: 0, totalClientes: 0, manutencoesPendentes: 0, totalSenhas: 0, totalHoras: 0
   })
@@ -248,14 +250,16 @@ export default function Dashboard() {
           <p className="page-subtitle">Visão geral do sistema — {currentYear}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline"
-            className="rounded-xl h-11 px-4"
-            onClick={() => setReportOpen(true)}
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Relatório</span>
-          </Button>
+          {planLimits.relatoriosAvancados && (
+            <Button 
+              variant="outline"
+              className="rounded-xl h-11 px-4"
+              onClick={() => setReportOpen(true)}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Relatório</span>
+            </Button>
+          )}
           <Button 
             className="gradient-primary border-0 shadow-lg shadow-primary/25 rounded-xl h-11 px-5"
             onClick={() => navigate('/manutencoes')}

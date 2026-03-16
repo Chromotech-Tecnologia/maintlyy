@@ -36,6 +36,11 @@ interface LandingPlan {
   destaque: boolean
   ordem: number
   offer_free_signup: boolean
+  suporte_email: boolean
+  suporte_whatsapp: boolean
+  relatorios_avancados: boolean
+  links_publicos: boolean
+  importacao_excel: boolean
 }
 
 const features = [
@@ -759,6 +764,15 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
     limitItems.push({ icon: "🌐", text: plan.max_urls >= 999 ? "URLs ilimitadas" : `Até ${plan.max_urls} URL${plan.max_urls > 1 ? "s" : ""} monitorada${plan.max_urls > 1 ? "s" : ""}` })
   }
 
+  // Feature toggle items
+  const featureToggleItems: { icon: string; text: string; enabled: boolean }[] = [
+    { icon: "📧", text: "Suporte por email", enabled: plan.suporte_email },
+    { icon: "💬", text: "Suporte exclusivo pelo WhatsApp", enabled: plan.suporte_whatsapp },
+    { icon: "📊", text: "Relatórios avançados com PDF", enabled: plan.relatorios_avancados },
+    { icon: "🔗", text: "Links públicos de relatórios", enabled: plan.links_publicos },
+    { icon: "📥", text: "Importação via Excel", enabled: plan.importacao_excel },
+  ]
+
   return (
     <div
       className={`relative glass-card rounded-2xl p-6 pt-8 flex flex-col w-full transition-all duration-500 ease-in-out hover:-translate-y-1 hover:shadow-lg ${
@@ -791,6 +805,16 @@ function PlanCard({ plan, onClick }: { plan: LandingPlan; onClick: () => void })
         {limitItems.map((item, i) => (
           <li key={`limit-${i}`} className="flex items-start gap-2 text-sm text-foreground">
             <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <span>{item.icon} {item.text}</span>
+          </li>
+        ))}
+        {featureToggleItems.map((item, i) => (
+          <li key={`feat-${i}`} className={`flex items-start gap-2 text-sm ${!item.enabled ? "text-muted-foreground/60 line-through" : "text-foreground"}`}>
+            {item.enabled ? (
+              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            ) : (
+              <XCircle className="h-4 w-4 text-destructive/60 mt-0.5 shrink-0" />
+            )}
             <span>{item.icon} {item.text}</span>
           </li>
         ))}

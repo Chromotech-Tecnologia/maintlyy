@@ -23,6 +23,14 @@ interface PlanLimits {
   canCreateManutencao: boolean
   canCreateSenha: boolean
   canCreateUrl: boolean
+  // Feature toggles
+  suporteEmail: boolean
+  suporteWhatsapp: boolean
+  relatoriosAvancados: boolean
+  linksPublicos: boolean
+  importacaoExcel: boolean
+  suporteEmailEndereco: string | null
+  suporteWhatsappNumero: string | null
   loading: boolean
 }
 
@@ -49,6 +57,13 @@ export function usePlanLimits(): PlanLimits {
     canCreateManutencao: true,
     canCreateSenha: true,
     canCreateUrl: true,
+    suporteEmail: false,
+    suporteWhatsapp: false,
+    relatoriosAvancados: false,
+    linksPublicos: false,
+    importacaoExcel: false,
+    suporteEmailEndereco: null,
+    suporteWhatsappNumero: null,
     loading: true,
   })
 
@@ -146,6 +161,13 @@ export function usePlanLimits(): PlanLimits {
           canCreateManutencao: false,
           canCreateSenha: false,
           canCreateUrl: false,
+          suporteEmail: false,
+          suporteWhatsapp: false,
+          relatoriosAvancados: false,
+          linksPublicos: false,
+          importacaoExcel: false,
+          suporteEmailEndereco: null,
+          suporteWhatsappNumero: null,
           loading: false,
         })
         return
@@ -154,7 +176,7 @@ export function usePlanLimits(): PlanLimits {
       // Fetch the plan details
       const { data: planRaw } = await supabase
         .from('landing_plans')
-        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, max_urls')
+        .select('nome, tipo, max_usuarios, max_equipes, max_manutencoes, max_empresas, max_senhas, max_urls, suporte_email, suporte_whatsapp, relatorios_avancados, links_publicos, importacao_excel, suporte_email_endereco, suporte_whatsapp_numero')
         .eq('id', profile.plan_id)
         .maybeSingle()
 
@@ -205,6 +227,13 @@ export function usePlanLimits(): PlanLimits {
         canCreateManutencao,
         canCreateSenha,
         canCreateUrl,
+        suporteEmail: plan.suporte_email ?? false,
+        suporteWhatsapp: plan.suporte_whatsapp ?? false,
+        relatoriosAvancados: plan.relatorios_avancados ?? false,
+        linksPublicos: plan.links_publicos ?? false,
+        importacaoExcel: plan.importacao_excel ?? false,
+        suporteEmailEndereco: plan.suporte_email_endereco ?? null,
+        suporteWhatsappNumero: plan.suporte_whatsapp_numero ?? null,
         loading: false,
       })
     }

@@ -243,6 +243,8 @@ export type Database = {
           descricao: string | null
           destaque: boolean | null
           id: string
+          importacao_excel: boolean | null
+          links_publicos: boolean | null
           max_empresas: number | null
           max_equipes: number | null
           max_manutencoes: number | null
@@ -254,6 +256,11 @@ export type Database = {
           ordem: number | null
           preco: string | null
           recursos: Json
+          relatorios_avancados: boolean | null
+          suporte_email: boolean | null
+          suporte_email_endereco: string | null
+          suporte_whatsapp: boolean | null
+          suporte_whatsapp_numero: string | null
           texto_botao: string
           tipo: string
           updated_at: string | null
@@ -267,6 +274,8 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          importacao_excel?: boolean | null
+          links_publicos?: boolean | null
           max_empresas?: number | null
           max_equipes?: number | null
           max_manutencoes?: number | null
@@ -278,6 +287,11 @@ export type Database = {
           ordem?: number | null
           preco?: string | null
           recursos?: Json
+          relatorios_avancados?: boolean | null
+          suporte_email?: boolean | null
+          suporte_email_endereco?: string | null
+          suporte_whatsapp?: boolean | null
+          suporte_whatsapp_numero?: string | null
           texto_botao?: string
           tipo?: string
           updated_at?: string | null
@@ -291,6 +305,8 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean | null
           id?: string
+          importacao_excel?: boolean | null
+          links_publicos?: boolean | null
           max_empresas?: number | null
           max_equipes?: number | null
           max_manutencoes?: number | null
@@ -302,6 +318,11 @@ export type Database = {
           ordem?: number | null
           preco?: string | null
           recursos?: Json
+          relatorios_avancados?: boolean | null
+          suporte_email?: boolean | null
+          suporte_email_endereco?: string | null
+          suporte_whatsapp?: boolean | null
+          suporte_whatsapp_numero?: string | null
           texto_botao?: string
           tipo?: string
           updated_at?: string | null
