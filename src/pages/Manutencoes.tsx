@@ -218,6 +218,7 @@ export default function Manutencoes() {
     try {
       const { error } = await supabase.from('manutencoes').delete().eq('id', id)
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'manutencao', resourceId: id })
       toast.success("Manutenção excluída!")
       fetchData()
     } catch (error: any) {
