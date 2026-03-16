@@ -227,11 +227,22 @@ export default function Manutencoes() {
     return m.equipes?.nome_equipe || '-'
   }
 
-  const formatTempo = (minutos?: number) => {
-    if (!minutos) return "-"
+  const formatTempo = (minutos?: number | null) => {
+    if (minutos === null || minutos === undefined) return "-"
+    if (minutos < 0) return "-"
     const horas = Math.floor(minutos / 60)
     const mins = minutos % 60
     return `${horas}h ${mins}m`
+  }
+
+  const getTempoDisplay = (m: any) => {
+    if (m.tempo_total !== null && m.tempo_total !== undefined) return formatTempo(m.tempo_total)
+    // Fallback: calculate from dates if available
+    if (m.data_inicio && m.hora_inicio && m.data_fim && m.hora_fim) {
+      const calc = calculateTempo(m.data_inicio, m.hora_inicio, m.data_fim, m.hora_fim)
+      return formatTempo(calc)
+    }
+    return "-"
   }
 
   // Filtered data
@@ -605,7 +616,7 @@ export default function Manutencoes() {
                 <div><Label className="text-muted-foreground">Data/Hora Fim</Label><p>{viewingManutencao.data_fim ? `${new Date(viewingManutencao.data_fim).toLocaleDateString()} ${viewingManutencao.hora_fim || ''}` : '-'}</p></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label className="text-muted-foreground">Tempo Total</Label><p>{formatTempo(viewingManutencao.tempo_total)}</p></div>
+                <div><Label className="text-muted-foreground">Tempo Total</Label><p>{getTempoDisplay(viewingManutencao)}</p></div>
                 <div><Label className="text-muted-foreground">Status</Label><Badge variant={viewingManutencao.status === "Finalizado" ? "default" : "secondary"}>{viewingManutencao.status}</Badge></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -673,7 +684,7 @@ export default function Manutencoes() {
                   <div className="text-sm">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}</div>
                   <div className="text-xs text-muted-foreground">{manutencao.hora_inicio}</div>
                 </TableCell>
-                <TableCell className="text-sm">{formatTempo(manutencao.tempo_total)}</TableCell>
+                <TableCell className="text-sm">{getTempoDisplay(manutencao)}</TableCell>
                 <TableCell>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${manutencao.status === "Finalizado" ? "bg-success/15 text-success border border-success/20" : "bg-warning/15 text-warning border border-warning/20"}`}>
                     {manutencao.status}
@@ -719,7 +730,7 @@ export default function Manutencoes() {
                   <div><p className="mobile-card-label">Tipo</p><p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p></div>
                   <div><p className="mobile-card-label">Equipes</p><p className="text-xs font-medium">{getEquipeNames(manutencao)}</p></div>
                   <div><p className="mobile-card-label">Data</p><p className="text-xs font-medium">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')} {manutencao.hora_inicio}</p></div>
-                  <div><p className="mobile-card-label">Tempo</p><p className="text-xs font-medium">{formatTempo(manutencao.tempo_total)}</p></div>
+                  <div><p className="mobile-card-label">Tempo</p><p className="text-xs font-medium">{getTempoDisplay(manutencao)}</p></div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   {(isAdmin || canViewDetailsSystem('manutencoes')) && (
