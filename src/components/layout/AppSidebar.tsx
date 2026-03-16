@@ -20,6 +20,7 @@ const mainItems = [
   { title: "Equipes", url: "/equipes", icon: UserCog },
   { title: "Tipos de Manutenção", url: "/tipos-manutencao", icon: Calendar },
   { title: "Relatórios", url: "/relatorios", icon: FileBarChart },
+  { title: "Monitoramento", url: "/monitoramento", icon: Activity },
 ]
 
 const securityItems = [
