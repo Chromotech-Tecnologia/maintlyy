@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [statusData, setStatusData] = useState<any[]>([])
   const [teamData, setTeamData] = useState<any[]>([])
   const [weeklyData, setWeeklyData] = useState<any[]>([])
+  const [clienteChartData, setClienteChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Filters
