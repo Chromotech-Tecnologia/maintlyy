@@ -16,6 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [profileChecked, setProfileChecked] = useState(false)
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const [accountStatus, setAccountStatus] = useState<string>('active')
+  const [creatingProfile, setCreatingProfile] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -28,7 +29,45 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .maybeSingle()
 
       if (!data) {
-        setHasProfile(false)
+        // No profile at all — this is a new self-registered tenant
+        // Auto-create tenant admin profile with free plan
+        setCreatingProfile(true)
+        try {
+          let planId: string | null = null
+          const { data: freePlan } = await supabase
+            .from('landing_plans')
+            .select('id')
+            .eq('offer_free_signup', true)
+            .eq('ativo', true)
+            .order('ordem')
+            .limit(1)
+            .maybeSingle()
+
+          if (freePlan) planId = freePlan.id
+
+          const { error: insertError } = await supabase.from('user_profiles').insert([{
+            user_id: user.id,
+            email: user.email || '',
+            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || '',
+            phone: user.user_metadata?.phone || '',
+            is_admin: true,
+            account_status: 'active',
+            plan_id: planId,
+          }])
+
+          if (insertError) {
+            console.error('Error auto-creating tenant profile:', insertError)
+            setHasProfile(false)
+          } else {
+            setHasProfile(true)
+            setAccountStatus('active')
+          }
+        } catch (err) {
+          console.error('Error creating profile:', err)
+          setHasProfile(false)
+        } finally {
+          setCreatingProfile(false)
+        }
       } else {
         const status = (data as any).account_status || 'active'
         setAccountStatus(status)
@@ -53,12 +92,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     checkProfile()
   }, [user])
 
-  if (loading) {
+  if (loading || creatingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">{creatingProfile ? 'Configurando sua conta...' : 'Carregando...'}</p>
         </div>
       </div>
     )
