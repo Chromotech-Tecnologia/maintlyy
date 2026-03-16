@@ -504,7 +504,7 @@ export default function MonitoramentoSites() {
                           <TableCell>{getStatusBadge(log.is_online)}</TableCell>
                           <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
                           <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
-                          <TableCell className="text-xs text-red-500 max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                          <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
                         </TableRow>
                       ))}
                       {(!logs[selectedUrl] || logs[selectedUrl].length === 0) && (
