@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label"
 import { Plus, Calendar, Edit, Trash2, Eye, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -28,6 +29,7 @@ interface TipoManutencao {
 
 export default function TiposManutencao() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const [tipos, setTipos] = useState<TipoManutencao[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,10 +70,12 @@ export default function TiposManutencao() {
       if (editingId) {
         const { error } = await supabase.from('tipos_manutencao').update(sanitizedData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'tipo_manutencao', resourceId: editingId, resourceName: sanitizedData.nome_tipo_manutencao })
         toast.success("Tipo de manutenção atualizado com sucesso!")
       } else {
-        const { error } = await supabase.from('tipos_manutencao').insert([{ ...sanitizedData, user_id: user.id }])
+        const { data: inserted, error } = await supabase.from('tipos_manutencao').insert([{ ...sanitizedData, user_id: user.id }]).select('id').single()
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'tipo_manutencao', resourceId: inserted?.id, resourceName: sanitizedData.nome_tipo_manutencao })
         toast.success("Tipo de manutenção criado com sucesso!")
       }
       setOpen(false); setEditingId(null); form.reset(); fetchTipos()
@@ -88,8 +92,10 @@ export default function TiposManutencao() {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este tipo de manutenção?")) return
     try {
+      const tipo = tipos.find(t => t.id === id)
       const { error } = await supabase.from('tipos_manutencao').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'tipo_manutencao', resourceId: id, resourceName: tipo?.nome_tipo_manutencao })
       toast.success("Tipo de manutenção excluído com sucesso!"); fetchTipos()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }

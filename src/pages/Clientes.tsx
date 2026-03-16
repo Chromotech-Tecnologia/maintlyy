@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Plus, Building2, MapPin, Phone, Mail, Edit, Trash2, Eye, Search, Upload, Image } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -43,6 +44,7 @@ interface EmpresaTerceira {
 
 export default function Clientes() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const permissions = usePermissions()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = permissions
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -113,6 +115,7 @@ export default function Clientes() {
         const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
         const { error } = await supabase.from('clientes').update(updateData).eq('id', editingId).eq('user_id', user.id)
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'cliente', resourceId: editingId, resourceName: sanitizedData.nome_cliente })
         toast.success("Cliente atualizado com sucesso!")
       } else {
         const { data: inserted, error } = await supabase.from('clientes').insert([{ ...sanitizedData, user_id: user.id }]).select('id').single()
@@ -121,6 +124,7 @@ export default function Clientes() {
           const logoUrl = await uploadLogo(inserted.id)
           if (logoUrl) await supabase.from('clientes').update({ logo_url: logoUrl }).eq('id', inserted.id)
         }
+        auditLog({ action: 'create', resourceType: 'cliente', resourceId: inserted?.id, resourceName: sanitizedData.nome_cliente })
         toast.success("Cliente criado com sucesso!")
       }
       setOpen(false); setEditingId(null); setLogoFile(null); setLogoPreview(null); form.reset(); fetchData()
@@ -139,8 +143,10 @@ export default function Clientes() {
     if (!user) return
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return
     try {
+      const cliente = clientes.find(c => c.id === id)
       const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente })
       toast.success("Cliente excluído com sucesso!"); fetchData()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
   }

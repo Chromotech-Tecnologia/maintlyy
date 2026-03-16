@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label"
 import { Plus, UserCog, Edit, Trash2, Users, Eye, Search } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -27,6 +28,7 @@ interface Equipe {
 
 export default function Equipes() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const planLimits = usePlanLimits()
   const [equipes, setEquipes] = useState<Equipe[]>([])
@@ -86,13 +88,16 @@ export default function Equipes() {
           .eq('user_id', user.id)
 
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'equipe', resourceId: editingId, resourceName: sanitizedData.nome_equipe })
         toast.success("Equipe atualizada com sucesso!")
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('equipes')
           .insert([{ ...sanitizedData, user_id: user.id }])
+          .select('id').single()
 
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'equipe', resourceId: inserted?.id, resourceName: sanitizedData.nome_equipe })
         toast.success("Equipe criada com sucesso!")
       }
 
@@ -124,6 +129,7 @@ export default function Equipes() {
     if (!confirm("Tem certeza que deseja excluir esta equipe?")) return
 
     try {
+      const equipe = equipes.find(e => e.id === id)
       const { error } = await supabase
         .from('equipes')
         .delete()
@@ -131,6 +137,7 @@ export default function Equipes() {
         .eq('user_id', user.id)
 
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'equipe', resourceId: id, resourceName: equipe?.nome_equipe })
       toast.success("Equipe excluída com sucesso!")
       fetchEquipes()
     } catch (error: any) {

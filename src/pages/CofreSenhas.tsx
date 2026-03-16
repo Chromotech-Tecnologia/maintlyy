@@ -15,6 +15,7 @@ import { Plus, KeyRound, Edit, Trash2, Eye, EyeOff, Copy, ExternalLink, Search, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
@@ -75,6 +76,7 @@ interface Manutencao {
 
 export default function CofreSenhas() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const permissions = usePermissions()
   const planLimits = usePlanLimits()
   
@@ -265,14 +267,17 @@ export default function CofreSenhas() {
           .eq('user_id', user.id)
 
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'cofre_senha', resourceId: editingId, resourceName: cleanData.nome_acesso })
         toast.success("Senha atualizada com sucesso!")
       } else {
         console.log('Creating new password')
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('cofre_senhas')
           .insert([{ ...cleanData, user_id: user.id }])
+          .select('id').single()
 
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'cofre_senha', resourceId: inserted?.id, resourceName: cleanData.nome_acesso })
         toast.success("Senha adicionada com sucesso!")
       }
 
@@ -322,6 +327,8 @@ export default function CofreSenhas() {
       const { error } = await query
 
       if (error) throw error
+      const senhaItem = senhasEncriptadas.find(s => s.id === id)
+      auditLog({ action: 'delete', resourceType: 'cofre_senha', resourceId: id, resourceName: senhaItem?.nome_acesso })
       toast.success("Senha excluída com sucesso!")
       fetchData()
     } catch (error: any) {

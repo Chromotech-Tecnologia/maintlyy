@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuditLog } from "@/hooks/useAuditLog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
@@ -26,6 +27,7 @@ interface EmpresaTerceira {
 
 export default function Empresas() {
   const { user } = useAuth()
+  const { log: auditLog } = useAuditLog()
   const { isAdmin, canViewDetailsSystem, canEditSystem, canCreateSystem, canDeleteSystem } = usePermissions()
   const planLimits = usePlanLimits()
   const [empresas, setEmpresas] = useState<EmpresaTerceira[]>([])
@@ -67,10 +69,12 @@ export default function Empresas() {
       if (editingId) {
         const { error } = await supabase.from('empresas_terceiras').update({ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa }).eq('id', editingId)
         if (error) throw error
+        auditLog({ action: 'update', resourceType: 'empresa', resourceId: editingId, resourceName: nomeEmpresa.trim() })
         toast.success("Empresa atualizada!")
       } else {
-        const { error } = await supabase.from('empresas_terceiras').insert([{ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa, user_id: user.id }])
+        const { data: inserted, error } = await supabase.from('empresas_terceiras').insert([{ nome_empresa: nomeEmpresa.trim(), ativo: ativoEmpresa, user_id: user.id }]).select('id').single()
         if (error) throw error
+        auditLog({ action: 'create', resourceType: 'empresa', resourceId: inserted?.id, resourceName: nomeEmpresa.trim() })
         toast.success("Empresa criada!")
       }
       setOpen(false); setEditingId(null); setNomeEmpresa(""); setAtivoEmpresa(true); fetchEmpresas()
@@ -85,8 +89,10 @@ export default function Empresas() {
 
   const handleDelete = async (id: string) => {
     try {
+      const empresa = empresas.find(e => e.id === id)
       const { error } = await supabase.from('empresas_terceiras').delete().eq('id', id)
       if (error) throw error
+      auditLog({ action: 'delete', resourceType: 'empresa', resourceId: id, resourceName: empresa?.nome_empresa })
       toast.success("Empresa excluída!"); fetchEmpresas()
     } catch (error: any) { toast.error(error.message) }
   }
