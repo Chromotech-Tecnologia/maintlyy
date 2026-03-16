@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
@@ -15,7 +15,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle } from "lucide-react"
+import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp } from "lucide-react"
+
+interface TestResult {
+  test: string
+  status: 'ok' | 'fail' | 'skip'
+  value: string
+  time_ms: number
+  detail: string
+}
 
 interface MonitoredUrl {
   id: string
@@ -26,6 +34,8 @@ interface MonitoredUrl {
   check_interval_minutes: number
   ativo: boolean
   created_at: string
+  keyword?: string | null
+  tipo?: string
 }
 
 interface CheckLog {
@@ -37,6 +47,7 @@ interface CheckLog {
   error_message: string | null
   screenshot_url: string | null
   checked_at: string
+  test_results?: TestResult[]
 }
 
 interface MonitorSchedule {
@@ -48,7 +59,19 @@ interface MonitorSchedule {
   ativo: boolean
 }
 
-const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "" }
+const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "", keyword: "", tipo: "url" }
+
+const TEST_LABELS: Record<string, string> = {
+  http_get: 'HTTP GET',
+  http_head: 'HTTP HEAD',
+  content_type: 'Content-Type',
+  redirect_check: 'Redirecionamento',
+  keyword: 'Palavra-chave',
+  dns_resolve: 'Resolução DNS',
+  ssl_check: 'Certificado SSL',
+  tcp_80: 'Porta TCP 80',
+  tcp_443: 'Porta TCP 443',
+}
 
 function translateErrorMessage(msg: string | null): string {
   if (!msg) return '-'
@@ -70,6 +93,12 @@ function translateErrorMessage(msg: string | null): string {
   return msg
 }
 
+function TestStatusIcon({ status }: { status: string }) {
+  if (status === 'ok') return <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+  if (status === 'fail') return <XCircle className="h-4 w-4 text-destructive" />
+  return <SkipForward className="h-4 w-4 text-muted-foreground" />
+}
+
 export default function MonitoramentoSites() {
   const { user } = useAuth()
   const { isAdmin, canCreateSystem, canEditSystem, canDeleteSystem } = usePermissions()
@@ -86,29 +115,19 @@ export default function MonitoramentoSites() {
   const [saving, setSaving] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; nome: string }>({ open: false, id: "", nome: "" })
   const [checking, setChecking] = useState(false)
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
+  const [detailUrl, setDetailUrl] = useState<string | null>(null)
+  const [expandedCycles, setExpandedCycles] = useState<Record<string, boolean>>({})
 
   // Schedule form
   const [scheduleDialog, setScheduleDialog] = useState(false)
   const [scheduleForm, setScheduleForm] = useState({ report_type: "daily", frequency_minutes: 60, report_time: "08:00", email_destinatario: "", ativo: true })
   const [editingSchedule, setEditingSchedule] = useState<MonitorSchedule | null>(null)
 
-  // Clientes & Empresas for selects
   const [clientes, setClientes] = useState<any[]>([])
   const [empresas, setEmpresas] = useState<any[]>([])
 
-  useEffect(() => {
-    if (user) {
-      fetchAll()
-    }
-  }, [user])
-
-  const fetchAll = async () => {
-    setLoading(true)
-    await Promise.all([fetchUrls(), fetchSchedules(), fetchClientes(), fetchEmpresas()])
-    setLoading(false)
-  }
-
-  const fetchUrls = async () => {
+  const fetchUrls = useCallback(async () => {
     const { data } = await supabase
       .from('monitored_urls')
       .select('*')
@@ -116,7 +135,6 @@ export default function MonitoramentoSites() {
     const urlList = (data || []) as MonitoredUrl[]
     setUrls(urlList)
 
-    // Fetch latest log for each
     const latestMap: Record<string, CheckLog> = {}
     for (const u of urlList) {
       const { data: log } = await supabase
@@ -126,29 +144,53 @@ export default function MonitoramentoSites() {
         .order('checked_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (log) latestMap[u.id] = log as CheckLog
+      if (log) latestMap[u.id] = log as unknown as CheckLog
     }
     setLatestLogs(latestMap)
-  }
+  }, [])
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     if (!user) return
-    const { data } = await supabase
-      .from('monitor_schedules')
-      .select('*')
-      .eq('user_id', user.id)
+    const { data } = await supabase.from('monitor_schedules').select('*').eq('user_id', user.id)
     setSchedules((data || []) as MonitorSchedule[])
-  }
+  }, [user])
 
-  const fetchClientes = async () => {
+  const fetchClientes = useCallback(async () => {
     const { data } = await supabase.from('clientes').select('id, nome_cliente')
     setClientes(data || [])
-  }
+  }, [])
 
-  const fetchEmpresas = async () => {
+  const fetchEmpresas = useCallback(async () => {
     const { data } = await supabase.from('empresas_terceiras').select('id, nome_empresa').eq('ativo', true)
     setEmpresas(data || [])
-  }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      setLoading(true)
+      Promise.all([fetchUrls(), fetchSchedules(), fetchClientes(), fetchEmpresas()]).then(() => setLoading(false))
+    }
+  }, [user, fetchUrls, fetchSchedules, fetchClientes, fetchEmpresas])
+
+  // Supabase Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('url-checks-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'url_check_logs' }, (payload) => {
+        const newLog = payload.new as CheckLog
+        setLatestLogs(prev => ({ ...prev, [newLog.monitored_url_id]: newLog }))
+        // Also update detail logs if viewing
+        setLogs(prev => {
+          if (prev[newLog.monitored_url_id]) {
+            return { ...prev, [newLog.monitored_url_id]: [newLog, ...prev[newLog.monitored_url_id]].slice(0, 50) }
+          }
+          return prev
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   const fetchHistory = async (urlId: string) => {
     const { data } = await supabase
@@ -157,7 +199,7 @@ export default function MonitoramentoSites() {
       .eq('monitored_url_id', urlId)
       .order('checked_at', { ascending: false })
       .limit(50)
-    setLogs(prev => ({ ...prev, [urlId]: (data || []) as CheckLog[] }))
+    setLogs(prev => ({ ...prev, [urlId]: (data || []) as unknown as CheckLog[] }))
   }
 
   const openCreate = () => {
@@ -178,6 +220,8 @@ export default function MonitoramentoSites() {
       ativo: u.ativo,
       cliente_id: u.cliente_id || "",
       empresa_terceira_id: u.empresa_terceira_id || "",
+      keyword: u.keyword || "",
+      tipo: u.tipo || "url",
     })
     setDialogOpen(true)
   }
@@ -187,7 +231,7 @@ export default function MonitoramentoSites() {
     if (!form.url.trim() || !form.nome.trim()) { toast.error("URL e nome são obrigatórios"); return }
     setSaving(true)
 
-    const payload = {
+    const payload: any = {
       url: form.url.trim(),
       nome: form.nome.trim(),
       check_interval_minutes: form.check_interval_minutes,
@@ -195,6 +239,8 @@ export default function MonitoramentoSites() {
       cliente_id: form.cliente_id || null,
       empresa_terceira_id: form.empresa_terceira_id || null,
       user_id: user.id,
+      keyword: form.keyword?.trim() || null,
+      tipo: form.tipo || 'url',
     }
 
     let error
@@ -224,9 +270,7 @@ export default function MonitoramentoSites() {
     if (!user) return
     setChecking(true)
     try {
-      const { data, error } = await supabase.functions.invoke('check-urls', {
-        body: {}
-      })
+      const { data, error } = await supabase.functions.invoke('check-urls', { body: {} })
       if (error) throw error
       toast.success(`Verificação concluída! ${data?.checked || 0} sites verificados.`)
       await fetchUrls()
@@ -274,8 +318,6 @@ export default function MonitoramentoSites() {
       : <Badge className="bg-red-500/20 text-red-700 border-red-300"><WifiOff className="h-3 w-3 mr-1" />Offline</Badge>
   }
 
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
-
   const onlineCount = urls.filter(u => latestLogs[u.id]?.is_online).length
   const offlineCount = urls.filter(u => latestLogs[u.id] && !latestLogs[u.id].is_online).length
   const avgResponseTime = (() => {
@@ -283,12 +325,16 @@ export default function MonitoramentoSites() {
     return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0
   })()
 
+  const toggleCycleExpand = (logId: string) => {
+    setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground">Monitoramento de Sites</h1>
-          <p className="text-sm text-muted-foreground mt-1">Monitore a disponibilidade e performance dos seus sites</p>
+          <p className="text-sm text-muted-foreground mt-1">Monitore a disponibilidade e performance dos seus sites e IPs</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={runManualCheck} disabled={checking} size="sm">
@@ -352,10 +398,11 @@ export default function MonitoramentoSites() {
       </div>
 
       <Tabs defaultValue="sites" className="w-full">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="sites">Sites Monitorados</TabsTrigger>
           <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
           {selectedUrl && <TabsTrigger value="historico">Histórico</TabsTrigger>}
+          {detailUrl && <TabsTrigger value="detalhes">Detalhes</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="sites" className="mt-4">
@@ -366,11 +413,9 @@ export default function MonitoramentoSites() {
               <CardContent className="p-8 text-center">
                 <Globe className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                 <h3 className="font-semibold text-lg mb-2">Nenhum site monitorado</h3>
-                <p className="text-muted-foreground text-sm mb-4">Adicione URLs para começar a monitorar</p>
+                <p className="text-muted-foreground text-sm mb-4">Adicione URLs ou IPs para começar a monitorar</p>
                 {(isAdmin || canCreateSystem('monitoramento')) && (
-                  <Button onClick={openCreate}>
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar URL
-                  </Button>
+                  <Button onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Adicionar URL</Button>
                 )}
               </CardContent>
             </Card>
@@ -378,6 +423,9 @@ export default function MonitoramentoSites() {
             <div className="space-y-3">
               {urls.map((u) => {
                 const log = latestLogs[u.id]
+                const tests = (log?.test_results || []) as TestResult[]
+                const testsOk = tests.filter(t => t.status === 'ok').length
+                const testsFail = tests.filter(t => t.status === 'fail').length
                 return (
                   <Card key={u.id} className={`glass-card transition-all ${!u.ativo ? 'opacity-50' : ''}`}>
                     <CardContent className="p-4">
@@ -387,19 +435,36 @@ export default function MonitoramentoSites() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold truncate">{u.nome}</span>
+                              {u.tipo === 'ip' && <Badge variant="secondary" className="text-[10px]"><Server className="h-3 w-3 mr-0.5" />IP</Badge>}
                               {!u.ativo && <Badge variant="secondary" className="text-[10px]">Pausado</Badge>}
+                              {u.keyword && <Badge variant="outline" className="text-[10px]"><Search className="h-3 w-3 mr-0.5" />{u.keyword}</Badge>}
                             </div>
                             <p className="text-xs text-muted-foreground truncate">{u.url}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              Intervalo: {u.check_interval_minutes}min
-                              {log && ` · Último check: ${new Date(log.checked_at).toLocaleString('pt-BR')}`}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <p className="text-[10px] text-muted-foreground">
+                                Intervalo: {u.check_interval_minutes}min
+                                {log && ` · Último check: ${new Date(log.checked_at).toLocaleString('pt-BR')}`}
+                              </p>
+                              {tests.length > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  · {tests.length} testes ({testsOk} ✓ {testsFail > 0 ? `${testsFail} ✗` : ''})
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(log?.is_online)}
                           {getSpeedBadge(log?.response_time_ms ?? null)}
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedUrl(u.id); fetchHistory(u.id) }}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <a href={u.url} target="_blank" rel="noopener noreferrer" title="Abrir site">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setDetailUrl(u.id); fetchHistory(u.id) }} title="Detalhes">
+                            <Activity className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedUrl(u.id); fetchHistory(u.id) }} title="Histórico">
                             <Clock className="h-4 w-4" />
                           </Button>
                           {(isAdmin || canEditSystem('monitoramento')) && (
@@ -481,7 +546,7 @@ export default function MonitoramentoSites() {
             <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
+                  <Clock className="h-4 w-4" />
                   Histórico - {urls.find(u => u.id === selectedUrl)?.nome}
                 </CardTitle>
               </CardHeader>
@@ -494,22 +559,61 @@ export default function MonitoramentoSites() {
                         <TableHead>Status</TableHead>
                         <TableHead>Código</TableHead>
                         <TableHead>Tempo</TableHead>
+                        <TableHead>Testes</TableHead>
                         <TableHead>Erro</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(logs[selectedUrl] || []).map(log => (
-                        <TableRow key={log.id}>
-                          <TableCell className="text-xs">{new Date(log.checked_at).toLocaleString('pt-BR')}</TableCell>
-                          <TableCell>{getStatusBadge(log.is_online)}</TableCell>
-                          <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
-                          <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
-                          <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
-                        </TableRow>
-                      ))}
+                      {(logs[selectedUrl] || []).map(log => {
+                        const tests = (log.test_results || []) as TestResult[]
+                        const testsOk = tests.filter(t => t.status === 'ok').length
+                        const testsFail = tests.filter(t => t.status === 'fail').length
+                        return (
+                          <TableRow key={log.id} className="cursor-pointer" onClick={() => toggleCycleExpand(log.id)}>
+                            <TableCell className="text-xs">{new Date(log.checked_at).toLocaleString('pt-BR')}</TableCell>
+                            <TableCell>{getStatusBadge(log.is_online)}</TableCell>
+                            <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
+                            <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
+                            <TableCell className="text-xs">
+                              {tests.length > 0 ? (
+                                <span className="flex items-center gap-1">
+                                  <span className="text-emerald-600">{testsOk}✓</span>
+                                  {testsFail > 0 && <span className="text-destructive">{testsFail}✗</span>}
+                                  {expandedCycles[log.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
+                          </TableRow>
+                        )
+                      })}
+                      {/* Expanded test details */}
+                      {(logs[selectedUrl] || []).map(log => {
+                        if (!expandedCycles[log.id]) return null
+                        const tests = (log.test_results || []) as TestResult[]
+                        if (tests.length === 0) return null
+                        return (
+                          <TableRow key={`${log.id}-detail`}>
+                            <TableCell colSpan={6} className="bg-muted/30 p-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {tests.map((t, i) => (
+                                  <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
+                                    <TestStatusIcon status={t.status} />
+                                    <div className="min-w-0">
+                                      <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
+                                      <p className="text-muted-foreground truncate">{t.detail}</p>
+                                      {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                       {(!logs[selectedUrl] || logs[selectedUrl].length === 0) && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -519,23 +623,150 @@ export default function MonitoramentoSites() {
             </Card>
           )}
         </TabsContent>
+
+        {/* Detail tab for a specific URL */}
+        <TabsContent value="detalhes" className="mt-4">
+          {detailUrl && (() => {
+            const urlObj = urls.find(u => u.id === detailUrl)
+            const log = latestLogs[detailUrl]
+            const tests = (log?.test_results || []) as TestResult[]
+            const history = logs[detailUrl] || []
+            return (
+              <div className="space-y-4">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Detalhes - {urlObj?.nome}
+                      <a href={urlObj?.url} target="_blank" rel="noopener noreferrer" className="ml-auto">
+                        <Button variant="outline" size="sm"><ExternalLink className="h-3 w-3 mr-1" />Abrir</Button>
+                      </a>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      {getStatusBadge(log?.is_online)}
+                      {getSpeedBadge(log?.response_time_ms ?? null)}
+                      {urlObj?.tipo === 'ip' && <Badge variant="secondary"><Server className="h-3 w-3 mr-1" />IP</Badge>}
+                      {urlObj?.keyword && <Badge variant="outline"><Search className="h-3 w-3 mr-1" />{urlObj.keyword}</Badge>}
+                      {log && <span className="text-xs text-muted-foreground">Último check: {new Date(log.checked_at).toLocaleString('pt-BR')}</span>}
+                    </div>
+
+                    {tests.length > 0 ? (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm">Último Ciclo de Testes ({tests.length} testes)</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {tests.map((t, i) => (
+                            <Card key={i} className={`${t.status === 'fail' ? 'border-destructive/50 bg-destructive/5' : t.status === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-muted'}`}>
+                              <CardContent className="p-3">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <TestStatusIcon status={t.status} />
+                                  <span className="font-medium text-sm">{TEST_LABELS[t.test] || t.test}</span>
+                                  {t.time_ms > 0 && <span className="ml-auto text-xs text-muted-foreground">{t.time_ms}ms</span>}
+                                </div>
+                                <p className="text-xs text-muted-foreground">{t.detail}</p>
+                                <p className="text-xs font-medium mt-1">Valor: {t.value}</p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">Nenhum teste detalhado disponível ainda. Execute uma verificação.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* History with expandable tests */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Histórico Recente ({history.length} ciclos)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {history.slice(0, 20).map(h => {
+                        const hTests = (h.test_results || []) as TestResult[]
+                        const hOk = hTests.filter(t => t.status === 'ok').length
+                        const hFail = hTests.filter(t => t.status === 'fail').length
+                        const expanded = expandedCycles[h.id]
+                        return (
+                          <div key={h.id}>
+                            <div
+                              className="flex items-center gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                              onClick={() => toggleCycleExpand(h.id)}
+                            >
+                              <div className={`w-2 h-2 rounded-full shrink-0 ${h.is_online ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              <span className="text-xs text-muted-foreground w-36 shrink-0">{new Date(h.checked_at).toLocaleString('pt-BR')}</span>
+                              <span className="text-xs">{h.status_code || '-'}</span>
+                              {h.response_time_ms && <span className="text-xs text-muted-foreground">{h.response_time_ms}ms</span>}
+                              {hTests.length > 0 && (
+                                <span className="text-xs ml-auto flex items-center gap-1">
+                                  <span className="text-emerald-600">{hOk}✓</span>
+                                  {hFail > 0 && <span className="text-destructive">{hFail}✗</span>}
+                                  {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </span>
+                              )}
+                            </div>
+                            {expanded && hTests.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 ml-5 mt-1 mb-2">
+                                {hTests.map((t, i) => (
+                                  <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
+                                    <TestStatusIcon status={t.status} />
+                                    <div className="min-w-0">
+                                      <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
+                                      <p className="text-muted-foreground truncate">{t.detail}</p>
+                                      {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                      {history.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum registro</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )
+          })()}
+        </TabsContent>
       </Tabs>
 
       {/* URL Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingUrl ? "Editar URL" : "Nova URL Monitorada"}</DialogTitle>
-            <DialogDescription>Configure a URL para monitoramento de disponibilidade</DialogDescription>
+            <DialogTitle>{editingUrl ? "Editar URL" : "Nova URL/IP Monitorado"}</DialogTitle>
+            <DialogDescription>Configure a URL ou IP para monitoramento completo</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Nome</Label>
-              <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Meu Site" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Nome</Label>
+                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Meu Site" />
+              </div>
+              <div>
+                <Label>Tipo</Label>
+                <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent portal={false}>
+                    <SelectItem value="url">🌐 URL (Website)</SelectItem>
+                    <SelectItem value="ip">🖥️ IP (Servidor/Modem/Router)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
-              <Label>URL</Label>
-              <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://exemplo.com" />
+              <Label>{form.tipo === 'ip' ? 'Endereço IP' : 'URL'}</Label>
+              <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder={form.tipo === 'ip' ? 'http://203.0.113.1' : 'https://exemplo.com'} />
+              {form.tipo === 'ip' && <p className="text-[10px] text-muted-foreground mt-1">Apenas IPs públicos acessíveis pela internet</p>}
+            </div>
+            <div>
+              <Label>Palavra-chave (opcional)</Label>
+              <Input value={form.keyword || ""} onChange={e => setForm(f => ({ ...f, keyword: e.target.value }))} placeholder="Ex: login, dashboard, OK" />
+              <p className="text-[10px] text-muted-foreground mt-1">Verifica se o conteúdo da página contém esta palavra</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
