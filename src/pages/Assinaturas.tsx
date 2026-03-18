@@ -13,12 +13,22 @@ interface Plan {
   categoria: string
   preco: string | null
   max_usuarios: number
+  max_equipes: number
+  max_empresas: number
+  max_manutencoes: number
+  max_senhas: number
+  max_urls: number
   descricao: string | null
   recursos: string[]
   whatsapp_numero: string | null
   whatsapp_mensagem: string | null
   texto_botao: string
   destaque: boolean
+  suporte_email: boolean
+  suporte_whatsapp: boolean
+  relatorios_avancados: boolean
+  links_publicos: boolean
+  importacao_excel: boolean
 }
 
 export default function Assinaturas() {
