@@ -168,8 +168,8 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const [filterDateFrom, setFilterDateFrom] = useState("")
   const [filterDateTo, setFilterDateTo] = useState("")
 
-  // Users map for display names
-  const [usersMap, setUsersMap] = useState<Record<string, string>>({})
+  // Users map for display names and tenant info
+  const [usersMap, setUsersMap] = useState<Record<string, { name: string; email: string }>>({})
 
   useEffect(() => {
     if (!user) return
@@ -179,8 +179,13 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   useEffect(() => {
     const loadUsers = async () => {
       const { data } = await supabase.from('user_profiles').select('user_id, display_name, email')
-      const map: Record<string, string> = {}
-      ;(data || []).forEach((u: any) => { map[u.user_id] = u.display_name || u.email || u.user_id })
+      const map: Record<string, { name: string; email: string }> = {}
+      ;(data || []).forEach((u: any) => { 
+        map[u.user_id] = { 
+          name: u.display_name || u.email || u.user_id,
+          email: u.email || ''
+        } 
+      })
       setUsersMap(map)
     }
     loadUsers()
