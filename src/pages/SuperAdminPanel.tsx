@@ -498,6 +498,9 @@ export default function SuperAdminPanel() {
                             </Button>
                           )}
                         </div>
+                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {admin.user_id.slice(0, 8)}
                       </TableCell>
                       <TableCell>{admin.email || '—'}</TableCell>
                       <TableCell>{getStatusBadge(admin)}</TableCell>
