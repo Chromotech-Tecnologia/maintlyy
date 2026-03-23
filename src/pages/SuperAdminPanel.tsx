@@ -518,7 +518,7 @@ export default function SuperAdminPanel() {
                     </TableRow>
                     {expandedAdmin === admin.user_id && admin.sub_users?.length > 0 && (
                       <TableRow key={`${admin.user_id}-subs`} className="bg-muted/20">
-                        <TableCell colSpan={10}>
+                        <TableCell colSpan={11}>
                           <div className="py-2 px-4">
                             <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Sub-usuários ({admin.sub_users.length})</p>
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
