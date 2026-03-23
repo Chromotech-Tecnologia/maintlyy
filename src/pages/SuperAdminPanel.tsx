@@ -467,8 +467,9 @@ export default function SuperAdminPanel() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Administrador</TableHead>
-                  <TableHead>Email</TableHead>
+                   <TableHead>Administrador</TableHead>
+                   <TableHead>ID Tenant</TableHead>
+                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Usuários</TableHead>
                   <TableHead className="text-center">Clientes</TableHead>
