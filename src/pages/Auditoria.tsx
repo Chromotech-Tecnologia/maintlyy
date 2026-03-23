@@ -214,7 +214,10 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const filteredLogs = filterSearch
     ? logs.filter(l =>
         (l.resource_name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
-        (usersMap[l.user_id] || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (usersMap[l.user_id]?.name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (usersMap[l.user_id]?.email || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        l.user_id.toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (l.tenant_admin_id || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
         generateSummary(l.action, l.resource_type, l.details).toLowerCase().includes(filterSearch.toLowerCase())
       )
     : logs

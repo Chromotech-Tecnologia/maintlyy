@@ -84,6 +84,7 @@ export function AppSidebar() {
 
   const isActiveRoute = (path: string) => {
     if (path === "/dashboard") return currentPath === "/dashboard"
+    if (path === "/auditoria") return currentPath === "/auditoria"
     return currentPath.startsWith(path)
   }
 
