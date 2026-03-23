@@ -425,7 +425,7 @@ export default function PermissionProfiles() {
             )}
 
             {!formIsAdmin && (
-              <Tabs defaultValue="sistema" className="w-full">
+              <Tabs defaultValue="sistema" className="w-full" key={editingProfile?.id || 'new'}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="sistema">Sistema</TabsTrigger>
                   <TabsTrigger value="acessos">Acessos</TabsTrigger>
