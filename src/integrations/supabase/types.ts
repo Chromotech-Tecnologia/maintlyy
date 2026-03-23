@@ -1066,6 +1066,7 @@ export type Database = {
         Returns: boolean
       }
       check_email_exists: { Args: { _email: string }; Returns: boolean }
+      get_tenant_owner_id: { Args: { _user_id: string }; Returns: string }
       has_system_permission: {
         Args: { _permission: string; _resource: string; _user_id: string }
         Returns: boolean
