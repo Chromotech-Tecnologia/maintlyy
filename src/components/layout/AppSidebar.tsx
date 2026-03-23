@@ -97,7 +97,9 @@ export function AppSidebar() {
     )
 
   const getNavStyle = (path: string): React.CSSProperties => {
-    const active = path === "/dashboard" ? currentPath === "/dashboard" : currentPath.startsWith(path)
+    const active = path === "/dashboard" ? currentPath === "/dashboard" 
+      : path === "/auditoria" ? currentPath === "/auditoria"
+      : currentPath.startsWith(path)
     return active ? { background: 'var(--gradient-primary)' } : {}
   }
 
