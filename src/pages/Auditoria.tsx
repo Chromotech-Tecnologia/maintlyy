@@ -168,8 +168,8 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const [filterDateFrom, setFilterDateFrom] = useState("")
   const [filterDateTo, setFilterDateTo] = useState("")
 
-  // Users map for display names
-  const [usersMap, setUsersMap] = useState<Record<string, string>>({})
+  // Users map for display names and tenant info
+  const [usersMap, setUsersMap] = useState<Record<string, { name: string; email: string }>>({})
 
   useEffect(() => {
     if (!user) return
@@ -179,8 +179,13 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   useEffect(() => {
     const loadUsers = async () => {
       const { data } = await supabase.from('user_profiles').select('user_id, display_name, email')
-      const map: Record<string, string> = {}
-      ;(data || []).forEach((u: any) => { map[u.user_id] = u.display_name || u.email || u.user_id })
+      const map: Record<string, { name: string; email: string }> = {}
+      ;(data || []).forEach((u: any) => { 
+        map[u.user_id] = { 
+          name: u.display_name || u.email || u.user_id,
+          email: u.email || ''
+        } 
+      })
       setUsersMap(map)
     }
     loadUsers()
@@ -209,7 +214,10 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
   const filteredLogs = filterSearch
     ? logs.filter(l =>
         (l.resource_name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
-        (usersMap[l.user_id] || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (usersMap[l.user_id]?.name || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (usersMap[l.user_id]?.email || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
+        l.user_id.toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (l.tenant_admin_id || '').toLowerCase().includes(filterSearch.toLowerCase()) ||
         generateSummary(l.action, l.resource_type, l.details).toLowerCase().includes(filterSearch.toLowerCase())
       )
     : logs
@@ -308,10 +316,11 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
       <Card className="glass-card border-0">
         <CardContent className="p-0">
           <ScrollArea className="w-full">
-            <Table>
+             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Data/Hora</TableHead>
+                  {globalView && <TableHead className="text-xs">Tenant ID</TableHead>}
                   <TableHead className="text-xs">Usuário</TableHead>
                   <TableHead className="text-xs">Ação</TableHead>
                   <TableHead className="text-xs">Recurso</TableHead>
@@ -323,11 +332,11 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                    <TableCell colSpan={globalView ? 8 : 7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
                   </TableRow>
                 ) : filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={globalView ? 8 : 7} className="text-center py-8 text-muted-foreground">
                       <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       Nenhum registro de auditoria encontrado
                     </TableCell>
@@ -337,13 +346,26 @@ export default function Auditoria({ globalView = false }: { globalView?: boolean
                     const actionInfo = ACTION_LABELS[log.action] || { label: log.action, color: 'bg-muted text-muted-foreground' }
                     const summary = generateSummary(log.action, log.resource_type, log.details)
                     const hasDetails = log.details && (log.details.tipo === 'edicao' || log.details.tipo === 'criacao' || log.details.tipo === 'exclusao')
+                    const userInfo = usersMap[log.user_id]
+                    const tenantInfo = log.tenant_admin_id ? usersMap[log.tenant_admin_id] : null
                     return (
                       <TableRow key={log.id} className={hasDetails ? 'cursor-pointer hover:bg-muted/60' : ''} onClick={() => hasDetails && openDetail(log)}>
                         <TableCell className="text-xs whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString('pt-BR')}
                         </TableCell>
+                        {globalView && (
+                          <TableCell className="text-xs">
+                            <div className="space-y-0.5">
+                              <span className="block truncate max-w-[150px] font-medium">{tenantInfo?.name || log.tenant_admin_id?.slice(0, 8) || '-'}</span>
+                              <span className="block text-[10px] text-muted-foreground font-mono">{log.tenant_admin_id?.slice(0, 8) || '-'}</span>
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell className="text-xs">
-                          <span className="truncate max-w-[150px] block">{usersMap[log.user_id] || log.user_id.slice(0, 8)}</span>
+                          <div className="space-y-0.5">
+                            <span className="block truncate max-w-[150px]">{userInfo?.name || log.user_id.slice(0, 8)}</span>
+                            <span className="block text-[10px] text-muted-foreground font-mono">{log.user_id.slice(0, 8)}</span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[10px] ${actionInfo.color}`}>

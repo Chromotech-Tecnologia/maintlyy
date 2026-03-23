@@ -467,8 +467,9 @@ export default function SuperAdminPanel() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Administrador</TableHead>
-                  <TableHead>Email</TableHead>
+                   <TableHead>Administrador</TableHead>
+                   <TableHead>ID Tenant</TableHead>
+                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Usuários</TableHead>
                   <TableHead className="text-center">Clientes</TableHead>
@@ -497,6 +498,9 @@ export default function SuperAdminPanel() {
                             </Button>
                           )}
                         </div>
+                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {admin.user_id.slice(0, 8)}
                       </TableCell>
                       <TableCell>{admin.email || '—'}</TableCell>
                       <TableCell>{getStatusBadge(admin)}</TableCell>
@@ -514,7 +518,7 @@ export default function SuperAdminPanel() {
                     </TableRow>
                     {expandedAdmin === admin.user_id && admin.sub_users?.length > 0 && (
                       <TableRow key={`${admin.user_id}-subs`} className="bg-muted/20">
-                        <TableCell colSpan={10}>
+                        <TableCell colSpan={11}>
                           <div className="py-2 px-4">
                             <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Sub-usuários ({admin.sub_users.length})</p>
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
