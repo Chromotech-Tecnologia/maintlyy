@@ -629,7 +629,7 @@ export default function MonitoramentoSites() {
                   variant={groupBy === 'cliente' ? 'secondary' : 'outline'}
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => setGroupBy(groupBy === 'cliente' ? 'none' : 'cliente')}
+                  onClick={() => { setGroupBy(groupBy === 'cliente' ? 'none' : 'cliente'); setCollapsedGroups({}) }}
                 >
                   <Layers className="h-3 w-3 mr-1" /> Cliente
                 </Button>
@@ -637,7 +637,7 @@ export default function MonitoramentoSites() {
                   variant={groupBy === 'empresa' ? 'secondary' : 'outline'}
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => setGroupBy(groupBy === 'empresa' ? 'none' : 'empresa')}
+                  onClick={() => { setGroupBy(groupBy === 'empresa' ? 'none' : 'empresa'); setCollapsedGroups({}) }}
                 >
                   <Building2 className="h-3 w-3 mr-1" /> Empresa
                 </Button>
