@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
@@ -15,7 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, Layers, Building2 } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface TestResult {
   test: string
@@ -115,11 +116,21 @@ export default function MonitoramentoSites() {
   const [saving, setSaving] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; nome: string }>({ open: false, id: "", nome: "" })
   const [checking, setChecking] = useState(false)
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(null)
-  const [detailUrl, setDetailUrl] = useState<string | null>(null)
   const [expandedCycles, setExpandedCycles] = useState<Record<string, boolean>>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<'todos' | 'online' | 'offline'>('todos')
+
+  // New filters
+  const [clienteFilter, setClienteFilter] = useState<string>("todos")
+  const [empresaFilter, setEmpresaFilter] = useState<string>("todos")
+  const [groupBy, setGroupBy] = useState<'none' | 'cliente' | 'empresa'>('none')
+
+  // Modals for history/details
+  const [historyModalUrl, setHistoryModalUrl] = useState<string | null>(null)
+  const [detailModalUrl, setDetailModalUrl] = useState<string | null>(null)
+
+  // Client search in form
+  const [clienteSearchForm, setClienteSearchForm] = useState("")
 
   // Schedule form
   const [scheduleDialog, setScheduleDialog] = useState(false)
@@ -181,7 +192,6 @@ export default function MonitoramentoSites() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'url_check_logs' }, (payload) => {
         const newLog = payload.new as CheckLog
         setLatestLogs(prev => ({ ...prev, [newLog.monitored_url_id]: newLog }))
-        // Also update detail logs if viewing
         setLogs(prev => {
           if (prev[newLog.monitored_url_id]) {
             return { ...prev, [newLog.monitored_url_id]: [newLog, ...prev[newLog.monitored_url_id]].slice(0, 50) }
@@ -209,6 +219,7 @@ export default function MonitoramentoSites() {
     if (!planLimits.canCreateUrl) { toast.error("Limite de URLs monitoradas atingido no seu plano"); return }
     setEditingUrl(null)
     setForm(emptyUrl)
+    setClienteSearchForm("")
     setDialogOpen(true)
   }
 
@@ -225,12 +236,26 @@ export default function MonitoramentoSites() {
       keyword: u.keyword || "",
       tipo: u.tipo || "url",
     })
+    const cliente = clientes.find(c => c.id === u.cliente_id)
+    setClienteSearchForm(cliente?.nome_cliente || "")
     setDialogOpen(true)
   }
 
   const handleSave = async () => {
     if (!user) return
     if (!form.url.trim() || !form.nome.trim()) { toast.error("URL e nome são obrigatórios"); return }
+
+    // Check for duplicate URL
+    const normalizedUrl = form.url.trim().toLowerCase().replace(/\/+$/, '')
+    const duplicate = urls.find(u => {
+      if (editingUrl && u.id === editingUrl.id) return false
+      return u.url.toLowerCase().replace(/\/+$/, '') === normalizedUrl
+    })
+    if (duplicate) {
+      toast.error(`Esta URL já está cadastrada com o nome "${duplicate.nome}"`)
+      return
+    }
+
     setSaving(true)
 
     const payload: any = {
@@ -320,24 +345,151 @@ export default function MonitoramentoSites() {
       : <Badge className="bg-red-500/20 text-red-700 border-red-300"><WifiOff className="h-3 w-3 mr-1" />Offline</Badge>
   }
 
-  const onlineCount = urls.filter(u => latestLogs[u.id]?.is_online).length
-  const offlineCount = urls.filter(u => latestLogs[u.id] && !latestLogs[u.id].is_online).length
-  const avgResponseTime = (() => {
-    const times = Object.values(latestLogs).filter(l => l.response_time_ms).map(l => l.response_time_ms!)
-    return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0
-  })()
-
   const toggleCycleExpand = (logId: string) => {
     setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
   }
 
-  const filteredUrls = urls.filter(u => {
-    const term = searchTerm.toLowerCase()
-    if (term && !u.nome.toLowerCase().includes(term) && !u.url.toLowerCase().includes(term)) return false
-    if (statusFilter === 'online' && !latestLogs[u.id]?.is_online) return false
-    if (statusFilter === 'offline' && (latestLogs[u.id]?.is_online !== false)) return false
-    return true
-  })
+  // Filtered URLs with client/company filters
+  const filteredUrls = useMemo(() => {
+    return urls.filter(u => {
+      const term = searchTerm.toLowerCase()
+      if (term && !u.nome.toLowerCase().includes(term) && !u.url.toLowerCase().includes(term)) return false
+      if (statusFilter === 'online' && !latestLogs[u.id]?.is_online) return false
+      if (statusFilter === 'offline' && (latestLogs[u.id]?.is_online !== false)) return false
+      if (clienteFilter !== 'todos') {
+        if (clienteFilter === 'sem_cliente' && u.cliente_id) return false
+        if (clienteFilter !== 'sem_cliente' && u.cliente_id !== clienteFilter) return false
+      }
+      if (empresaFilter !== 'todos') {
+        if (empresaFilter === 'sem_empresa' && u.empresa_terceira_id) return false
+        if (empresaFilter !== 'sem_empresa' && u.empresa_terceira_id !== empresaFilter) return false
+      }
+      return true
+    })
+  }, [urls, searchTerm, statusFilter, clienteFilter, empresaFilter, latestLogs])
+
+  // Stats based on filtered URLs
+  const onlineCount = filteredUrls.filter(u => latestLogs[u.id]?.is_online).length
+  const offlineCount = filteredUrls.filter(u => latestLogs[u.id] && !latestLogs[u.id].is_online).length
+  const avgResponseTime = (() => {
+    const times = filteredUrls.map(u => latestLogs[u.id]?.response_time_ms).filter((t): t is number => !!t)
+    return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0
+  })()
+
+  // Grouped URLs
+  const groupedUrls = useMemo(() => {
+    if (groupBy === 'none') return null
+    const groups: Record<string, { label: string; urls: MonitoredUrl[] }> = {}
+    for (const u of filteredUrls) {
+      let key: string
+      let label: string
+      if (groupBy === 'cliente') {
+        key = u.cliente_id || '__sem_cliente'
+        label = clientes.find(c => c.id === u.cliente_id)?.nome_cliente || 'Sem cliente'
+      } else {
+        key = u.empresa_terceira_id || '__sem_empresa'
+        label = empresas.find(e => e.id === u.empresa_terceira_id)?.nome_empresa || 'Sem empresa'
+      }
+      if (!groups[key]) groups[key] = { label, urls: [] }
+      groups[key].urls.push(u)
+    }
+    return Object.entries(groups).sort(([, a], [, b]) => a.label.localeCompare(b.label))
+  }, [filteredUrls, groupBy, clientes, empresas])
+
+  // Filtered clientes for form search
+  const filteredClientesForm = useMemo(() => {
+    if (!clienteSearchForm.trim()) return clientes
+    const term = clienteSearchForm.toLowerCase()
+    return clientes.filter(c => c.nome_cliente?.toLowerCase().includes(term))
+  }, [clientes, clienteSearchForm])
+
+  // Helper to get client/empresa names
+  const getClienteName = (id: string | null) => clientes.find(c => c.id === id)?.nome_cliente || null
+  const getEmpresaName = (id: string | null) => empresas.find(e => e.id === id)?.nome_empresa || null
+
+  // Render a single site card
+  const renderSiteCard = (u: MonitoredUrl) => {
+    const log = latestLogs[u.id]
+    const tests = (log?.test_results || []) as TestResult[]
+    const testsOk = tests.filter(t => t.status === 'ok').length
+    const testsFail = tests.filter(t => t.status === 'fail').length
+    const empresaNome = getEmpresaName(u.empresa_terceira_id)
+    const clienteNome = getClienteName(u.cliente_id)
+
+    return (
+      <Card key={u.id} className={`glass-card transition-all ${!u.ativo ? 'opacity-50' : ''}`}>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className={`w-3 h-3 rounded-full shrink-0 ${log ? (log.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500') : 'bg-muted'}`} />
+              <div className="min-w-0">
+                {/* Empresa (small) and Client (larger) before the title */}
+                {(empresaNome || clienteNome) && (
+                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                    {empresaNome && (
+                      <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5">
+                        <Building2 className="h-3 w-3" />{empresaNome}
+                      </span>
+                    )}
+                    {empresaNome && clienteNome && <span className="text-[10px] text-muted-foreground">›</span>}
+                    {clienteNome && (
+                      <span className="text-xs font-semibold text-primary">{clienteNome}</span>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold truncate">{u.nome}</span>
+                  {u.tipo === 'ip' && <Badge variant="secondary" className="text-[10px]"><Server className="h-3 w-3 mr-0.5" />IP</Badge>}
+                  {!u.ativo && <Badge variant="secondary" className="text-[10px]">Pausado</Badge>}
+                  {u.keyword && <Badge variant="outline" className="text-[10px]"><Search className="h-3 w-3 mr-0.5" />{u.keyword}</Badge>}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{u.url}</p>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <p className="text-[10px] text-muted-foreground">
+                    Intervalo: {u.check_interval_minutes}min
+                    {log && ` · Último check: ${new Date(log.checked_at).toLocaleString('pt-BR')}`}
+                  </p>
+                  {tests.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      · {tests.length} testes ({testsOk} ✓ {testsFail > 0 ? `${testsFail} ✗` : ''})
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {getStatusBadge(log?.is_online)}
+              {getSpeedBadge(log?.response_time_ms ?? null)}
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <a href={u.url} target="_blank" rel="noopener noreferrer" title="Abrir site">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setDetailModalUrl(u.id); fetchHistory(u.id) }} title="Detalhes">
+                <Activity className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setHistoryModalUrl(u.id); fetchHistory(u.id) }} title="Histórico">
+                <Clock className="h-4 w-4" />
+              </Button>
+              {(isAdmin || canEditSystem('monitoramento')) && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
+              {(isAdmin || canDeleteSystem('monitoramento')) && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => setDeleteDialog({ open: true, id: u.id, nome: u.nome })}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          {log?.error_message && (
+            <p className="text-xs text-destructive mt-2 bg-destructive/10 p-2 rounded">⚠️ {translateErrorMessage(log.error_message)}</p>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -359,7 +511,7 @@ export default function MonitoramentoSites() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - based on filtered URLs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="glass-card">
           <CardContent className="p-4 flex items-center gap-3">
@@ -367,7 +519,7 @@ export default function MonitoramentoSites() {
               <Globe className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{urls.length}</p>
+              <p className="text-2xl font-bold">{filteredUrls.length}</p>
               <p className="text-xs text-muted-foreground">Sites</p>
             </div>
           </CardContent>
@@ -411,37 +563,84 @@ export default function MonitoramentoSites() {
         <TabsList className="flex-wrap">
           <TabsTrigger value="sites">Sites Monitorados</TabsTrigger>
           <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
-          {selectedUrl && <TabsTrigger value="historico">Histórico</TabsTrigger>}
-          {detailUrl && <TabsTrigger value="detalhes">Detalhes</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="sites" className="mt-4">
           {/* Search & Filter Bar */}
           {!loading && urls.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou URL..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9"
-                />
+            <div className="space-y-2 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome ou URL..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[140px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="online">
+                      <span className="flex items-center gap-1.5"><Wifi className="h-3 w-3 text-emerald-600" /> Online</span>
+                    </SelectItem>
+                    <SelectItem value="offline">
+                      <span className="flex items-center gap-1.5"><WifiOff className="h-3 w-3 text-destructive" /> Offline</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={clienteFilter} onValueChange={setClienteFilter}>
+                  <SelectTrigger className="h-9 w-full sm:w-[180px]">
+                    <SelectValue placeholder="Cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os clientes</SelectItem>
+                    <SelectItem value="sem_cliente">Sem cliente</SelectItem>
+                    {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
+                  <SelectTrigger className="h-9 w-full sm:w-[180px]">
+                    <SelectValue placeholder="Empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas as empresas</SelectItem>
+                    <SelectItem value="sem_empresa">Sem empresa</SelectItem>
+                    {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-                <SelectTrigger className="h-9 w-full sm:w-[160px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="online">
-                    <span className="flex items-center gap-1.5"><Wifi className="h-3 w-3 text-emerald-600" /> Online</span>
-                  </SelectItem>
-                  <SelectItem value="offline">
-                    <span className="flex items-center gap-1.5"><WifiOff className="h-3 w-3 text-destructive" /> Offline</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Agrupar por:</span>
+                <Button
+                  variant={groupBy === 'none' ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setGroupBy('none')}
+                >
+                  Nenhum
+                </Button>
+                <Button
+                  variant={groupBy === 'cliente' ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setGroupBy(groupBy === 'cliente' ? 'none' : 'cliente')}
+                >
+                  <Layers className="h-3 w-3 mr-1" /> Cliente
+                </Button>
+                <Button
+                  variant={groupBy === 'empresa' ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setGroupBy(groupBy === 'empresa' ? 'none' : 'empresa')}
+                >
+                  <Building2 className="h-3 w-3 mr-1" /> Empresa
+                </Button>
+              </div>
             </div>
           )}
 
@@ -460,73 +659,24 @@ export default function MonitoramentoSites() {
             </Card>
           ) : filteredUrls.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">Nenhum resultado encontrado</div>
+          ) : groupBy !== 'none' && groupedUrls ? (
+            <div className="space-y-6">
+              {groupedUrls.map(([key, group]) => (
+                <div key={key}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {groupBy === 'empresa' ? <Building2 className="h-4 w-4 text-muted-foreground" /> : <Globe className="h-4 w-4 text-muted-foreground" />}
+                    <h3 className="font-semibold text-sm">{group.label}</h3>
+                    <Badge variant="secondary" className="text-[10px]">{group.urls.length}</Badge>
+                  </div>
+                  <div className="space-y-3 ml-1 border-l-2 border-muted pl-4">
+                    {group.urls.map(u => renderSiteCard(u))}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="space-y-3">
-              {filteredUrls.map((u) => {
-                const log = latestLogs[u.id]
-                const tests = (log?.test_results || []) as TestResult[]
-                const testsOk = tests.filter(t => t.status === 'ok').length
-                const testsFail = tests.filter(t => t.status === 'fail').length
-                return (
-                  <Card key={u.id} className={`glass-card transition-all ${!u.ativo ? 'opacity-50' : ''}`}>
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-3 h-3 rounded-full shrink-0 ${log ? (log.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500') : 'bg-muted'}`} />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold truncate">{u.nome}</span>
-                              {u.tipo === 'ip' && <Badge variant="secondary" className="text-[10px]"><Server className="h-3 w-3 mr-0.5" />IP</Badge>}
-                              {!u.ativo && <Badge variant="secondary" className="text-[10px]">Pausado</Badge>}
-                              {u.keyword && <Badge variant="outline" className="text-[10px]"><Search className="h-3 w-3 mr-0.5" />{u.keyword}</Badge>}
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate">{u.url}</p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <p className="text-[10px] text-muted-foreground">
-                                Intervalo: {u.check_interval_minutes}min
-                                {log && ` · Último check: ${new Date(log.checked_at).toLocaleString('pt-BR')}`}
-                              </p>
-                              {tests.length > 0 && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  · {tests.length} testes ({testsOk} ✓ {testsFail > 0 ? `${testsFail} ✗` : ''})
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {getStatusBadge(log?.is_online)}
-                          {getSpeedBadge(log?.response_time_ms ?? null)}
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <a href={u.url} target="_blank" rel="noopener noreferrer" title="Abrir site">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setDetailUrl(u.id); fetchHistory(u.id) }} title="Detalhes">
-                            <Activity className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedUrl(u.id); fetchHistory(u.id) }} title="Histórico">
-                            <Clock className="h-4 w-4" />
-                          </Button>
-                          {(isAdmin || canEditSystem('monitoramento')) && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(u)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {(isAdmin || canDeleteSystem('monitoramento')) && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => setDeleteDialog({ open: true, id: u.id, nome: u.nome })}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      {log?.error_message && (
-                        <p className="text-xs text-destructive mt-2 bg-destructive/10 p-2 rounded">⚠️ {translateErrorMessage(log.error_message)}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
+              {filteredUrls.map(u => renderSiteCard(u))}
             </div>
           )}
         </TabsContent>
@@ -581,198 +731,6 @@ export default function MonitoramentoSites() {
             </div>
           )}
         </TabsContent>
-
-        <TabsContent value="historico" className="mt-4">
-          {selectedUrl && (
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Histórico - {urls.find(u => u.id === selectedUrl)?.nome}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data/Hora</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Tempo</TableHead>
-                        <TableHead>Testes</TableHead>
-                        <TableHead>Erro</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(logs[selectedUrl] || []).map(log => {
-                        const tests = (log.test_results || []) as TestResult[]
-                        const testsOk = tests.filter(t => t.status === 'ok').length
-                        const testsFail = tests.filter(t => t.status === 'fail').length
-                        return (
-                          <TableRow key={log.id} className="cursor-pointer" onClick={() => toggleCycleExpand(log.id)}>
-                            <TableCell className="text-xs">{new Date(log.checked_at).toLocaleString('pt-BR')}</TableCell>
-                            <TableCell>{getStatusBadge(log.is_online)}</TableCell>
-                            <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
-                            <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
-                            <TableCell className="text-xs">
-                              {tests.length > 0 ? (
-                                <span className="flex items-center gap-1">
-                                  <span className="text-emerald-600">{testsOk}✓</span>
-                                  {testsFail > 0 && <span className="text-destructive">{testsFail}✗</span>}
-                                  {expandedCycles[log.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </span>
-                              ) : '-'}
-                            </TableCell>
-                            <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
-                          </TableRow>
-                        )
-                      })}
-                      {/* Expanded test details */}
-                      {(logs[selectedUrl] || []).map(log => {
-                        if (!expandedCycles[log.id]) return null
-                        const tests = (log.test_results || []) as TestResult[]
-                        if (tests.length === 0) return null
-                        return (
-                          <TableRow key={`${log.id}-detail`}>
-                            <TableCell colSpan={6} className="bg-muted/30 p-3">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {tests.map((t, i) => (
-                                  <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
-                                    <TestStatusIcon status={t.status} />
-                                    <div className="min-w-0">
-                                      <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
-                                      <p className="text-muted-foreground truncate">{t.detail}</p>
-                                      {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                      {(!logs[selectedUrl] || logs[selectedUrl].length === 0) && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Detail tab for a specific URL */}
-        <TabsContent value="detalhes" className="mt-4">
-          {detailUrl && (() => {
-            const urlObj = urls.find(u => u.id === detailUrl)
-            const log = latestLogs[detailUrl]
-            const tests = (log?.test_results || []) as TestResult[]
-            const history = logs[detailUrl] || []
-            return (
-              <div className="space-y-4">
-                <Card className="glass-card">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      Detalhes - {urlObj?.nome}
-                      <a href={urlObj?.url} target="_blank" rel="noopener noreferrer" className="ml-auto">
-                        <Button variant="outline" size="sm"><ExternalLink className="h-3 w-3 mr-1" />Abrir</Button>
-                      </a>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-3 mb-4 flex-wrap">
-                      {getStatusBadge(log?.is_online)}
-                      {getSpeedBadge(log?.response_time_ms ?? null)}
-                      {urlObj?.tipo === 'ip' && <Badge variant="secondary"><Server className="h-3 w-3 mr-1" />IP</Badge>}
-                      {urlObj?.keyword && <Badge variant="outline"><Search className="h-3 w-3 mr-1" />{urlObj.keyword}</Badge>}
-                      {log && <span className="text-xs text-muted-foreground">Último check: {new Date(log.checked_at).toLocaleString('pt-BR')}</span>}
-                    </div>
-
-                    {tests.length > 0 ? (
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-sm">Último Ciclo de Testes ({tests.length} testes)</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {tests.map((t, i) => (
-                            <Card key={i} className={`${t.status === 'fail' ? 'border-destructive/50 bg-destructive/5' : t.status === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-muted'}`}>
-                              <CardContent className="p-3">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <TestStatusIcon status={t.status} />
-                                  <span className="font-medium text-sm">{TEST_LABELS[t.test] || t.test}</span>
-                                  {t.time_ms > 0 && <span className="ml-auto text-xs text-muted-foreground">{t.time_ms}ms</span>}
-                                </div>
-                                <p className="text-xs text-muted-foreground">{t.detail}</p>
-                                <p className="text-xs font-medium mt-1">Valor: {t.value}</p>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">Nenhum teste detalhado disponível ainda. Execute uma verificação.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* History with expandable tests */}
-                <Card className="glass-card">
-                  <CardHeader>
-                    <CardTitle className="text-sm">Histórico Recente ({history.length} ciclos)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {history.slice(0, 20).map(h => {
-                        const hTests = (h.test_results || []) as TestResult[]
-                        const hOk = hTests.filter(t => t.status === 'ok').length
-                        const hFail = hTests.filter(t => t.status === 'fail').length
-                        const expanded = expandedCycles[h.id]
-                        return (
-                          <div key={h.id}>
-                            <div
-                              className="flex items-center gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer text-sm"
-                              onClick={() => toggleCycleExpand(h.id)}
-                            >
-                              <div className={`w-2 h-2 rounded-full shrink-0 ${h.is_online ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                              <span className="text-xs text-muted-foreground w-36 shrink-0">{new Date(h.checked_at).toLocaleString('pt-BR')}</span>
-                              <span className="text-xs">{h.status_code || '-'}</span>
-                              {h.response_time_ms && <span className="text-xs text-muted-foreground">{h.response_time_ms}ms</span>}
-                              {hTests.length > 0 && (
-                                <span className="text-xs ml-auto flex items-center gap-1">
-                                  <span className="text-emerald-600">{hOk}✓</span>
-                                  {hFail > 0 && <span className="text-destructive">{hFail}✗</span>}
-                                  {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                                </span>
-                              )}
-                            </div>
-                            {expanded && hTests.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 ml-5 mt-1 mb-2">
-                                {hTests.map((t, i) => (
-                                  <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
-                                    <TestStatusIcon status={t.status} />
-                                    <div className="min-w-0">
-                                      <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
-                                      <p className="text-muted-foreground truncate">{t.detail}</p>
-                                      {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                      {history.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum registro</p>}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )
-          })()}
-        </TabsContent>
       </Tabs>
 
       {/* URL Dialog */}
@@ -786,22 +744,49 @@ export default function MonitoramentoSites() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Cliente</Label>
-                <Select value={form.cliente_id || "none"} onValueChange={v => {
-                  const clienteId = v === "none" ? "" : v
-                  const cliente = clientes.find(c => c.id === clienteId)
-                  setForm(f => ({ ...f, cliente_id: clienteId, empresa_terceira_id: cliente?.empresa_terceira_id || "" }))
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                  <SelectContent portal={false}>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar cliente..."
+                    value={clienteSearchForm}
+                    onChange={e => {
+                      setClienteSearchForm(e.target.value)
+                      if (!e.target.value) setForm(f => ({ ...f, cliente_id: "", empresa_terceira_id: "" }))
+                    }}
+                    className="pl-8 h-9"
+                  />
+                </div>
+                {clienteSearchForm && filteredClientesForm.length > 0 && !clientes.find(c => c.nome_cliente === clienteSearchForm) && (
+                  <div className="border rounded-md mt-1 max-h-32 overflow-auto bg-popover shadow-md">
+                    {filteredClientesForm.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent truncate"
+                        onClick={() => {
+                          setClienteSearchForm(c.nome_cliente)
+                          setForm(f => ({ ...f, cliente_id: c.id, empresa_terceira_id: c.empresa_terceira_id || "" }))
+                        }}
+                      >
+                        {c.nome_cliente}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {form.cliente_id && (
+                  <button
+                    type="button"
+                    className="text-[10px] text-destructive hover:underline mt-1"
+                    onClick={() => { setClienteSearchForm(""); setForm(f => ({ ...f, cliente_id: "", empresa_terceira_id: "" })) }}
+                  >
+                    Limpar cliente
+                  </button>
+                )}
               </div>
               <div>
                 <Label>Empresa</Label>
                 <Select value={form.empresa_terceira_id || "none"} disabled>
-                  <SelectTrigger className="opacity-60"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                  <SelectTrigger className="opacity-60 h-9"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                   <SelectContent portal={false}>
                     <SelectItem value="none">Nenhuma</SelectItem>
                     {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
@@ -914,6 +899,195 @@ export default function MonitoramentoSites() {
             <Button variant="outline" onClick={() => setScheduleDialog(false)}>Cancelar</Button>
             <Button onClick={handleSaveSchedule}>Salvar</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Modal */}
+      <Dialog open={!!historyModalUrl} onOpenChange={(open) => { if (!open) setHistoryModalUrl(null) }}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Histórico - {urls.find(u => u.id === historyModalUrl)?.nome}
+            </DialogTitle>
+            <DialogDescription>Últimas verificações realizadas</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {historyModalUrl && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Tempo</TableHead>
+                      <TableHead>Testes</TableHead>
+                      <TableHead>Erro</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(logs[historyModalUrl] || []).map(log => {
+                      const tests = (log.test_results || []) as TestResult[]
+                      const testsOk = tests.filter(t => t.status === 'ok').length
+                      const testsFail = tests.filter(t => t.status === 'fail').length
+                      return (
+                        <React.Fragment key={log.id}>
+                          <TableRow className="cursor-pointer" onClick={() => toggleCycleExpand(log.id)}>
+                            <TableCell className="text-xs">{new Date(log.checked_at).toLocaleString('pt-BR')}</TableCell>
+                            <TableCell>{getStatusBadge(log.is_online)}</TableCell>
+                            <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
+                            <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
+                            <TableCell className="text-xs">
+                              {tests.length > 0 ? (
+                                <span className="flex items-center gap-1">
+                                  <span className="text-emerald-600">{testsOk}✓</span>
+                                  {testsFail > 0 && <span className="text-destructive">{testsFail}✗</span>}
+                                  {expandedCycles[log.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-xs text-destructive max-w-[200px] truncate">{translateErrorMessage(log.error_message)}</TableCell>
+                          </TableRow>
+                          {expandedCycles[log.id] && tests.length > 0 && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="bg-muted/30 p-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                  {tests.map((t, i) => (
+                                    <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
+                                      <TestStatusIcon status={t.status} />
+                                      <div className="min-w-0">
+                                        <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
+                                        <p className="text-muted-foreground truncate">{t.detail}</p>
+                                        {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      )
+                    })}
+                    {(!logs[historyModalUrl] || logs[historyModalUrl].length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Modal */}
+      <Dialog open={!!detailModalUrl} onOpenChange={(open) => { if (!open) setDetailModalUrl(null) }}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[85vh]">
+          {detailModalUrl && (() => {
+            const urlObj = urls.find(u => u.id === detailModalUrl)
+            const log = latestLogs[detailModalUrl]
+            const tests = (log?.test_results || []) as TestResult[]
+            const history = logs[detailModalUrl] || []
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Detalhes - {urlObj?.nome}
+                    <a href={urlObj?.url} target="_blank" rel="noopener noreferrer" className="ml-auto">
+                      <Button variant="outline" size="sm"><ExternalLink className="h-3 w-3 mr-1" />Abrir</Button>
+                    </a>
+                  </DialogTitle>
+                  <DialogDescription>{urlObj?.url}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="space-y-4 pr-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {getStatusBadge(log?.is_online)}
+                      {getSpeedBadge(log?.response_time_ms ?? null)}
+                      {urlObj?.tipo === 'ip' && <Badge variant="secondary"><Server className="h-3 w-3 mr-1" />IP</Badge>}
+                      {urlObj?.keyword && <Badge variant="outline"><Search className="h-3 w-3 mr-1" />{urlObj.keyword}</Badge>}
+                      {log && <span className="text-xs text-muted-foreground">Último check: {new Date(log.checked_at).toLocaleString('pt-BR')}</span>}
+                    </div>
+
+                    {tests.length > 0 ? (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm">Último Ciclo de Testes ({tests.length} testes)</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {tests.map((t, i) => (
+                            <Card key={i} className={`${t.status === 'fail' ? 'border-destructive/50 bg-destructive/5' : t.status === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-muted'}`}>
+                              <CardContent className="p-3">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <TestStatusIcon status={t.status} />
+                                  <span className="font-medium text-sm">{TEST_LABELS[t.test] || t.test}</span>
+                                  {t.time_ms > 0 && <span className="ml-auto text-xs text-muted-foreground">{t.time_ms}ms</span>}
+                                </div>
+                                <p className="text-xs text-muted-foreground">{t.detail}</p>
+                                <p className="text-xs font-medium mt-1">Valor: {t.value}</p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">Nenhum teste detalhado disponível ainda. Execute uma verificação.</p>
+                    )}
+
+                    {/* History inside detail modal */}
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Histórico Recente ({history.length} ciclos)</h4>
+                      <div className="space-y-2">
+                        {history.slice(0, 20).map(h => {
+                          const hTests = (h.test_results || []) as TestResult[]
+                          const hOk = hTests.filter(t => t.status === 'ok').length
+                          const hFail = hTests.filter(t => t.status === 'fail').length
+                          const expanded = expandedCycles[h.id]
+                          return (
+                            <div key={h.id}>
+                              <div
+                                className="flex items-center gap-3 p-2 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                                onClick={() => toggleCycleExpand(h.id)}
+                              >
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${h.is_online ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                <span className="text-xs text-muted-foreground w-36 shrink-0">{new Date(h.checked_at).toLocaleString('pt-BR')}</span>
+                                <span className="text-xs">{h.status_code || '-'}</span>
+                                {h.response_time_ms && <span className="text-xs text-muted-foreground">{h.response_time_ms}ms</span>}
+                                {hTests.length > 0 && (
+                                  <span className="text-xs ml-auto flex items-center gap-1">
+                                    <span className="text-emerald-600">{hOk}✓</span>
+                                    {hFail > 0 && <span className="text-destructive">{hFail}✗</span>}
+                                    {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                  </span>
+                                )}
+                              </div>
+                              {expanded && hTests.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 ml-5 mt-1 mb-2">
+                                  {hTests.map((t, i) => (
+                                    <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
+                                      <TestStatusIcon status={t.status} />
+                                      <div className="min-w-0">
+                                        <span className="font-medium">{TEST_LABELS[t.test] || t.test}</span>
+                                        <p className="text-muted-foreground truncate">{t.detail}</p>
+                                        {t.time_ms > 0 && <p className="text-muted-foreground">{t.time_ms}ms</p>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                        {history.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Nenhum registro</p>}
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </>
+            )
+          })()}
         </DialogContent>
       </Dialog>
 
