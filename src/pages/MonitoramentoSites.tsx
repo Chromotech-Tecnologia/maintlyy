@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, Layers, Building2 } from "lucide-react"
+import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, ChevronRight, Layers, Building2, ChevronsUpDown } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface TestResult {
@@ -124,6 +124,7 @@ export default function MonitoramentoSites() {
   const [clienteFilter, setClienteFilter] = useState<string>("todos")
   const [empresaFilter, setEmpresaFilter] = useState<string>("todos")
   const [groupBy, setGroupBy] = useState<'none' | 'cliente' | 'empresa'>('none')
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   // Modals for history/details
   const [historyModalUrl, setHistoryModalUrl] = useState<string | null>(null)
@@ -660,19 +661,45 @@ export default function MonitoramentoSites() {
           ) : filteredUrls.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">Nenhum resultado encontrado</div>
           ) : groupBy !== 'none' && groupedUrls ? (
-            <div className="space-y-6">
-              {groupedUrls.map(([key, group]) => (
-                <div key={key}>
-                  <div className="flex items-center gap-2 mb-2">
-                    {groupBy === 'empresa' ? <Building2 className="h-4 w-4 text-muted-foreground" /> : <Globe className="h-4 w-4 text-muted-foreground" />}
-                    <h3 className="font-semibold text-sm">{group.label}</h3>
-                    <Badge variant="secondary" className="text-[10px]">{group.urls.length}</Badge>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    const allKeys = groupedUrls.map(([k]) => k)
+                    const allCollapsed = allKeys.every(k => collapsedGroups[k])
+                    const next: Record<string, boolean> = {}
+                    allKeys.forEach(k => next[k] = !allCollapsed)
+                    setCollapsedGroups(next)
+                  }}
+                >
+                  <ChevronsUpDown className="h-3 w-3 mr-1" />
+                  {groupedUrls.every(([k]) => collapsedGroups[k]) ? 'Expandir todos' : 'Recolher todos'}
+                </Button>
+              </div>
+              {groupedUrls.map(([key, group]) => {
+                const isCollapsed = !!collapsedGroups[key]
+                return (
+                  <div key={key}>
+                    <button
+                      className="flex items-center gap-2 mb-2 w-full text-left hover:opacity-80 transition-opacity"
+                      onClick={() => setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }))}
+                    >
+                      {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      {groupBy === 'empresa' ? <Building2 className="h-4 w-4 text-muted-foreground" /> : <Globe className="h-4 w-4 text-muted-foreground" />}
+                      <h3 className="font-semibold text-sm">{group.label}</h3>
+                      <Badge variant="secondary" className="text-[10px]">{group.urls.length}</Badge>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="space-y-3 ml-1 border-l-2 border-muted pl-4">
+                        {group.urls.map(u => renderSiteCard(u))}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-3 ml-1 border-l-2 border-muted pl-4">
-                    {group.urls.map(u => renderSiteCard(u))}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="space-y-3">
