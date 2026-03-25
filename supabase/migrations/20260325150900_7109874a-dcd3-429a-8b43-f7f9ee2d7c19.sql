@@ -1,0 +1,1 @@
+ALTER TABLE public.monitored_urls ADD COLUMN pagante boolean NOT NULL DEFAULT false;
