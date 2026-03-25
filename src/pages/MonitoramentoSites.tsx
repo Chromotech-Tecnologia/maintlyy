@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
@@ -15,8 +15,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, ChevronRight, Layers, Building2, ChevronsUpDown } from "lucide-react"
+import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, ChevronRight, Layers, Building2, ChevronsUpDown, DollarSign } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface TestResult {
   test: string
@@ -37,6 +40,7 @@ interface MonitoredUrl {
   created_at: string
   keyword?: string | null
   tipo?: string
+  pagante?: boolean
 }
 
 interface CheckLog {
@@ -60,7 +64,7 @@ interface MonitorSchedule {
   ativo: boolean
 }
 
-const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "", keyword: "", tipo: "url" }
+const emptyUrl = { url: "", nome: "", check_interval_minutes: 60, ativo: true, cliente_id: "", empresa_terceira_id: "", keyword: "", tipo: "url", pagante: false }
 
 const TEST_LABELS: Record<string, string> = {
   http_get: 'HTTP GET',
@@ -100,6 +104,54 @@ function TestStatusIcon({ status }: { status: string }) {
   return <SkipForward className="h-4 w-4 text-muted-foreground" />
 }
 
+// Searchable Combobox for Client/Empresa
+function SearchableSelect({ items, value, onValueChange, placeholder, searchPlaceholder, emptyText, icon }: {
+  items: Array<{ id: string; label: string }>
+  value: string
+  onValueChange: (v: string) => void
+  placeholder: string
+  searchPlaceholder: string
+  emptyText: string
+  icon?: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const selectedLabel = value === "todos" ? placeholder : value === "sem_cliente" ? "Sem cliente" : value === "sem_empresa" ? "Sem empresa" : items.find(i => i.id === value)?.label || placeholder
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open} className="h-9 w-full justify-between text-sm font-normal">
+          <span className="truncate flex items-center gap-1.5">
+            {icon}
+            {selectedLabel}
+          </span>
+          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {items.map(item => (
+                <CommandItem
+                  key={item.id}
+                  value={item.label}
+                  onSelect={() => { onValueChange(item.id); setOpen(false) }}
+                  className="text-sm"
+                >
+                  <span className={value === item.id ? "font-semibold" : ""}>{item.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export default function MonitoramentoSites() {
   const { user } = useAuth()
   const { isAdmin, canCreateSystem, canEditSystem, canDeleteSystem } = usePermissions()
@@ -123,6 +175,8 @@ export default function MonitoramentoSites() {
   // New filters
   const [clienteFilter, setClienteFilter] = useState<string>("todos")
   const [empresaFilter, setEmpresaFilter] = useState<string>("todos")
+  const [paganteFilter, setPaganteFilter] = useState<'todos' | 'sim' | 'nao'>('todos')
+  const [ativoFilter, setAtivoFilter] = useState<'ativos' | 'inativos' | 'todos'>('ativos')
   const [groupBy, setGroupBy] = useState<'none' | 'cliente' | 'empresa'>('none')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
@@ -130,8 +184,8 @@ export default function MonitoramentoSites() {
   const [historyModalUrl, setHistoryModalUrl] = useState<string | null>(null)
   const [detailModalUrl, setDetailModalUrl] = useState<string | null>(null)
 
-  // Client search in form
-  const [clienteSearchForm, setClienteSearchForm] = useState("")
+  // Client search in form (combobox)
+  const [clienteFormOpen, setClienteFormOpen] = useState(false)
 
   // Schedule form
   const [scheduleDialog, setScheduleDialog] = useState(false)
@@ -220,7 +274,6 @@ export default function MonitoramentoSites() {
     if (!planLimits.canCreateUrl) { toast.error("Limite de URLs monitoradas atingido no seu plano"); return }
     setEditingUrl(null)
     setForm(emptyUrl)
-    setClienteSearchForm("")
     setDialogOpen(true)
   }
 
@@ -236,9 +289,8 @@ export default function MonitoramentoSites() {
       empresa_terceira_id: u.empresa_terceira_id || "",
       keyword: u.keyword || "",
       tipo: u.tipo || "url",
+      pagante: u.pagante || false,
     })
-    const cliente = clientes.find(c => c.id === u.cliente_id)
-    setClienteSearchForm(cliente?.nome_cliente || "")
     setDialogOpen(true)
   }
 
@@ -269,6 +321,7 @@ export default function MonitoramentoSites() {
       user_id: user.id,
       keyword: form.keyword?.trim() || null,
       tipo: form.tipo || 'url',
+      pagante: form.pagante,
     }
 
     let error
@@ -350,7 +403,7 @@ export default function MonitoramentoSites() {
     setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
   }
 
-  // Filtered URLs with client/company filters
+  // Filtered URLs with client/company/pagante/ativo filters
   const filteredUrls = useMemo(() => {
     return urls.filter(u => {
       const term = searchTerm.toLowerCase()
@@ -365,9 +418,13 @@ export default function MonitoramentoSites() {
         if (empresaFilter === 'sem_empresa' && u.empresa_terceira_id) return false
         if (empresaFilter !== 'sem_empresa' && u.empresa_terceira_id !== empresaFilter) return false
       }
+      if (paganteFilter === 'sim' && !u.pagante) return false
+      if (paganteFilter === 'nao' && u.pagante) return false
+      if (ativoFilter === 'ativos' && !u.ativo) return false
+      if (ativoFilter === 'inativos' && u.ativo) return false
       return true
     })
-  }, [urls, searchTerm, statusFilter, clienteFilter, empresaFilter, latestLogs])
+  }, [urls, searchTerm, statusFilter, clienteFilter, empresaFilter, paganteFilter, ativoFilter, latestLogs])
 
   // Stats based on filtered URLs
   const onlineCount = filteredUrls.filter(u => latestLogs[u.id]?.is_online).length
@@ -397,16 +454,26 @@ export default function MonitoramentoSites() {
     return Object.entries(groups).sort(([, a], [, b]) => a.label.localeCompare(b.label))
   }, [filteredUrls, groupBy, clientes, empresas])
 
-  // Filtered clientes for form search
-  const filteredClientesForm = useMemo(() => {
-    if (!clienteSearchForm.trim()) return clientes
-    const term = clienteSearchForm.toLowerCase()
-    return clientes.filter(c => c.nome_cliente?.toLowerCase().includes(term))
-  }, [clientes, clienteSearchForm])
-
   // Helper to get client/empresa names
   const getClienteName = (id: string | null) => clientes.find(c => c.id === id)?.nome_cliente || null
   const getEmpresaName = (id: string | null) => empresas.find(e => e.id === id)?.nome_empresa || null
+
+  // Build items for filter comboboxes
+  const clienteFilterItems = useMemo(() => [
+    { id: 'todos', label: 'Todos os clientes' },
+    { id: 'sem_cliente', label: 'Sem cliente' },
+    ...clientes.map(c => ({ id: c.id, label: c.nome_cliente || 'Sem nome' }))
+  ], [clientes])
+
+  const empresaFilterItems = useMemo(() => [
+    { id: 'todos', label: 'Todas as empresas' },
+    { id: 'sem_empresa', label: 'Sem empresa' },
+    ...empresas.map(e => ({ id: e.id, label: e.nome_empresa }))
+  ], [empresas])
+
+  const clienteFormItems = useMemo(() =>
+    clientes.map(c => ({ id: c.id, label: c.nome_cliente || 'Sem nome' }))
+  , [clientes])
 
   // Render a single site card
   const renderSiteCard = (u: MonitoredUrl) => {
@@ -424,7 +491,6 @@ export default function MonitoramentoSites() {
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className={`w-3 h-3 rounded-full shrink-0 ${log ? (log.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500') : 'bg-muted'}`} />
               <div className="min-w-0">
-                {/* Empresa (small) and Client (larger) before the title */}
                 {(empresaNome || clienteNome) && (
                   <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                     {empresaNome && (
@@ -442,6 +508,7 @@ export default function MonitoramentoSites() {
                   <span className="font-semibold truncate">{u.nome}</span>
                   {u.tipo === 'ip' && <Badge variant="secondary" className="text-[10px]"><Server className="h-3 w-3 mr-0.5" />IP</Badge>}
                   {!u.ativo && <Badge variant="secondary" className="text-[10px]">Pausado</Badge>}
+                  {u.pagante && <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-300 text-[10px]"><DollarSign className="h-3 w-3 mr-0.5" />Pagante</Badge>}
                   {u.keyword && <Badge variant="outline" className="text-[10px]"><Search className="h-3 w-3 mr-0.5" />{u.keyword}</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{u.url}</p>
@@ -594,26 +661,50 @@ export default function MonitoramentoSites() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={clienteFilter} onValueChange={setClienteFilter}>
-                  <SelectTrigger className="h-9 w-full sm:w-[180px]">
-                    <SelectValue placeholder="Cliente" />
+                <Select value={ativoFilter} onValueChange={(v: any) => setAtivoFilter(v)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[130px]">
+                    <SelectValue placeholder="Ativo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos os clientes</SelectItem>
-                    <SelectItem value="sem_cliente">Sem cliente</SelectItem>
-                    {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
+                    <SelectItem value="ativos">Ativos</SelectItem>
+                    <SelectItem value="inativos">Inativos</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={empresaFilter} onValueChange={setEmpresaFilter}>
-                  <SelectTrigger className="h-9 w-full sm:w-[180px]">
-                    <SelectValue placeholder="Empresa" />
+                <Select value={paganteFilter} onValueChange={(v: any) => setPaganteFilter(v)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[130px]">
+                    <SelectValue placeholder="Pagante" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todas as empresas</SelectItem>
-                    <SelectItem value="sem_empresa">Sem empresa</SelectItem>
-                    {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="sim">
+                      <span className="flex items-center gap-1.5"><DollarSign className="h-3 w-3 text-emerald-600" /> Pagante</span>
+                    </SelectItem>
+                    <SelectItem value="nao">Não pagante</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="w-full sm:w-[220px]">
+                  <SearchableSelect
+                    items={clienteFilterItems}
+                    value={clienteFilter}
+                    onValueChange={setClienteFilter}
+                    placeholder="Todos os clientes"
+                    searchPlaceholder="Buscar cliente..."
+                    emptyText="Nenhum cliente encontrado"
+                  />
+                </div>
+                <div className="w-full sm:w-[220px]">
+                  <SearchableSelect
+                    items={empresaFilterItems}
+                    value={empresaFilter}
+                    onValueChange={setEmpresaFilter}
+                    placeholder="Todas as empresas"
+                    searchPlaceholder="Buscar empresa..."
+                    emptyText="Nenhuma empresa encontrada"
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Agrupar por:</span>
@@ -767,108 +858,124 @@ export default function MonitoramentoSites() {
             <DialogTitle>{editingUrl ? "Editar URL" : "Nova URL/IP Monitorado"}</DialogTitle>
             <DialogDescription>Configure a URL ou IP para monitoramento completo</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Cliente</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar cliente..."
-                    value={clienteSearchForm}
-                    onChange={e => {
-                      setClienteSearchForm(e.target.value)
-                      if (!e.target.value) setForm(f => ({ ...f, cliente_id: "", empresa_terceira_id: "" }))
-                    }}
-                    className="pl-8 h-9"
-                  />
+          <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-4 pr-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Cliente</Label>
+                  <Popover open={clienteFormOpen} onOpenChange={setClienteFormOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between h-9 text-sm font-normal">
+                        <span className="truncate">
+                          {form.cliente_id ? (clientes.find(c => c.id === form.cliente_id)?.nome_cliente || 'Selecionar') : 'Selecionar cliente'}
+                        </span>
+                        <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[250px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar cliente..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
+                          <CommandGroup>
+                            {clientes.map(c => (
+                              <CommandItem
+                                key={c.id}
+                                value={c.nome_cliente || ''}
+                                onSelect={() => {
+                                  setForm(f => ({
+                                    ...f,
+                                    cliente_id: c.id,
+                                    empresa_terceira_id: c.empresa_terceira_id || ""
+                                  }))
+                                  setClienteFormOpen(false)
+                                }}
+                                className="text-sm"
+                              >
+                                <span className={form.cliente_id === c.id ? "font-semibold" : ""}>{c.nome_cliente}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {form.cliente_id && (
+                    <button
+                      type="button"
+                      className="text-[10px] text-destructive hover:underline mt-1"
+                      onClick={() => setForm(f => ({ ...f, cliente_id: "", empresa_terceira_id: "" }))}
+                    >
+                      Limpar cliente
+                    </button>
+                  )}
                 </div>
-                {clienteSearchForm && filteredClientesForm.length > 0 && !clientes.find(c => c.nome_cliente === clienteSearchForm) && (
-                  <div className="border rounded-md mt-1 max-h-32 overflow-auto bg-popover shadow-md">
-                    {filteredClientesForm.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent truncate"
-                        onClick={() => {
-                          setClienteSearchForm(c.nome_cliente)
-                          setForm(f => ({ ...f, cliente_id: c.id, empresa_terceira_id: c.empresa_terceira_id || "" }))
-                        }}
-                      >
-                        {c.nome_cliente}
-                      </button>
-                    ))}
+                <div>
+                  <Label>Empresa</Label>
+                  <Select value={form.empresa_terceira_id || "none"} disabled>
+                    <SelectTrigger className="opacity-60 h-9"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                    <SelectContent portal={false}>
+                      <SelectItem value="none">Nenhuma</SelectItem>
+                      {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground mt-1">Preenchida automaticamente pelo cliente</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Nome</Label>
+                  <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Meu Site" />
+                </div>
+                <div>
+                  <Label>Tipo</Label>
+                  <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent portal={false}>
+                      <SelectItem value="url">🌐 URL (Website)</SelectItem>
+                      <SelectItem value="ip">🖥️ IP (Servidor/Modem/Router)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>{form.tipo === 'ip' ? 'Endereço IP' : 'URL'}</Label>
+                <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder={form.tipo === 'ip' ? 'http://203.0.113.1' : 'https://exemplo.com'} />
+                {form.tipo === 'ip' && <p className="text-[10px] text-muted-foreground mt-1">Apenas IPs públicos acessíveis pela internet</p>}
+              </div>
+              <div>
+                <Label>Palavra-chave (opcional)</Label>
+                <Input value={form.keyword || ""} onChange={e => setForm(f => ({ ...f, keyword: e.target.value }))} placeholder="Ex: login, dashboard, OK" />
+                <p className="text-[10px] text-muted-foreground mt-1">Verifica se o conteúdo da página contém esta palavra</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Intervalo (min)</Label>
+                  <Select value={String(form.check_interval_minutes)} onValueChange={v => setForm(f => ({ ...f, check_interval_minutes: parseInt(v) }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent portal={false}>
+                      <SelectItem value="5">5 min</SelectItem>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="60">1 hora</SelectItem>
+                      <SelectItem value="120">2 horas</SelectItem>
+                      <SelectItem value="360">6 horas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3 pt-6">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
+                    <Label>Ativo</Label>
                   </div>
-                )}
-                {form.cliente_id && (
-                  <button
-                    type="button"
-                    className="text-[10px] text-destructive hover:underline mt-1"
-                    onClick={() => { setClienteSearchForm(""); setForm(f => ({ ...f, cliente_id: "", empresa_terceira_id: "" })) }}
-                  >
-                    Limpar cliente
-                  </button>
-                )}
-              </div>
-              <div>
-                <Label>Empresa</Label>
-                <Select value={form.empresa_terceira_id || "none"} disabled>
-                  <SelectTrigger className="opacity-60 h-9"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                  <SelectContent portal={false}>
-                    <SelectItem value="none">Nenhuma</SelectItem>
-                    {empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground mt-1">Preenchida automaticamente pelo cliente</p>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={form.pagante} onCheckedChange={v => setForm(f => ({ ...f, pagante: v }))} />
+                    <Label className="flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" />Pagante</Label>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Nome</Label>
-                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Meu Site" />
-              </div>
-              <div>
-                <Label>Tipo</Label>
-                <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent portal={false}>
-                    <SelectItem value="url">🌐 URL (Website)</SelectItem>
-                    <SelectItem value="ip">🖥️ IP (Servidor/Modem/Router)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label>{form.tipo === 'ip' ? 'Endereço IP' : 'URL'}</Label>
-              <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder={form.tipo === 'ip' ? 'http://203.0.113.1' : 'https://exemplo.com'} />
-              {form.tipo === 'ip' && <p className="text-[10px] text-muted-foreground mt-1">Apenas IPs públicos acessíveis pela internet</p>}
-            </div>
-            <div>
-              <Label>Palavra-chave (opcional)</Label>
-              <Input value={form.keyword || ""} onChange={e => setForm(f => ({ ...f, keyword: e.target.value }))} placeholder="Ex: login, dashboard, OK" />
-              <p className="text-[10px] text-muted-foreground mt-1">Verifica se o conteúdo da página contém esta palavra</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Intervalo (min)</Label>
-                <Select value={String(form.check_interval_minutes)} onValueChange={v => setForm(f => ({ ...f, check_interval_minutes: parseInt(v) }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent portal={false}>
-                    <SelectItem value="5">5 min</SelectItem>
-                    <SelectItem value="15">15 min</SelectItem>
-                    <SelectItem value="30">30 min</SelectItem>
-                    <SelectItem value="60">1 hora</SelectItem>
-                    <SelectItem value="120">2 horas</SelectItem>
-                    <SelectItem value="360">6 horas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2 pt-6">
-                <Switch checked={form.ativo} onCheckedChange={v => setForm(f => ({ ...f, ativo: v }))} />
-                <Label>Ativo</Label>
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>{saving ? "Salvando..." : editingUrl ? "Atualizar" : "Criar"}</Button>
@@ -1037,6 +1144,7 @@ export default function MonitoramentoSites() {
                       {getSpeedBadge(log?.response_time_ms ?? null)}
                       {urlObj?.tipo === 'ip' && <Badge variant="secondary"><Server className="h-3 w-3 mr-1" />IP</Badge>}
                       {urlObj?.keyword && <Badge variant="outline"><Search className="h-3 w-3 mr-1" />{urlObj.keyword}</Badge>}
+                      {urlObj?.pagante && <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-300"><DollarSign className="h-3 w-3 mr-1" />Pagante</Badge>}
                       {log && <span className="text-xs text-muted-foreground">Último check: {new Date(log.checked_at).toLocaleString('pt-BR')}</span>}
                     </div>
 

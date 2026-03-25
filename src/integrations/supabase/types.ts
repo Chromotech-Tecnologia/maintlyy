@@ -541,6 +541,7 @@ export type Database = {
           id: string
           keyword: string | null
           nome: string
+          pagante: boolean
           tipo: string | null
           updated_at: string
           url: string
@@ -555,6 +556,7 @@ export type Database = {
           id?: string
           keyword?: string | null
           nome: string
+          pagante?: boolean
           tipo?: string | null
           updated_at?: string
           url: string
@@ -569,6 +571,7 @@ export type Database = {
           id?: string
           keyword?: string | null
           nome?: string
+          pagante?: boolean
           tipo?: string | null
           updated_at?: string
           url?: string
