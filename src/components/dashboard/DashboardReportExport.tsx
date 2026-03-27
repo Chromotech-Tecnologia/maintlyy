@@ -204,22 +204,30 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
           {/* Filters Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Empresa</Label>
-              <Select value={filters.filterEmpresa} onValueChange={v => filters.onFilterChange('empresa', v)}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todas" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as empresas</SelectItem>
-                  {filters.empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <Label className="text-xs">Cliente</Label>
-              <Select value={filters.filterCliente} onValueChange={v => filters.onFilterChange('cliente', v)}>
+              <Select value={filters.filterCliente} onValueChange={v => {
+                filters.onFilterChange('cliente', v)
+                if (v !== 'todos') {
+                  const cli = filters.clientes.find(c => c.id === v)
+                  if (cli?.empresa_terceira_id) filters.onFilterChange('empresa', cli.empresa_terceira_id)
+                } else {
+                  filters.onFilterChange('empresa', 'todos')
+                }
+              }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os clientes</SelectItem>
                   {filters.clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Empresa</Label>
+              <Select value={filters.filterEmpresa} onValueChange={v => filters.onFilterChange('empresa', v)} disabled={filters.filterCliente !== 'todos' && !!filters.clientes.find(c => c.id === filters.filterCliente)?.empresa_terceira_id}>
+                <SelectTrigger className={`h-9 ${filters.filterCliente !== 'todos' ? 'opacity-60' : ''}`}><SelectValue placeholder="Todas" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as empresas</SelectItem>
+                  {filters.empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
