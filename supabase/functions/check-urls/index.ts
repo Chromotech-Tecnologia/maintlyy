@@ -256,10 +256,19 @@ serve(async (req) => {
       { auth: { persistSession: false, autoRefreshToken: false } }
     )
 
-    const { data: urls, error: urlsError } = await supabase
-      .from('monitored_urls')
-      .select('*')
-      .eq('ativo', true)
+    // Support single URL check
+    let body: any = {}
+    try { body = await req.json() } catch { body = {} }
+    const singleUrlId = body?.single_url_id
+
+    let urlQuery = supabase.from('monitored_urls').select('*')
+    if (singleUrlId) {
+      urlQuery = urlQuery.eq('id', singleUrlId)
+    } else {
+      urlQuery = urlQuery.eq('ativo', true)
+    }
+
+    const { data: urls, error: urlsError } = await urlQuery
 
     if (urlsError) {
       console.error('Error fetching URLs:', urlsError)
@@ -274,19 +283,21 @@ serve(async (req) => {
     const results: any[] = []
 
     for (const urlEntry of urls) {
-      // Check interval
-      const { data: lastCheck } = await supabase
-        .from('url_check_logs')
-        .select('checked_at')
-        .eq('monitored_url_id', urlEntry.id)
-        .order('checked_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      // Skip interval check for single URL requests
+      if (!singleUrlId) {
+        const { data: lastCheck } = await supabase
+          .from('url_check_logs')
+          .select('checked_at')
+          .eq('monitored_url_id', urlEntry.id)
+          .order('checked_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
-      if (lastCheck) {
-        const minutesSinceLastCheck = (now.getTime() - new Date(lastCheck.checked_at).getTime()) / 60000
-        if (minutesSinceLastCheck < urlEntry.check_interval_minutes) {
-          continue
+        if (lastCheck) {
+          const minutesSinceLastCheck = (now.getTime() - new Date(lastCheck.checked_at).getTime()) / 60000
+          if (minutesSinceLastCheck < urlEntry.check_interval_minutes) {
+            continue
+          }
         }
       }
 

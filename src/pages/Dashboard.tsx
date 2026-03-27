@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { StatCard } from "@/components/dashboard/StatCard"
 import { ChartCard } from "@/components/dashboard/ChartCard"
 import { DashboardReportExport } from "@/components/dashboard/DashboardReportExport"
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList } from "recharts"
 import {
   Clock, Users, Wrench, TrendingUp, Plus, Calendar, KeyRound, ArrowRight, Filter, UserCog, FileDown, X, Search
@@ -17,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
+import { TablePagination } from "@/components/TablePagination"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface DashboardStats {
   totalManutencoes: number
@@ -36,11 +39,30 @@ interface ManutencaoRecente {
   empresas_terceiras?: { nome_empresa: string }
   tempo_total?: number
   data_inicio: string
+  hora_inicio?: string
+  hora_fim?: string
   cliente_id: string
   equipe_id: string | null
   tipo_manutencao_id: string
   empresa_terceira_id: string
   descricao?: string
+}
+
+function formatMinutesToHM(totalMin: number): string {
+  if (totalMin === 0) return '0h'
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${h > 0 ? `${h}h` : ''}${m > 0 ? `${m}m` : ''}`
+}
+
+function getEffectiveMinutes(m: any): number {
+  let t = m.tempo_total || 0
+  if (t === 0 && m.hora_inicio && m.hora_fim) {
+    const [hi, mi] = m.hora_inicio.split(':').map(Number)
+    const [hf, mf] = m.hora_fim.split(':').map(Number)
+    t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+  }
+  return t
 }
 
 export default function Dashboard() {
@@ -62,7 +84,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   // Filters
-  const [clientes, setClientes] = useState<{id: string, nome_cliente: string, logo_url?: string | null}[]>([])
+  const [clientes, setClientes] = useState<{id: string, nome_cliente: string, logo_url?: string | null, empresa_terceira_id?: string}[]>([])
   const [equipes, setEquipes] = useState<{id: string, nome_equipe: string}[]>([])
   const [tipos, setTipos] = useState<{id: string, nome_tipo_manutencao: string}[]>([])
   const [empresas, setEmpresas] = useState<{id: string, nome_empresa: string}[]>([])
@@ -81,10 +103,31 @@ export default function Dashboard() {
   const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
 
+  // Maintenance table pagination
+  const [tablePage, setTablePage] = useState(1)
+  const [tablePageSize, setTablePageSize] = useState(10)
+
   const currentYear = new Date().getFullYear()
   const canGenerateDashboardReport = planLimits.relatoriosAvancados || isSuperAdmin
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))']
   const getSortDate = (m: ManutencaoRecente) => new Date(`${m.data_inicio}T00:00:00`).getTime() || new Date(m.created_at).getTime()
+
+  // Auto-select empresa when cliente is selected
+  useEffect(() => {
+    if (filterCliente !== "todos") {
+      const selectedClientes = [clientes.find(c => c.id === filterCliente)].filter(Boolean)
+      if (selectedClientes.length === 1 && selectedClientes[0]?.empresa_terceira_id) {
+        setFilterEmpresa(selectedClientes[0].empresa_terceira_id)
+      }
+    }
+  }, [filterCliente, clientes])
+
+  // Check if empresa should be locked
+  const isEmpresaLocked = useMemo(() => {
+    if (filterCliente === "todos") return false
+    const cli = clientes.find(c => c.id === filterCliente)
+    return !!cli?.empresa_terceira_id
+  }, [filterCliente, clientes])
 
   useEffect(() => {
     if (!user) return
@@ -96,20 +139,20 @@ export default function Dashboard() {
           supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('status', 'Em andamento'),
           supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }),
           supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`),
-          supabase.from('clientes').select('id, nome_cliente, logo_url'),
+          supabase.from('clientes').select('id, nome_cliente, logo_url, empresa_terceira_id'),
           supabase.from('equipes').select('id, nome_equipe'),
           supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao'),
           supabase.from('empresas_terceiras').select('id, nome_empresa'),
         ])
 
-        const totalHoras = (cd.data || []).reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+        const totalHorasMin = (cd.data || []).reduce((sum, m) => sum + getEffectiveMinutes(m), 0)
 
         setStats({
           totalManutencoes: mc.count || 0,
           totalClientes: cc.count || 0,
           manutencoesPendentes: pc.count || 0,
           totalSenhas: sc.count || 0,
-          totalHoras: Math.round(totalHoras / 60),
+          totalHoras: totalHorasMin,
         })
         setRecentManutencoes(
           [...(cd.data || [])].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
@@ -128,9 +171,9 @@ export default function Dashboard() {
     fetchData()
   }, [user])
 
-  // Recompute charts when filters change
-  useEffect(() => {
-    const filtered = allManutencoes.filter(m => {
+  // Filtered data for table
+  const filteredManutencoes = useMemo(() => {
+    return allManutencoes.filter(m => {
       if (filterCliente !== "todos" && m.cliente_id !== filterCliente) return false
       if (filterEquipe !== "todos" && m.equipe_id !== filterEquipe) return false
       if (filterTipo !== "todos" && m.tipo_manutencao_id !== filterTipo) return false
@@ -139,12 +182,17 @@ export default function Dashboard() {
       if (filterDataInicio && m.data_inicio < filterDataInicio) return false
       if (filterDataFim && m.data_inicio > filterDataFim) return false
       return true
-    })
+    }).sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente))
+  }, [allManutencoes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
+
+  // Recompute charts when filters change
+  useEffect(() => {
+    const filtered = filteredManutencoes
 
     const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
 
     if (hasFilters) {
-      const totalHoras = filtered.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      const totalMin = filtered.reduce((sum, m) => sum + getEffectiveMinutes(m), 0)
       const uniqueClientes = new Set(filtered.map(m => m.cliente_id))
       const pendentes = filtered.filter(m => m.status === 'Em andamento')
       setStats(prev => ({
@@ -152,15 +200,15 @@ export default function Dashboard() {
         totalManutencoes: filtered.length,
         totalClientes: uniqueClientes.size,
         manutencoesPendentes: pendentes.length,
-        totalHoras: Math.round(totalHoras / 60),
+        totalHoras: totalMin,
       }))
     } else {
-      const totalHoras = allManutencoes.reduce((sum, m) => sum + (m.tempo_total || 0), 0)
+      const totalMin = allManutencoes.reduce((sum, m) => sum + getEffectiveMinutes(m), 0)
       setStats(prev => ({
         ...prev,
         totalManutencoes: allManutencoes.length,
         manutencoesPendentes: allManutencoes.filter(m => m.status === 'Em andamento').length,
-        totalHoras: Math.round(totalHoras / 60),
+        totalHoras: totalMin,
       }))
     }
 
@@ -168,7 +216,7 @@ export default function Dashboard() {
       [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
-    // Monthly chart — use filter year range or current year
+    // Monthly chart
     const filterYear = filterDataInicio ? new Date(filterDataInicio).getFullYear() : (filterDataFim ? new Date(filterDataFim).getFullYear() : currentYear)
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
       const monthDate = new Date(filterYear, i)
@@ -177,7 +225,8 @@ export default function Dashboard() {
         const d = new Date(m.data_inicio)
         return d.getMonth() === i && d.getFullYear() === filterYear
       })
-      return { name: monthLabel, manutenções: monthItems.length, horas: Math.round(monthItems.reduce((s, m) => s + (m.tempo_total || 0), 0) / 60) }
+      const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
+      return { name: monthLabel, manutenções: monthItems.length, horas: formatMinutesToHM(totalMin) }
     })
     setChartData(visaoMensal)
 
@@ -202,9 +251,10 @@ export default function Dashboard() {
     const teamMap: Record<string, number> = {}
     filtered.forEach(m => {
       const name = (m as any).equipes?.nome_equipe || 'Sem equipe'
-      teamMap[name] = (teamMap[name] || 0) + Math.round((m.tempo_total || 0) / 60)
+      const mins = getEffectiveMinutes(m)
+      teamMap[name] = (teamMap[name] || 0) + mins
     })
-    setTeamData(Object.entries(teamMap).map(([name, value], i) => ({ name, horas: value, fill: COLORS[i % COLORS.length] })))
+    setTeamData(Object.entries(teamMap).map(([name, value], i) => ({ name, horas: formatMinutesToHM(value), horasMin: value, fill: COLORS[i % COLORS.length] })))
 
     // Weekly trend (last 8 weeks)
     const weeks: any[] = []
@@ -224,12 +274,13 @@ export default function Dashboard() {
     // Client chart data (hours + maintenances per client)
     const cliData = clientes.map(cli => {
       const cliManutencoes = filtered.filter(m => m.cliente_id === cli.id)
-      const totalMin = cliManutencoes.reduce((s, m) => s + (m.tempo_total || 0), 0)
-      const totalHorasDecimal = Math.round(totalMin / 60 * 10) / 10
-      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: totalHorasDecimal }
+      const totalMin = cliManutencoes.reduce((s, m) => s + getEffectiveMinutes(m), 0)
+      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: formatMinutesToHM(totalMin), horasMin: totalMin }
     }).filter(e => e.manutenções > 0)
     setClienteChartData(cliData)
-  }, [allManutencoes, clientes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
+
+    setTablePage(1)
+  }, [filteredManutencoes, allManutencoes, clientes, filterCliente, filterEquipe, filterTipo, filterEmpresa, filterStatus, filterDataInicio, filterDataFim])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -246,6 +297,14 @@ export default function Dashboard() {
   }
 
   const hasActiveFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
+
+  // Table pagination
+  const paginatedManutencoes = useMemo(() => {
+    const start = (tablePage - 1) * tablePageSize
+    return filteredManutencoes.slice(start, start + tablePageSize)
+  }, [filteredManutencoes, tablePage, tablePageSize])
+
+  const totalTablePages = Math.ceil(filteredManutencoes.length / tablePageSize)
 
   if (loading) {
     return (
@@ -305,29 +364,10 @@ export default function Dashboard() {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-            {/* Empresa */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Empresa</Label>
-              <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Empresa" /></SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEmpresa} onChange={e => setSearchEmpresa(e.target.value)} onClick={e => e.stopPropagation()} />
-                    </div>
-                  </div>
-                  <SelectItem value="todos">Todas as empresas</SelectItem>
-                  {empresas.filter(e => !searchEmpresa || e.nome_empresa?.toLowerCase().includes(searchEmpresa.toLowerCase())).map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Cliente */}
+            {/* Cliente FIRST */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Cliente</Label>
-              <Select value={filterCliente} onValueChange={setFilterCliente}>
+              <Select value={filterCliente} onValueChange={v => { setFilterCliente(v); if (v === "todos") setFilterEmpresa("todos") }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Cliente" /></SelectTrigger>
                 <SelectContent>
                   <div className="p-2">
@@ -342,6 +382,26 @@ export default function Dashboard() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {/* Empresa */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Empresa</Label>
+              <Select value={filterEmpresa} onValueChange={setFilterEmpresa} disabled={isEmpresaLocked}>
+                <SelectTrigger className={`h-9 ${isEmpresaLocked ? 'opacity-60' : ''}`}><SelectValue placeholder="Empresa" /></SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEmpresa} onChange={e => setSearchEmpresa(e.target.value)} onClick={e => e.stopPropagation()} />
+                    </div>
+                  </div>
+                  <SelectItem value="todos">Todas as empresas</SelectItem>
+                  {empresas.filter(e => !searchEmpresa || e.nome_empresa?.toLowerCase().includes(searchEmpresa.toLowerCase())).map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isEmpresaLocked && <p className="text-[10px] text-muted-foreground">Selecionada pelo cliente</p>}
             </div>
             {/* Equipe */}
             <div className="space-y-1">
@@ -412,7 +472,7 @@ export default function Dashboard() {
         <StatCard title="Manutenções" value={stats.totalManutencoes} description="Total cadastrado" icon={Wrench} gradient="primary" />
         <StatCard title="Clientes" value={stats.totalClientes} description="Ativos no sistema" icon={Users} gradient="success" />
         <StatCard title="Pendentes" value={stats.manutencoesPendentes} description="Em andamento" icon={Clock} gradient="warm" />
-        <StatCard title="Horas" value={stats.totalHoras} description="Total acumulado" icon={Calendar} gradient="primary" />
+        <StatCard title="Horas" value={formatMinutesToHM(stats.totalHoras)} description="Total acumulado" icon={Calendar} gradient="primary" />
         <StatCard title="Senhas" value={stats.totalSenhas} description="No cofre" icon={KeyRound} gradient="danger" />
       </div>
 
@@ -555,6 +615,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </ChartCard>
       )}
+
       {/* Team Hours + Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
         {teamData.length > 0 && (
@@ -564,11 +625,12 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={100} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
-                <Bar dataKey="horas" radius={[0, 6, 6, 0]} name="Horas">
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => [props.payload.horas, 'Horas']} />
+                <Bar dataKey="horasMin" radius={[0, 6, 6, 0]} name="Horas">
                   {teamData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.fill} />
                   ))}
+                  <LabelList dataKey="horas" position="right" style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -609,6 +671,87 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Maintenance Table */}
+      {filteredManutencoes.length > 0 && (
+        <Card className="glass-card border-0">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Wrench className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-display font-semibold">Manutenções</CardTitle>
+                  <p className="text-xs text-muted-foreground">{filteredManutencoes.length} registros</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Por página:</Label>
+                <Select value={String(tablePageSize)} onValueChange={v => { setTablePageSize(Number(v)); setTablePage(1) }}>
+                  <SelectTrigger className="h-7 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="max-h-[500px]">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Tipo</TableHead>
+                      <TableHead className="text-xs">Cliente</TableHead>
+                      <TableHead className="text-xs">Data</TableHead>
+                      <TableHead className="text-xs">Tempo</TableHead>
+                      <TableHead className="text-xs">Descrição</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedManutencoes.map(m => {
+                      const mins = getEffectiveMinutes(m)
+                      return (
+                        <TableRow key={m.id}>
+                          <TableCell className="text-xs">{(m as any).tipos_manutencao?.nome_tipo_manutencao || '—'}</TableCell>
+                          <TableCell className="text-xs">{(m as any).clientes?.nome_cliente || '—'}</TableCell>
+                          <TableCell className="text-xs">{new Date(m.data_inicio).toLocaleDateString('pt-BR')}</TableCell>
+                          <TableCell className="text-xs font-medium">{formatMinutesToHM(mins)}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate">{m.descricao || '—'}</TableCell>
+                          <TableCell>
+                            <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", getStatusColor(m.status))}>
+                              {m.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
+            {/* Total row */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <p className="text-xs font-semibold">
+                Total: {filteredManutencoes.length} manutenções — {formatMinutesToHM(filteredManutencoes.reduce((s, m) => s + getEffectiveMinutes(m), 0))}
+              </p>
+              {totalTablePages > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-7 text-xs" disabled={tablePage === 1} onClick={() => setTablePage(p => p - 1)}>Anterior</Button>
+                  <span className="text-xs text-muted-foreground">{tablePage}/{totalTablePages}</span>
+                  <Button variant="outline" size="sm" className="h-7 text-xs" disabled={tablePage === totalTablePages} onClick={() => setTablePage(p => p + 1)}>Próximo</Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <DashboardReportExport
         open={reportOpen}

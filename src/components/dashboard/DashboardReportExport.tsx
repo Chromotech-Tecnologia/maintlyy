@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
-import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface ReportData {
   chartData: any[]
@@ -34,7 +33,7 @@ interface ReportData {
 }
 
 interface ReportFilters {
-  clientes: { id: string; nome_cliente: string; logo_url?: string | null }[]
+  clientes: { id: string; nome_cliente: string; logo_url?: string | null; empresa_terceira_id?: string }[]
   equipes: { id: string; nome_equipe: string }[]
   tipos: { id: string; nome_tipo_manutencao: string }[]
   empresas: { id: string; nome_empresa: string }[]
@@ -67,7 +66,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
   const { toast } = useToast()
   const [exporting, setExporting] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [securityDialogOpen, setSecurityDialogOpen] = useState(false)
+  
 
   // Separate date filters for analytical
   const [analyticDataInicio, setAnalyticDataInicio] = useState("")
@@ -205,22 +204,30 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
           {/* Filters Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Empresa</Label>
-              <Select value={filters.filterEmpresa} onValueChange={v => filters.onFilterChange('empresa', v)}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todas" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as empresas</SelectItem>
-                  {filters.empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <Label className="text-xs">Cliente</Label>
-              <Select value={filters.filterCliente} onValueChange={v => filters.onFilterChange('cliente', v)}>
+              <Select value={filters.filterCliente} onValueChange={v => {
+                filters.onFilterChange('cliente', v)
+                if (v !== 'todos') {
+                  const cli = filters.clientes.find(c => c.id === v)
+                  if (cli?.empresa_terceira_id) filters.onFilterChange('empresa', cli.empresa_terceira_id)
+                } else {
+                  filters.onFilterChange('empresa', 'todos')
+                }
+              }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os clientes</SelectItem>
                   {filters.clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Empresa</Label>
+              <Select value={filters.filterEmpresa} onValueChange={v => filters.onFilterChange('empresa', v)} disabled={filters.filterCliente !== 'todos' && !!filters.clientes.find(c => c.id === filters.filterCliente)?.empresa_terceira_id}>
+                <SelectTrigger className={`h-9 ${filters.filterCliente !== 'todos' ? 'opacity-60' : ''}`}><SelectValue placeholder="Todas" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as empresas</SelectItem>
+                  {filters.empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -270,16 +277,10 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
 
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => setSecurityDialogOpen(true)} disabled={exporting} className="h-9">
+            <Button onClick={handleExport} disabled={exporting} className="h-9">
               {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
               {exporting ? "Gerando..." : "Gerar Relatório (PDF)"}
             </Button>
-            <SecurityTokenDialog
-              open={securityDialogOpen}
-              onOpenChange={setSecurityDialogOpen}
-              email={user?.email || ''}
-              onVerified={handleExport}
-            />
             <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={() => setShowHistory(true)}>
               <History className="h-4 w-4 mr-2" /> Histórico
             </Button>
@@ -316,7 +317,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               {[
                 { label: "Total Manutenções", value: data.stats.totalManutencoes, color: "#3b82f6" },
                 { label: "Pendentes", value: data.stats.manutencoesPendentes, color: "#f59e0b" },
-                { label: "Total Horas", value: data.stats.totalHoras, color: "#22c55e" },
+                { label: "Total Horas", value: (() => { const h = Math.floor(data.stats.totalHoras / 60); const m = data.stats.totalHoras % 60; return `${h}h${m > 0 ? `${m}m` : ''}`; })(), color: "#22c55e" },
                 { label: "Clientes", value: data.stats.totalClientes, color: "#8b5cf6" },
               ].map((kpi, i) => (
                 <div key={i} className="p-4 rounded-xl border border-gray-100" style={{ background: `linear-gradient(135deg, ${kpi.color}08, ${kpi.color}15)` }}>

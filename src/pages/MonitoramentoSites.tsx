@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, ChevronRight, Layers, Building2, ChevronsUpDown, DollarSign } from "lucide-react"
+import { Plus, Trash2, Edit, Globe, Activity, Clock, RefreshCw, Settings, Wifi, WifiOff, Zap, AlertTriangle, ExternalLink, Search, Server, CheckCircle2, XCircle, SkipForward, ChevronDown, ChevronUp, ChevronRight, Layers, Building2, ChevronsUpDown, DollarSign, ShieldAlert, ShieldCheck } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -86,7 +86,7 @@ function translateErrorMessage(msg: string | null): string {
   if (lower.includes('connection refused'))
     return 'Conexão recusada: o servidor não está aceitando conexões'
   if (lower.includes('connection reset'))
-    return 'Conexão resetada pelo servidor'
+    return 'Conexão resetada pelo servidor — possível bloqueio de segurança ou firewall'
   if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('aborted'))
     return 'Tempo esgotado: o site não respondeu dentro do limite'
   if (lower.includes('ssl') || lower.includes('certificate') || lower.includes('tls'))
@@ -95,6 +95,8 @@ function translateErrorMessage(msg: string | null): string {
     return 'Falha na conexão de rede'
   if (lower.includes('too many redirects'))
     return 'Muitos redirecionamentos'
+  if (lower.includes('err_connection_reset'))
+    return 'ERR_CONNECTION_RESET — Conexão resetada, possível ameaça de segurança detectada'
   return msg
 }
 
@@ -102,6 +104,40 @@ function TestStatusIcon({ status }: { status: string }) {
   if (status === 'ok') return <CheckCircle2 className="h-4 w-4 text-emerald-600" />
   if (status === 'fail') return <XCircle className="h-4 w-4 text-destructive" />
   return <SkipForward className="h-4 w-4 text-muted-foreground" />
+}
+
+// Calculate health score: percentage of non-skipped tests that passed
+function getHealthScore(tests: TestResult[]): { percent: number; ok: number; fail: number; total: number } {
+  const nonSkipped = tests.filter(t => t.status !== 'skip')
+  const ok = nonSkipped.filter(t => t.status === 'ok').length
+  const fail = nonSkipped.filter(t => t.status === 'fail').length
+  const total = nonSkipped.length
+  const percent = total > 0 ? Math.round((ok / total) * 100) : 0
+  return { percent, ok, fail, total }
+}
+
+function HealthBadge({ tests }: { tests: TestResult[] }) {
+  if (tests.length === 0) return <Badge variant="outline" className="text-[10px]">Sem dados</Badge>
+  const { percent } = getHealthScore(tests)
+  if (percent === 100) {
+    return (
+      <Badge className="bg-emerald-500/20 text-emerald-700 border-emerald-300 text-[10px]">
+        <ShieldCheck className="h-3 w-3 mr-0.5" />{percent}%
+      </Badge>
+    )
+  }
+  if (percent >= 70) {
+    return (
+      <Badge className="bg-amber-500/20 text-amber-700 border-amber-300 text-[10px]">
+        <AlertTriangle className="h-3 w-3 mr-0.5" />{percent}%
+      </Badge>
+    )
+  }
+  return (
+    <Badge className="bg-red-500/20 text-red-700 border-red-300 text-[10px]">
+      <ShieldAlert className="h-3 w-3 mr-0.5" />{percent}%
+    </Badge>
+  )
 }
 
 // Searchable Combobox for Client/Empresa
@@ -168,6 +204,7 @@ export default function MonitoramentoSites() {
   const [saving, setSaving] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; nome: string }>({ open: false, id: "", nome: "" })
   const [checking, setChecking] = useState(false)
+  const [checkingSingle, setCheckingSingle] = useState<string | null>(null)
   const [expandedCycles, setExpandedCycles] = useState<Record<string, boolean>>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<'todos' | 'online' | 'offline'>('todos')
@@ -177,6 +214,7 @@ export default function MonitoramentoSites() {
   const [empresaFilter, setEmpresaFilter] = useState<string>("todos")
   const [paganteFilter, setPaganteFilter] = useState<'todos' | 'sim' | 'nao'>('todos')
   const [ativoFilter, setAtivoFilter] = useState<'ativos' | 'inativos' | 'todos'>('ativos')
+  const [healthFilter, setHealthFilter] = useState<'todos' | '100' | 'problemas'>('todos')
   const [groupBy, setGroupBy] = useState<'none' | 'cliente' | 'empresa'>('none')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
@@ -361,6 +399,30 @@ export default function MonitoramentoSites() {
     setChecking(false)
   }
 
+  const runSingleCheck = async (urlId: string) => {
+    if (!user) return
+    setCheckingSingle(urlId)
+    try {
+      const { data, error } = await supabase.functions.invoke('check-urls', { body: { single_url_id: urlId } })
+      if (error) throw error
+      toast.success("Verificação individual concluída!")
+      // Refresh just this URL's latest log
+      const { data: log } = await supabase
+        .from('url_check_logs')
+        .select('*')
+        .eq('monitored_url_id', urlId)
+        .order('checked_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (log) {
+        setLatestLogs(prev => ({ ...prev, [urlId]: log as unknown as CheckLog }))
+      }
+    } catch (err: any) {
+      toast.error("Erro ao verificar: " + (err.message || "Erro desconhecido"))
+    }
+    setCheckingSingle(null)
+  }
+
   const handleSaveSchedule = async () => {
     if (!user) return
     if (!scheduleForm.email_destinatario.trim()) { toast.error("Email é obrigatório"); return }
@@ -403,7 +465,7 @@ export default function MonitoramentoSites() {
     setExpandedCycles(prev => ({ ...prev, [logId]: !prev[logId] }))
   }
 
-  // Filtered URLs with client/company/pagante/ativo filters
+  // Filtered URLs with client/company/pagante/ativo/health filters
   const filteredUrls = useMemo(() => {
     return urls.filter(u => {
       const term = searchTerm.toLowerCase()
@@ -422,9 +484,21 @@ export default function MonitoramentoSites() {
       if (paganteFilter === 'nao' && u.pagante) return false
       if (ativoFilter === 'ativos' && !u.ativo) return false
       if (ativoFilter === 'inativos' && u.ativo) return false
+      // Health filter
+      if (healthFilter !== 'todos') {
+        const log = latestLogs[u.id]
+        const tests = (log?.test_results || []) as TestResult[]
+        if (tests.length === 0) {
+          if (healthFilter === '100') return false
+        } else {
+          const { percent } = getHealthScore(tests)
+          if (healthFilter === '100' && percent !== 100) return false
+          if (healthFilter === 'problemas' && percent === 100) return false
+        }
+      }
       return true
     })
-  }, [urls, searchTerm, statusFilter, clienteFilter, empresaFilter, paganteFilter, ativoFilter, latestLogs])
+  }, [urls, searchTerm, statusFilter, clienteFilter, empresaFilter, paganteFilter, ativoFilter, healthFilter, latestLogs])
 
   // Stats based on filtered URLs
   const onlineCount = filteredUrls.filter(u => latestLogs[u.id]?.is_online).length
@@ -433,6 +507,10 @@ export default function MonitoramentoSites() {
     const times = filteredUrls.map(u => latestLogs[u.id]?.response_time_ms).filter((t): t is number => !!t)
     return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0
   })()
+  const healthyCount = filteredUrls.filter(u => {
+    const tests = (latestLogs[u.id]?.test_results || []) as TestResult[]
+    return tests.length > 0 && getHealthScore(tests).percent === 100
+  }).length
 
   // Grouped URLs
   const groupedUrls = useMemo(() => {
@@ -479,13 +557,17 @@ export default function MonitoramentoSites() {
   const renderSiteCard = (u: MonitoredUrl) => {
     const log = latestLogs[u.id]
     const tests = (log?.test_results || []) as TestResult[]
-    const testsOk = tests.filter(t => t.status === 'ok').length
-    const testsFail = tests.filter(t => t.status === 'fail').length
+    const { percent, ok: testsOk, fail: testsFail } = getHealthScore(tests)
     const empresaNome = getEmpresaName(u.empresa_terceira_id)
     const clienteNome = getClienteName(u.cliente_id)
+    const hasSecurityIssue = log?.error_message?.toLowerCase().includes('connection reset') || 
+      tests.some(t => t.status === 'fail' && (t.detail.toLowerCase().includes('reset') || t.detail.toLowerCase().includes('ssl') || t.detail.toLowerCase().includes('security')))
+
+    // Card border color based on health
+    const cardBorder = !log ? '' : percent === 100 ? 'border-l-4 border-l-emerald-500' : percent >= 70 ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-red-500'
 
     return (
-      <Card key={u.id} className={`glass-card transition-all ${!u.ativo ? 'opacity-50' : ''}`}>
+      <Card key={u.id} className={`glass-card transition-all ${!u.ativo ? 'opacity-50' : ''} ${cardBorder}`}>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -517,17 +599,28 @@ export default function MonitoramentoSites() {
                     Intervalo: {u.check_interval_minutes}min
                     {log && ` · Último check: ${new Date(log.checked_at).toLocaleString('pt-BR')}`}
                   </p>
-                  {tests.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      · {tests.length} testes ({testsOk} ✓ {testsFail > 0 ? `${testsFail} ✗` : ''})
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {getStatusBadge(log?.is_online)}
+              <HealthBadge tests={tests} />
               {getSpeedBadge(log?.response_time_ms ?? null)}
+              {hasSecurityIssue && (
+                <Badge className="bg-red-600/20 text-red-700 border-red-400 text-[10px] animate-pulse">
+                  <ShieldAlert className="h-3 w-3 mr-0.5" />Alerta Segurança
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => runSingleCheck(u.id)}
+                disabled={checkingSingle === u.id}
+                title="Verificar este site"
+              >
+                <RefreshCw className={`h-4 w-4 ${checkingSingle === u.id ? 'animate-spin' : ''}`} />
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                 <a href={u.url} target="_blank" rel="noopener noreferrer" title="Abrir site">
                   <ExternalLink className="h-4 w-4" />
@@ -569,7 +662,7 @@ export default function MonitoramentoSites() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={runManualCheck} disabled={checking} size="sm">
             <RefreshCw className={`h-4 w-4 mr-1 ${checking ? 'animate-spin' : ''}`} />
-            {checking ? "Verificando..." : "Verificar Agora"}
+            {checking ? "Verificando..." : "Verificar Todos"}
           </Button>
           {(isAdmin || canCreateSystem('monitoramento')) && (
             <Button onClick={openCreate} size="sm">
@@ -580,7 +673,7 @@ export default function MonitoramentoSites() {
       </div>
 
       {/* Stats - based on filtered URLs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Card className="glass-card">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -611,6 +704,17 @@ export default function MonitoramentoSites() {
             <div>
               <p className="text-2xl font-bold text-red-600">{offlineCount}</p>
               <p className="text-xs text-muted-foreground">Offline</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-emerald-600">{healthyCount}</p>
+              <p className="text-xs text-muted-foreground">100% Saudáveis</p>
             </div>
           </CardContent>
         </Card>
@@ -658,6 +762,20 @@ export default function MonitoramentoSites() {
                     </SelectItem>
                     <SelectItem value="offline">
                       <span className="flex items-center gap-1.5"><WifiOff className="h-3 w-3 text-destructive" /> Offline</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={healthFilter} onValueChange={(v: any) => setHealthFilter(v)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[150px]">
+                    <SelectValue placeholder="Saúde" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Saúde: Todos</SelectItem>
+                    <SelectItem value="100">
+                      <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-emerald-600" /> 100% OK</span>
+                    </SelectItem>
+                    <SelectItem value="problemas">
+                      <span className="flex items-center gap-1.5"><ShieldAlert className="h-3 w-3 text-red-600" /> Com problemas</span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -1056,6 +1174,7 @@ export default function MonitoramentoSites() {
                       <TableHead>Status</TableHead>
                       <TableHead>Código</TableHead>
                       <TableHead>Tempo</TableHead>
+                      <TableHead>Saúde</TableHead>
                       <TableHead>Testes</TableHead>
                       <TableHead>Erro</TableHead>
                     </TableRow>
@@ -1072,6 +1191,7 @@ export default function MonitoramentoSites() {
                             <TableCell>{getStatusBadge(log.is_online)}</TableCell>
                             <TableCell className="text-xs">{log.status_code || '-'}</TableCell>
                             <TableCell>{getSpeedBadge(log.response_time_ms)}</TableCell>
+                            <TableCell><HealthBadge tests={tests} /></TableCell>
                             <TableCell className="text-xs">
                               {tests.length > 0 ? (
                                 <span className="flex items-center gap-1">
@@ -1085,7 +1205,7 @@ export default function MonitoramentoSites() {
                           </TableRow>
                           {expandedCycles[log.id] && tests.length > 0 && (
                             <TableRow>
-                              <TableCell colSpan={6} className="bg-muted/30 p-3">
+                              <TableCell colSpan={7} className="bg-muted/30 p-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                   {tests.map((t, i) => (
                                     <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.status === 'fail' ? 'bg-destructive/10' : t.status === 'ok' ? 'bg-emerald-500/10' : 'bg-muted/50'}`}>
@@ -1106,7 +1226,7 @@ export default function MonitoramentoSites() {
                     })}
                     {(!logs[historyModalUrl] || logs[historyModalUrl].length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhum registro</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -1125,6 +1245,7 @@ export default function MonitoramentoSites() {
             const log = latestLogs[detailModalUrl]
             const tests = (log?.test_results || []) as TestResult[]
             const history = logs[detailModalUrl] || []
+            const { percent } = getHealthScore(tests)
             return (
               <>
                 <DialogHeader>
@@ -1141,6 +1262,7 @@ export default function MonitoramentoSites() {
                   <div className="space-y-4 pr-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       {getStatusBadge(log?.is_online)}
+                      <HealthBadge tests={tests} />
                       {getSpeedBadge(log?.response_time_ms ?? null)}
                       {urlObj?.tipo === 'ip' && <Badge variant="secondary"><Server className="h-3 w-3 mr-1" />IP</Badge>}
                       {urlObj?.keyword && <Badge variant="outline"><Search className="h-3 w-3 mr-1" />{urlObj.keyword}</Badge>}
@@ -1148,9 +1270,23 @@ export default function MonitoramentoSites() {
                       {log && <span className="text-xs text-muted-foreground">Último check: {new Date(log.checked_at).toLocaleString('pt-BR')}</span>}
                     </div>
 
+                    {/* Security alert banner */}
+                    {log?.error_message && (log.error_message.toLowerCase().includes('reset') || log.error_message.toLowerCase().includes('security')) && (
+                      <div className="bg-red-500/10 border border-red-300 rounded-lg p-3 flex items-start gap-2">
+                        <ShieldAlert className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-red-700">⚠️ Alerta de Segurança</p>
+                          <p className="text-xs text-red-600 mt-0.5">
+                            A conexão com este site foi resetada. Isso pode indicar bloqueio por firewall, antivírus ou ameaça de segurança detectada. 
+                            Recomenda-se verificar manualmente o site com um navegador atualizado.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {tests.length > 0 ? (
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">Último Ciclo de Testes ({tests.length} testes)</h4>
+                        <h4 className="font-semibold text-sm">Último Ciclo de Testes ({tests.length} testes — {percent}% OK)</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {tests.map((t, i) => (
                             <Card key={i} className={`${t.status === 'fail' ? 'border-destructive/50 bg-destructive/5' : t.status === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-muted'}`}>
@@ -1190,6 +1326,7 @@ export default function MonitoramentoSites() {
                                 <span className="text-xs text-muted-foreground w-36 shrink-0">{new Date(h.checked_at).toLocaleString('pt-BR')}</span>
                                 <span className="text-xs">{h.status_code || '-'}</span>
                                 {h.response_time_ms && <span className="text-xs text-muted-foreground">{h.response_time_ms}ms</span>}
+                                <HealthBadge tests={hTests} />
                                 {hTests.length > 0 && (
                                   <span className="text-xs ml-auto flex items-center gap-1">
                                     <span className="text-emerald-600">{hOk}✓</span>
