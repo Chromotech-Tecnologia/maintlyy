@@ -269,16 +269,10 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
 
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => setSecurityDialogOpen(true)} disabled={exporting} className="h-9">
+            <Button onClick={handleExport} disabled={exporting} className="h-9">
               {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
               {exporting ? "Gerando..." : "Gerar Relatório (PDF)"}
             </Button>
-            <SecurityTokenDialog
-              open={securityDialogOpen}
-              onOpenChange={setSecurityDialogOpen}
-              email={user?.email || ''}
-              onVerified={handleExport}
-            />
             <Button variant="outline" size="sm" className="h-9 ml-auto" onClick={() => setShowHistory(true)}>
               <History className="h-4 w-4 mr-2" /> Histórico
             </Button>
