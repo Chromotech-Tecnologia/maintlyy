@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
-import { SecurityTokenDialog } from "@/components/SecurityTokenDialog"
 
 interface ReportData {
   chartData: any[]
@@ -34,7 +33,7 @@ interface ReportData {
 }
 
 interface ReportFilters {
-  clientes: { id: string; nome_cliente: string; logo_url?: string | null }[]
+  clientes: { id: string; nome_cliente: string; logo_url?: string | null; empresa_terceira_id?: string }[]
   equipes: { id: string; nome_equipe: string }[]
   tipos: { id: string; nome_tipo_manutencao: string }[]
   empresas: { id: string; nome_empresa: string }[]
