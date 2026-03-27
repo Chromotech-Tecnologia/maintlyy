@@ -317,7 +317,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
               {[
                 { label: "Total Manutenções", value: data.stats.totalManutencoes, color: "#3b82f6" },
                 { label: "Pendentes", value: data.stats.manutencoesPendentes, color: "#f59e0b" },
-                { label: "Total Horas", value: data.stats.totalHoras, color: "#22c55e" },
+                { label: "Total Horas", value: (() => { const h = Math.floor(data.stats.totalHoras / 60); const m = data.stats.totalHoras % 60; return `${h}h${m > 0 ? `${m}m` : ''}`; })(), color: "#22c55e" },
                 { label: "Clientes", value: data.stats.totalClientes, color: "#8b5cf6" },
               ].map((kpi, i) => (
                 <div key={i} className="p-4 rounded-xl border border-gray-100" style={{ background: `linear-gradient(135deg, ${kpi.color}08, ${kpi.color}15)` }}>
