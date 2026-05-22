@@ -651,12 +651,21 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={100} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => [props.payload.horas, 'Horas']} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(_value: any, _name: any, props: any) => [`${props.payload.manutenções} manut. • ${props.payload.horas}`, 'Total']} />
                 <Bar dataKey="horasMin" radius={[0, 6, 6, 0]} name="Horas">
                   {teamData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.fill} />
                   ))}
-                  <LabelList dataKey="horas" position="right" style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <LabelList position="right" content={(props: any) => {
+                    const { x, y, width, height, index } = props
+                    const d = teamData[index]
+                    if (!d) return null
+                    return (
+                      <text x={(x || 0) + (width || 0) + 6} y={(y || 0) + (height || 0) / 2 + 3} style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}>
+                        {`${d.manutenções} • ${d.horas}`}
+                      </text>
+                    )
+                  }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
