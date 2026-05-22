@@ -55,13 +55,18 @@ function formatMinutesToHM(totalMin: number): string {
   return `${h > 0 ? `${h}h` : ''}${m > 0 ? `${m}m` : ''}`
 }
 
+const MAX_REASONABLE_MINUTES = 60 * 24 * 30 // 30 dias
 function getEffectiveMinutes(m: any): number {
   let t = m.tempo_total || 0
-  if (t === 0 && m.hora_inicio && m.hora_fim) {
+  // Recalcula a partir dos horários quando o tempo armazenado é inválido
+  // (zero, negativo ou absurdo por erro de digitação na data)
+  if ((t <= 0 || t > MAX_REASONABLE_MINUTES) && m.hora_inicio && m.hora_fim) {
     const [hi, mi] = m.hora_inicio.split(':').map(Number)
     const [hf, mf] = m.hora_fim.split(':').map(Number)
-    t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+    const recalc = (hf * 60 + mf) - (hi * 60 + mi)
+    t = recalc >= 0 ? recalc : recalc + 24 * 60
   }
+  if (t < 0 || t > MAX_REASONABLE_MINUTES) t = 0
   return t
 }
 
