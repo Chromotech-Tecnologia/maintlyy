@@ -231,7 +231,7 @@ export default function Dashboard() {
         return d.getMonth() === i && d.getFullYear() === filterYear
       })
       const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
-      return { name: monthLabel, manutenções: monthItems.length, horas: formatMinutesToHM(totalMin) }
+      return { name: monthLabel, manutenções: monthItems.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
     })
     setChartData(visaoMensal)
 
