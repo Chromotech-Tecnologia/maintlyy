@@ -280,7 +280,7 @@ export default function Dashboard() {
     const cliData = clientes.map(cli => {
       const cliManutencoes = filtered.filter(m => m.cliente_id === cli.id)
       const totalMin = cliManutencoes.reduce((s, m) => s + getEffectiveMinutes(m), 0)
-      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: formatMinutesToHM(totalMin), horasMin: totalMin }
+      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
     }).filter(e => e.manutenções > 0)
     setClienteChartData(cliData)
 
