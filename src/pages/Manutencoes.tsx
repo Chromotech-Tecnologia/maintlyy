@@ -158,7 +158,16 @@ export default function Manutencoes() {
     if (!dataFim || !horaFim) return null
     const inicio = new Date(`${dataInicio}T${horaInicio}`)
     const fim = new Date(`${dataFim}T${horaFim}`)
-    return Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60))
+    const diffMin = Math.round((fim.getTime() - inicio.getTime()) / (1000 * 60))
+    const MAX_MIN = 60 * 24 * 30 // 30 dias — protege contra erros de digitação em datas
+    if (diffMin < 0 || diffMin > MAX_MIN) {
+      // Recalcula apenas pelos horários (mesmo dia) quando o intervalo é absurdo
+      const [hi, mi] = horaInicio.split(':').map(Number)
+      const [hf, mf] = horaFim.split(':').map(Number)
+      const r = (hf * 60 + mf) - (hi * 60 + mi)
+      return r >= 0 ? r : r + 24 * 60
+    }
+    return diffMin
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
