@@ -603,8 +603,10 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
-              <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" strokeWidth={2} name="Manutenções" />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, _name: any, props: any) => [`${value} • ${formatMinutesToHM(props?.payload?.horasMin || 0)}`, 'Manutenções']} />
+              <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" strokeWidth={2} name="Manutenções">
+                <LabelList dataKey="value" position="top" formatter={(v: any, _i: any, entry: any) => entry?.horasMin ? `${v} / ${formatMinutesToHM(entry.horasMin)}` : `${v}`} style={{ fontSize: 9, fill: 'hsl(var(--primary))' }} />
+              </Area>
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
