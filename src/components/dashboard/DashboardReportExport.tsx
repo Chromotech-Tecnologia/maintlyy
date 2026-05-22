@@ -346,13 +346,13 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
                     <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
-                    <Tooltip />
+                    <Tooltip formatter={(value: any, name: any, props: any) => name === 'horas' ? [(() => { const mins = props?.payload?.horasMin ?? Math.round(Number(value) * 60); const h = Math.floor(mins / 60); const m = mins % 60; return `${h > 0 ? h + 'h' : ''}${m > 0 ? m + 'm' : (h === 0 ? '0h' : '')}`; })(), 'horas'] : [value, name]} />
                     <Legend wrapperStyle={{ fontSize: 10 }} />
                     <Bar dataKey="manutenções" fill="url(#barGrad1)" radius={[6, 6, 0, 0]}>
                       <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#3b82f6' }} />
                     </Bar>
                     <Bar dataKey="horas" fill="url(#barGrad2)" radius={[6, 6, 0, 0]}>
-                      <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: '#22c55e' }} />
+                      <LabelList dataKey="horasMin" position="top" formatter={(v: any) => { const mins = Number(v) || 0; const h = Math.floor(mins / 60); const m = mins % 60; return `${h > 0 ? h + 'h' : ''}${m > 0 ? m + 'm' : (h === 0 ? '' : '')}`; }} style={{ fontSize: 9, fill: '#22c55e' }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
