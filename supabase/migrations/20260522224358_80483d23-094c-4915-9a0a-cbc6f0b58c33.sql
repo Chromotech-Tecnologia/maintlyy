@@ -1,0 +1,1 @@
+UPDATE public.manutencoes SET data_inicio = '2026-05-08', tempo_total = 25 WHERE id = '5c4e911c-6a8e-4b28-96fc-8244ecd89645';
