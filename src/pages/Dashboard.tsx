@@ -605,7 +605,16 @@ export default function Dashboard() {
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
               <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, _name: any, props: any) => [`${value} • ${formatMinutesToHM(props?.payload?.horasMin || 0)}`, 'Manutenções']} />
               <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" strokeWidth={2} name="Manutenções">
-                <LabelList dataKey="value" position="top" formatter={(v: any, _i: any, entry: any) => entry?.horasMin ? `${v} / ${formatMinutesToHM(entry.horasMin)}` : `${v}`} style={{ fontSize: 9, fill: 'hsl(var(--primary))' }} />
+                <LabelList position="top" content={(props: any) => {
+                  const { x, y, index } = props
+                  const d = weeklyData[index]
+                  if (!d) return null
+                  return (
+                    <text x={x} y={(y || 0) - 6} textAnchor="middle" style={{ fontSize: 9, fill: 'hsl(var(--primary))' }}>
+                      {`${d.value} • ${formatMinutesToHM(d.horasMin || 0)}`}
+                    </text>
+                  )
+                }} />
               </Area>
             </AreaChart>
           </ResponsiveContainer>
