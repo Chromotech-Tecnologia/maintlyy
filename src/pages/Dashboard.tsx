@@ -566,14 +566,14 @@ export default function Dashboard() {
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, _name: any, props: any) => [`${value} (${formatMinutesToHM(props?.payload?.horasMin || 0)})`, props?.payload?.name]} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 px-2">
                 {tipoData.map((entry: any, index: number) => (
                   <div key={index} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                    <span className="truncate max-w-[100px]">{entry.name} ({entry.value})</span>
+                    <span className="truncate max-w-[140px]">{entry.name} ({entry.value} • {formatMinutesToHM(entry.horasMin || 0)})</span>
                   </div>
                 ))}
               </div>
@@ -585,7 +585,7 @@ export default function Dashboard() {
           <ChartCard title="Por Status" description="Status das manutenções" icon={Clock}>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value" label={(e: any) => `${e.value} • ${formatMinutesToHM(e.horasMin || 0)}`} labelLine={false} style={{ fontSize: 10 }}>
                   {statusData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
