@@ -235,44 +235,50 @@ export default function Dashboard() {
     })
     setChartData(visaoMensal)
 
-    // Type breakdown
-    const tipoMap: Record<string, number> = {}
+    // Type breakdown (count + hours)
+    const tipoMap: Record<string, { count: number; mins: number }> = {}
     filtered.forEach(m => {
       const name = (m as any).tipos_manutencao?.nome_tipo_manutencao || 'Sem tipo'
-      tipoMap[name] = (tipoMap[name] || 0) + 1
+      if (!tipoMap[name]) tipoMap[name] = { count: 0, mins: 0 }
+      tipoMap[name].count += 1
+      tipoMap[name].mins += getEffectiveMinutes(m)
     })
-    setTipoData(Object.entries(tipoMap).map(([name, value], i) => ({ name, value, color: COLORS[i % COLORS.length] })))
+    setTipoData(Object.entries(tipoMap).map(([name, v], i) => ({ name, value: v.count, horasMin: v.mins, color: COLORS[i % COLORS.length] })))
 
-    // Status distribution
-    const statusMap: Record<string, number> = {}
+    // Status distribution (count + hours)
+    const statusMap: Record<string, { count: number; mins: number }> = {}
     filtered.forEach(m => {
       const s = m.status || 'Em andamento'
-      statusMap[s] = (statusMap[s] || 0) + 1
+      if (!statusMap[s]) statusMap[s] = { count: 0, mins: 0 }
+      statusMap[s].count += 1
+      statusMap[s].mins += getEffectiveMinutes(m)
     })
     const statusColors: Record<string, string> = { 'Finalizado': 'hsl(142, 76%, 36%)', 'Em andamento': 'hsl(38, 92%, 50%)', 'Cancelado': 'hsl(0, 84%, 60%)' }
-    setStatusData(Object.entries(statusMap).map(([name, value]) => ({ name, value, color: statusColors[name] || 'hsl(215, 16%, 47%)' })))
+    setStatusData(Object.entries(statusMap).map(([name, v]) => ({ name, value: v.count, horasMin: v.mins, color: statusColors[name] || 'hsl(215, 16%, 47%)' })))
 
-    // Team breakdown
-    const teamMap: Record<string, number> = {}
+    // Team breakdown (hours + count)
+    const teamMap: Record<string, { mins: number; count: number }> = {}
     filtered.forEach(m => {
       const name = (m as any).equipes?.nome_equipe || 'Sem equipe'
-      const mins = getEffectiveMinutes(m)
-      teamMap[name] = (teamMap[name] || 0) + mins
+      if (!teamMap[name]) teamMap[name] = { mins: 0, count: 0 }
+      teamMap[name].mins += getEffectiveMinutes(m)
+      teamMap[name].count += 1
     })
-    setTeamData(Object.entries(teamMap).map(([name, value], i) => ({ name, horas: formatMinutesToHM(value), horasMin: value, fill: COLORS[i % COLORS.length] })))
+    setTeamData(Object.entries(teamMap).map(([name, v], i) => ({ name, horas: formatMinutesToHM(v.mins), horasMin: v.mins, manutenções: v.count, fill: COLORS[i % COLORS.length] })))
 
-    // Weekly trend (last 8 weeks)
+    // Weekly trend (last 8 weeks) — count + hours
     const weeks: any[] = []
     for (let w = 7; w >= 0; w--) {
       const weekStart = new Date()
       weekStart.setDate(weekStart.getDate() - (w * 7))
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekEnd.getDate() + 7)
-      const count = filtered.filter(m => {
+      const wkItems = filtered.filter(m => {
         const d = new Date(m.data_inicio)
         return d >= weekStart && d < weekEnd
-      }).length
-      weeks.push({ name: `S${8 - w}`, value: count })
+      })
+      const wkMin = wkItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
+      weeks.push({ name: `S${8 - w}`, value: wkItems.length, horasMin: wkMin })
     }
     setWeeklyData(weeks)
 
@@ -492,8 +498,12 @@ export default function Dashboard() {
                 <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                  <LabelList dataKey="manutenções" position="top" style={{ fontSize: 10, fill: 'hsl(var(--primary))' }} />
+                </Bar>
+                <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]}>
+                  <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 10, fill: 'hsl(142, 76%, 36%)' }} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -556,14 +566,14 @@ export default function Dashboard() {
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, _name: any, props: any) => [`${value} (${formatMinutesToHM(props?.payload?.horasMin || 0)})`, props?.payload?.name]} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 px-2">
                 {tipoData.map((entry: any, index: number) => (
                   <div key={index} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                    <span className="truncate max-w-[100px]">{entry.name} ({entry.value})</span>
+                    <span className="truncate max-w-[140px]">{entry.name} ({entry.value} • {formatMinutesToHM(entry.horasMin || 0)})</span>
                   </div>
                 ))}
               </div>
@@ -575,7 +585,7 @@ export default function Dashboard() {
           <ChartCard title="Por Status" description="Status das manutenções" icon={Clock}>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value" label={(e: any) => `${e.value} • ${formatMinutesToHM(e.horasMin || 0)}`} labelLine={false} style={{ fontSize: 10 }}>
                   {statusData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
@@ -593,8 +603,19 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
-              <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" strokeWidth={2} name="Manutenções" />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, _name: any, props: any) => [`${value} • ${formatMinutesToHM(props?.payload?.horasMin || 0)}`, 'Manutenções']} />
+              <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" strokeWidth={2} name="Manutenções">
+                <LabelList position="top" content={(props: any) => {
+                  const { x, y, index } = props
+                  const d = weeklyData[index]
+                  if (!d) return null
+                  return (
+                    <text x={x} y={(y || 0) - 6} textAnchor="middle" style={{ fontSize: 9, fill: 'hsl(var(--primary))' }}>
+                      {`${d.value} • ${formatMinutesToHM(d.horasMin || 0)}`}
+                    </text>
+                  )
+                }} />
+              </Area>
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -630,12 +651,21 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={100} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => [props.payload.horas, 'Horas']} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(_value: any, _name: any, props: any) => [`${props.payload.manutenções} manut. • ${props.payload.horas}`, 'Total']} />
                 <Bar dataKey="horasMin" radius={[0, 6, 6, 0]} name="Horas">
                   {teamData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.fill} />
                   ))}
-                  <LabelList dataKey="horas" position="right" style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <LabelList position="right" content={(props: any) => {
+                    const { x, y, width, height, index } = props
+                    const d = teamData[index]
+                    if (!d) return null
+                    return (
+                      <text x={(x || 0) + (width || 0) + 6} y={(y || 0) + (height || 0) / 2 + 3} style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}>
+                        {`${d.manutenções} • ${d.horas}`}
+                      </text>
+                    )
+                  }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

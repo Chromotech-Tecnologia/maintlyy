@@ -374,8 +374,22 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
                     <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="url(#areaGrad)" strokeWidth={2.5} name="Manutenções" />
+                    <Tooltip formatter={(value: any, _name: any, props: any) => [`${value} • ${(() => { const mins = props?.payload?.horasMin || 0; const h = Math.floor(mins/60); const m = mins%60; return `${h>0?h+'h':''}${m>0?m+'m':(h===0?'0h':'')}`; })()}`, 'Manutenções']} />
+                    <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="url(#areaGrad)" strokeWidth={2.5} name="Manutenções">
+                      <LabelList position="top" content={(props: any) => {
+                        const { x, y, index } = props
+                        const d = data.weeklyData[index]
+                        if (!d) return null
+                        const mins = d.horasMin || 0
+                        const h = Math.floor(mins/60); const m = mins%60
+                        const hLabel = `${h>0?h+'h':''}${m>0?m+'m':(h===0?'0h':'')}`
+                        return (
+                          <text x={x} y={(y || 0) - 6} textAnchor="middle" style={{ fontSize: 9, fill: '#3b82f6' }}>
+                            {`${d.value} • ${hLabel}`}
+                          </text>
+                        )
+                      }} />
+                    </Area>
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -385,12 +399,12 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">🔧 Por Tipo</h3>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={data.tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                      <Pie data={data.tipoData} cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={4} dataKey="value" label={({ name, value, payload }: any) => { const mins = payload?.horasMin || 0; const h = Math.floor(mins/60); const m = mins%60; const hLabel = `${h>0?h+'h':''}${m>0?m+'m':(h===0?'0h':'')}`; return `${name}: ${value} • ${hLabel}`; }}>
                         {data.tipoData.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value: any, _name: any, props: any) => [`${value} • ${(() => { const mins = props?.payload?.horasMin || 0; const h = Math.floor(mins/60); const m = mins%60; return `${h>0?h+'h':''}${m>0?m+'m':(h===0?'0h':'')}`; })()}`, props?.payload?.name]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
