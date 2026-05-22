@@ -455,12 +455,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     )}
                     {analyticalData.length > 0 && (() => {
                       const totalMin = analyticalData.reduce((s: number, m: any) => {
+                        const MAX_MIN = 60 * 24 * 30
                         let t = m.tempo_total || 0
-                        if (t === 0 && m.hora_inicio && m.hora_fim) {
+                        if ((t <= 0 || t > MAX_MIN) && m.hora_inicio && m.hora_fim) {
                           const [hi, mi] = m.hora_inicio.split(':').map(Number)
                           const [hf, mf] = m.hora_fim.split(':').map(Number)
-                          t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                          const r = (hf * 60 + mf) - (hi * 60 + mi)
+                          t = r >= 0 ? r : r + 24 * 60
                         }
+                        if (t < 0 || t > MAX_MIN) t = 0
                         return s + t
                       }, 0)
                       const totalH = Math.floor(totalMin / 60)
