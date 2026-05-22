@@ -55,13 +55,18 @@ function formatMinutesToHM(totalMin: number): string {
   return `${h > 0 ? `${h}h` : ''}${m > 0 ? `${m}m` : ''}`
 }
 
+const MAX_REASONABLE_MINUTES = 60 * 24 * 30 // 30 dias
 function getEffectiveMinutes(m: any): number {
   let t = m.tempo_total || 0
-  if (t === 0 && m.hora_inicio && m.hora_fim) {
+  // Recalcula a partir dos horários quando o tempo armazenado é inválido
+  // (zero, negativo ou absurdo por erro de digitação na data)
+  if ((t <= 0 || t > MAX_REASONABLE_MINUTES) && m.hora_inicio && m.hora_fim) {
     const [hi, mi] = m.hora_inicio.split(':').map(Number)
     const [hf, mf] = m.hora_fim.split(':').map(Number)
-    t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+    const recalc = (hf * 60 + mf) - (hi * 60 + mi)
+    t = recalc >= 0 ? recalc : recalc + 24 * 60
   }
+  if (t < 0 || t > MAX_REASONABLE_MINUTES) t = 0
   return t
 }
 
@@ -226,7 +231,7 @@ export default function Dashboard() {
         return d.getMonth() === i && d.getFullYear() === filterYear
       })
       const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
-      return { name: monthLabel, manutenções: monthItems.length, horas: formatMinutesToHM(totalMin) }
+      return { name: monthLabel, manutenções: monthItems.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
     })
     setChartData(visaoMensal)
 
@@ -275,7 +280,7 @@ export default function Dashboard() {
     const cliData = clientes.map(cli => {
       const cliManutencoes = filtered.filter(m => m.cliente_id === cli.id)
       const totalMin = cliManutencoes.reduce((s, m) => s + getEffectiveMinutes(m), 0)
-      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: formatMinutesToHM(totalMin), horasMin: totalMin }
+      return { name: cli.nome_cliente, manutenções: cliManutencoes.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
     }).filter(e => e.manutenções > 0)
     setClienteChartData(cliData)
 
@@ -485,7 +490,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]} />
@@ -603,13 +608,13 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
               <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
                 <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: 'hsl(var(--primary))' }} />
               </Bar>
               <Bar dataKey="horas" fill="hsl(38, 92%, 50%)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: 'hsl(38, 92%, 50%)' }} />
+                <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 9, fill: 'hsl(38, 92%, 50%)' }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

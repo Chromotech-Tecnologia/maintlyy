@@ -346,13 +346,13 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
                     <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
-                    <Tooltip />
+                    <Tooltip formatter={(value: any, name: any, props: any) => name === 'horas' ? [(() => { const mins = props?.payload?.horasMin ?? Math.round(Number(value) * 60); const h = Math.floor(mins / 60); const m = mins % 60; return `${h > 0 ? h + 'h' : ''}${m > 0 ? m + 'm' : (h === 0 ? '0h' : '')}`; })(), 'horas'] : [value, name]} />
                     <Legend wrapperStyle={{ fontSize: 10 }} />
                     <Bar dataKey="manutenções" fill="url(#barGrad1)" radius={[6, 6, 0, 0]}>
                       <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#3b82f6' }} />
                     </Bar>
                     <Bar dataKey="horas" fill="url(#barGrad2)" radius={[6, 6, 0, 0]}>
-                      <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: '#22c55e' }} />
+                      <LabelList dataKey="horasMin" position="top" formatter={(v: any) => { const mins = Number(v) || 0; const h = Math.floor(mins / 60); const m = mins % 60; return `${h > 0 ? h + 'h' : ''}${m > 0 ? m + 'm' : (h === 0 ? '' : '')}`; }} style={{ fontSize: 9, fill: '#22c55e' }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -425,13 +425,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                   <tbody>
                     {analyticalData.length > 0 ? analyticalData.map((m: any, i: number) => {
                       const d = new Date(m.data_inicio)
+                      const MAX_MIN = 60 * 24 * 30
                       let tempoMin = m.tempo_total || 0
-                      // Calculate from hora_inicio/hora_fim if tempo_total is 0
-                      if (tempoMin === 0 && m.hora_inicio && m.hora_fim) {
+                      if ((tempoMin <= 0 || tempoMin > MAX_MIN) && m.hora_inicio && m.hora_fim) {
                         const [hi, mi] = m.hora_inicio.split(':').map(Number)
                         const [hf, mf] = m.hora_fim.split(':').map(Number)
-                        tempoMin = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                        const r = (hf * 60 + mf) - (hi * 60 + mi)
+                        tempoMin = r >= 0 ? r : r + 24 * 60
                       }
+                      if (tempoMin < 0 || tempoMin > MAX_MIN) tempoMin = 0
                       const horas = Math.floor(tempoMin / 60)
                       const mins = tempoMin % 60
                       const tempoLabel = tempoMin === 0 ? '0h' : `${horas > 0 ? `${horas}h` : ''}${mins > 0 ? `${mins}m` : ''}`
@@ -453,12 +455,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                     )}
                     {analyticalData.length > 0 && (() => {
                       const totalMin = analyticalData.reduce((s: number, m: any) => {
+                        const MAX_MIN = 60 * 24 * 30
                         let t = m.tempo_total || 0
-                        if (t === 0 && m.hora_inicio && m.hora_fim) {
+                        if ((t <= 0 || t > MAX_MIN) && m.hora_inicio && m.hora_fim) {
                           const [hi, mi] = m.hora_inicio.split(':').map(Number)
                           const [hf, mf] = m.hora_fim.split(':').map(Number)
-                          t = Math.max(0, (hf * 60 + mf) - (hi * 60 + mi))
+                          const r = (hf * 60 + mf) - (hi * 60 + mi)
+                          t = r >= 0 ? r : r + 24 * 60
                         }
+                        if (t < 0 || t > MAX_MIN) t = 0
                         return s + t
                       }, 0)
                       const totalH = Math.floor(totalMin / 60)
