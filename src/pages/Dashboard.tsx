@@ -608,13 +608,13 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
               <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
                 <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: 'hsl(var(--primary))' }} />
               </Bar>
               <Bar dataKey="horas" fill="hsl(38, 92%, 50%)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="horas" position="top" style={{ fontSize: 9, fill: 'hsl(38, 92%, 50%)' }} />
+                <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 9, fill: 'hsl(38, 92%, 50%)' }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
