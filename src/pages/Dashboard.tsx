@@ -235,44 +235,50 @@ export default function Dashboard() {
     })
     setChartData(visaoMensal)
 
-    // Type breakdown
-    const tipoMap: Record<string, number> = {}
+    // Type breakdown (count + hours)
+    const tipoMap: Record<string, { count: number; mins: number }> = {}
     filtered.forEach(m => {
       const name = (m as any).tipos_manutencao?.nome_tipo_manutencao || 'Sem tipo'
-      tipoMap[name] = (tipoMap[name] || 0) + 1
+      if (!tipoMap[name]) tipoMap[name] = { count: 0, mins: 0 }
+      tipoMap[name].count += 1
+      tipoMap[name].mins += getEffectiveMinutes(m)
     })
-    setTipoData(Object.entries(tipoMap).map(([name, value], i) => ({ name, value, color: COLORS[i % COLORS.length] })))
+    setTipoData(Object.entries(tipoMap).map(([name, v], i) => ({ name, value: v.count, horasMin: v.mins, color: COLORS[i % COLORS.length] })))
 
-    // Status distribution
-    const statusMap: Record<string, number> = {}
+    // Status distribution (count + hours)
+    const statusMap: Record<string, { count: number; mins: number }> = {}
     filtered.forEach(m => {
       const s = m.status || 'Em andamento'
-      statusMap[s] = (statusMap[s] || 0) + 1
+      if (!statusMap[s]) statusMap[s] = { count: 0, mins: 0 }
+      statusMap[s].count += 1
+      statusMap[s].mins += getEffectiveMinutes(m)
     })
     const statusColors: Record<string, string> = { 'Finalizado': 'hsl(142, 76%, 36%)', 'Em andamento': 'hsl(38, 92%, 50%)', 'Cancelado': 'hsl(0, 84%, 60%)' }
-    setStatusData(Object.entries(statusMap).map(([name, value]) => ({ name, value, color: statusColors[name] || 'hsl(215, 16%, 47%)' })))
+    setStatusData(Object.entries(statusMap).map(([name, v]) => ({ name, value: v.count, horasMin: v.mins, color: statusColors[name] || 'hsl(215, 16%, 47%)' })))
 
-    // Team breakdown
-    const teamMap: Record<string, number> = {}
+    // Team breakdown (hours + count)
+    const teamMap: Record<string, { mins: number; count: number }> = {}
     filtered.forEach(m => {
       const name = (m as any).equipes?.nome_equipe || 'Sem equipe'
-      const mins = getEffectiveMinutes(m)
-      teamMap[name] = (teamMap[name] || 0) + mins
+      if (!teamMap[name]) teamMap[name] = { mins: 0, count: 0 }
+      teamMap[name].mins += getEffectiveMinutes(m)
+      teamMap[name].count += 1
     })
-    setTeamData(Object.entries(teamMap).map(([name, value], i) => ({ name, horas: formatMinutesToHM(value), horasMin: value, fill: COLORS[i % COLORS.length] })))
+    setTeamData(Object.entries(teamMap).map(([name, v], i) => ({ name, horas: formatMinutesToHM(v.mins), horasMin: v.mins, manutenções: v.count, fill: COLORS[i % COLORS.length] })))
 
-    // Weekly trend (last 8 weeks)
+    // Weekly trend (last 8 weeks) — count + hours
     const weeks: any[] = []
     for (let w = 7; w >= 0; w--) {
       const weekStart = new Date()
       weekStart.setDate(weekStart.getDate() - (w * 7))
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekEnd.getDate() + 7)
-      const count = filtered.filter(m => {
+      const wkItems = filtered.filter(m => {
         const d = new Date(m.data_inicio)
         return d >= weekStart && d < weekEnd
-      }).length
-      weeks.push({ name: `S${8 - w}`, value: count })
+      })
+      const wkMin = wkItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
+      weeks.push({ name: `S${8 - w}`, value: wkItems.length, horasMin: wkMin })
     }
     setWeeklyData(weeks)
 
