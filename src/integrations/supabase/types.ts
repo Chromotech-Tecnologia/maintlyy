@@ -224,6 +224,7 @@ export type Database = {
           format: string
           id: string
           public_id: string
+          report_data: Json | null
           report_html: string
           title: string
           user_id: string
@@ -234,6 +235,7 @@ export type Database = {
           format?: string
           id?: string
           public_id?: string
+          report_data?: Json | null
           report_html?: string
           title?: string
           user_id: string
@@ -244,6 +246,7 @@ export type Database = {
           format?: string
           id?: string
           public_id?: string
+          report_data?: Json | null
           report_html?: string
           title?: string
           user_id?: string
