@@ -94,47 +94,72 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
     }).sort((a: any, b: any) => new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime())
   }, [allManutencoes, filters, analyticDataInicio, analyticDataFim])
 
-  const handleExport = useCallback(async () => {
+  const periodoLabel = () => {
+    if (filters.filterDataInicio && filters.filterDataFim) {
+      return `${new Date(filters.filterDataInicio).toLocaleDateString('pt-BR')} a ${new Date(filters.filterDataFim).toLocaleDateString('pt-BR')}`
+    }
+    return `Ano ${currentYear}`
+  }
+
+  const analyticalRaw = getAnalyticalData()
+
+  const payload: ReportPayload = {
+    title: selectedCliente ? selectedCliente.nome_cliente : "Relatório Geral",
+    empresaLabel: empresaHeaderLabel(),
+    periodoLabel: periodoLabel(),
+    clienteLogoUrl: selectedCliente?.logo_url || null,
+    generatedAt: new Date().toLocaleString('pt-BR'),
+    stats: {
+      totalManutencoes: data.stats.totalManutencoes,
+      manutencoesPendentes: data.stats.manutencoesPendentes,
+      totalHoras: data.stats.totalHoras,
+      totalClientes: data.stats.totalClientes,
+    },
+    chartData: data.chartData,
+    weeklyData: data.weeklyData,
+    tipoData: data.tipoData,
+    analyticalData: buildAnalyticalRows(analyticalRaw),
+    analyticPeriodo: { inicio: analyticDataInicio, fim: analyticDataFim },
+  }
+
+  const saveReport = useCallback(async (format: 'pdf' | 'png' | 'link') => {
+    if (!user) return null
+    const filtersJson = {
+      cliente: filters.filterCliente,
+      equipe: filters.filterEquipe,
+      tipo: filters.filterTipo,
+      empresa: filters.filterEmpresa,
+      status: filters.filterStatus,
+      dataInicio: filters.filterDataInicio,
+      dataFim: filters.filterDataFim,
+    }
+    const reportHtml = reportRef.current?.innerHTML || ''
+    const { data: inserted, error } = await supabase
+      .from('generated_reports')
+      .insert({
+        user_id: user.id,
+        title: payload.title,
+        filters: filtersJson,
+        report_html: reportHtml,
+        report_data: payload as any,
+        format,
+      } as any)
+      .select('public_id')
+      .single()
+    if (error) throw error
+    return inserted as { public_id: string }
+  }, [user, filters, payload])
+
+  const handleExportPdf = useCallback(async () => {
     if (!reportRef.current || !user) return
     setExporting(true)
-
     try {
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      })
-
-      const reportHtml = reportRef.current.innerHTML
-      const filtersJson = {
-        cliente: filters.filterCliente,
-        equipe: filters.filterEquipe,
-        tipo: filters.filterTipo,
-        empresa: filters.filterEmpresa,
-        status: filters.filterStatus,
-        dataInicio: filters.filterDataInicio,
-        dataFim: filters.filterDataFim,
-      }
-
-      // Always save to DB and download as PDF
-      const { error } = await supabase
-        .from('generated_reports')
-        .insert({
-          user_id: user.id,
-          title: selectedCliente ? selectedCliente.nome_cliente : 'Relatório Geral',
-          filters: filtersJson,
-          report_html: reportHtml,
-          format: 'pdf',
-        } as any)
-
-      if (error) throw error
-
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false })
+      await saveReport('pdf')
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      
       if (pdfHeight <= pdf.internal.pageSize.getHeight()) {
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
       } else {
@@ -146,25 +171,45 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
           position += pageHeight
         }
       }
-      
       pdf.save(`relatorio_dashboard_${new Date().toISOString().split('T')[0]}.pdf`)
-      toast({ title: "Relatório exportado!", description: "O PDF foi baixado e salvo no histórico." })
-    } catch (error) {
-      console.error('Erro ao exportar:', error)
-      toast({ title: "Erro", description: "Falha ao exportar relatório.", variant: "destructive" })
-    } finally {
-      setExporting(false)
-    }
-  }, [user, filters, selectedCliente, toast])
+      toast({ title: "PDF baixado!", description: "Relatório salvo no histórico." })
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Erro", description: "Falha ao gerar PDF.", variant: "destructive" })
+    } finally { setExporting(false) }
+  }, [user, saveReport, toast])
 
-  const periodoLabel = () => {
-    if (filters.filterDataInicio && filters.filterDataFim) {
-      return `${new Date(filters.filterDataInicio).toLocaleDateString('pt-BR')} a ${new Date(filters.filterDataFim).toLocaleDateString('pt-BR')}`
-    }
-    return `Ano ${currentYear}`
-  }
+  const handleExportPng = useCallback(async () => {
+    if (!reportRef.current || !user) return
+    setExporting(true)
+    try {
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false })
+      await saveReport('png')
+      const link = document.createElement('a')
+      link.download = `relatorio_dashboard_${new Date().toISOString().split('T')[0]}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      toast({ title: "Imagem baixada!", description: "Relatório salvo no histórico." })
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Erro", description: "Falha ao gerar imagem.", variant: "destructive" })
+    } finally { setExporting(false) }
+  }, [user, saveReport, toast])
 
-  const analyticalData = getAnalyticalData()
+  const handleCopyPublicLink = useCallback(async () => {
+    if (!user) return
+    setExporting(true)
+    try {
+      const inserted = await saveReport('link')
+      if (!inserted?.public_id) throw new Error("sem public_id")
+      const url = `${window.location.origin}/relatorio-publico/${inserted.public_id}`
+      await navigator.clipboard.writeText(url)
+      toast({ title: "Link público copiado!", description: url })
+    } catch (e) {
+      console.error(e)
+      toast({ title: "Erro", description: "Falha ao gerar link público.", variant: "destructive" })
+    } finally { setExporting(false) }
+  }, [user, saveReport, toast])
 
   if (showHistory) {
     return (
