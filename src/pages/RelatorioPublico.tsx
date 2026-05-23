@@ -1,13 +1,8 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import { Loader2 } from "lucide-react"
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList
-} from "recharts"
-
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+import { ReportContent, type ReportPayload } from "@/components/dashboard/ReportContent"
 
 export default function RelatorioPublico() {
   const { publicId } = useParams<{ publicId: string }>()
@@ -20,7 +15,7 @@ export default function RelatorioPublico() {
     const fetchReport = async () => {
       const { data, error: err } = await supabase
         .from('generated_reports')
-        .select('report_html, title, filters')
+        .select('report_html, report_data, title, filters')
         .eq('public_id', publicId)
         .single()
 
@@ -54,14 +49,17 @@ export default function RelatorioPublico() {
     )
   }
 
-  // Render with interactive charts by parsing the saved HTML and re-rendering with Recharts
-  // Since we store report_html as static, we render it but also inject interactive chart wrappers
+  const payload: ReportPayload | null = (reportData as any).report_data || null
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div
-        className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-8"
-        dangerouslySetInnerHTML={{ __html: (reportData as any).report_html }}
-      />
+      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        {payload ? (
+          <ReportContent payload={payload} />
+        ) : (
+          <div className="p-4 sm:p-8" dangerouslySetInnerHTML={{ __html: (reportData as any).report_html }} />
+        )}
+      </div>
     </div>
   )
 }
