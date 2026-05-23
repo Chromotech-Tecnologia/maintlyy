@@ -1,21 +1,17 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { FileDown, Loader2, History } from "lucide-react"
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList
-} from "recharts"
+import { FileDown, Loader2, History, Image as ImageIcon, Link2 } from "lucide-react"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
+import { ReportContent, buildAnalyticalRows, type ReportPayload } from "./ReportContent"
 
 interface ReportData {
   chartData: any[]
