@@ -115,29 +115,32 @@ export default function Manutencoes() {
     if (!user) return
 
     try {
-      const [manutResult, empresasResult, clientesResult, tiposResult, equipesResult] = await Promise.all([
-        supabase
-          .from('manutencoes')
-          .select(`
-            *,
-            clientes(nome_cliente),
-            empresas_terceiras(nome_empresa),
-            tipos_manutencao(nome_tipo_manutencao),
-            equipes(nome_equipe),
-            manutencao_equipes(equipe_id, equipes(nome_equipe))
-          `)
-          .order('created_at', { ascending: false }),
+      const [manutData, empresasResult, clientesResult, tiposResult, equipesResult] = await Promise.all([
+        fetchAllInBatches<any>(() =>
+          supabase
+            .from('manutencoes')
+            .select(`
+              *,
+              clientes(nome_cliente),
+              empresas_terceiras(nome_empresa),
+              tipos_manutencao(nome_tipo_manutencao),
+              equipes(nome_equipe),
+              manutencao_equipes(equipe_id, equipes(nome_equipe))
+            `)
+            .order('created_at', { ascending: false })
+        ),
         supabase.from('empresas_terceiras').select('*'),
         supabase.from('clientes').select('*'),
         supabase.from('tipos_manutencao').select('*'),
         supabase.from('equipes').select('*')
       ])
 
-      if (manutResult.error) throw manutResult.error
+      const manutResult = { data: manutData, error: null as any }
       if (empresasResult.error) throw empresasResult.error
       if (clientesResult.error) throw clientesResult.error
       if (tiposResult.error) throw tiposResult.error
       if (equipesResult.error) throw equipesResult.error
+
 
       setManutencoes(manutResult.data || [])
       setEmpresas(empresasResult.data || [])
