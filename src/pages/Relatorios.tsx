@@ -271,16 +271,16 @@ export default function Relatorios() {
         content = buildContent(headers, rows)
 
       } else {
-        let query = supabase.from('manutencoes')
-          .select('*, clientes(nome_cliente), tipos_manutencao(nome_tipo_manutencao), equipes(nome_equipe), empresas_terceiras(nome_empresa)')
-          .eq('user_id', user.id)
-          .order('data_inicio', { ascending: false })
+        const data = await fetchAllInBatches<any>(() => {
+          let query = supabase.from('manutencoes')
+            .select('*, clientes(nome_cliente), tipos_manutencao(nome_tipo_manutencao), equipes(nome_equipe), empresas_terceiras(nome_empresa)')
+            .eq('user_id', user.id)
+            .order('data_inicio', { ascending: false })
+          if (filterDataInicio) query = query.gte('data_inicio', filterDataInicio)
+          if (filterDataFim) query = query.lte('data_inicio', filterDataFim)
+          return query
+        })
 
-        if (filterDataInicio) query = query.gte('data_inicio', filterDataInicio)
-        if (filterDataFim) query = query.lte('data_inicio', filterDataFim)
-
-        const { data, error } = await query
-        if (error) throw error
 
         if (selectedReport === 'horas_resumo') {
           const aggMap: Record<string, { horas: number; count: number; cliente: string; equipe: string; tipo: string }> = {}
