@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { TablePagination } from "@/components/TablePagination"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { fetchAllInBatches } from "@/lib/fetchAll"
 
 interface DashboardStats {
   totalManutencoes: number
@@ -138,17 +139,18 @@ export default function Dashboard() {
     if (!user) return
     const fetchData = async () => {
       try {
-        const [mc, cc, pc, sc, cd, clientesRes, equipesRes, tiposRes, empresasRes] = await Promise.all([
+        const [mc, cc, pc, sc, cdData, clientesRes, equipesRes, tiposRes, empresasRes] = await Promise.all([
           supabase.from('manutencoes').select('id', { count: 'exact', head: true }),
           supabase.from('clientes').select('id', { count: 'exact', head: true }),
           supabase.from('manutencoes').select('id', { count: 'exact', head: true }).eq('status', 'Em andamento'),
           supabase.from('cofre_senhas').select('id', { count: 'exact', head: true }),
-          supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`),
+          fetchAllInBatches<any>(() => supabase.from('manutencoes').select(`*,tipos_manutencao(nome_tipo_manutencao),equipes(nome_equipe),clientes(nome_cliente),empresas_terceiras(nome_empresa)`)),
           supabase.from('clientes').select('id, nome_cliente, logo_url, empresa_terceira_id'),
           supabase.from('equipes').select('id, nome_equipe'),
           supabase.from('tipos_manutencao').select('id, nome_tipo_manutencao'),
           supabase.from('empresas_terceiras').select('id, nome_empresa'),
         ])
+        const cd = { data: cdData }
 
         const totalHorasMin = (cd.data || []).reduce((sum, m) => sum + getEffectiveMinutes(m), 0)
 
