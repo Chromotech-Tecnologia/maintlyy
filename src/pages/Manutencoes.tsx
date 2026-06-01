@@ -22,6 +22,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
 import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
+import { fetchAllInBatches } from "@/lib/fetchAll"
 
 interface Manutencao {
   id: string
