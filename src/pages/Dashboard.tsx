@@ -225,7 +225,7 @@ export default function Dashboard() {
     )
 
     // Monthly chart
-    const filterYear = filterDataInicio ? new Date(filterDataInicio).getFullYear() : (filterDataFim ? new Date(filterDataFim).getFullYear() : currentYear)
+    const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
       const monthDate = new Date(filterYear, i)
       const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
@@ -493,7 +493,7 @@ export default function Dashboard() {
       {/* Main Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
         <div className="lg:col-span-4">
-          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${filterDataInicio ? new Date(filterDataInicio).getFullYear() : currentYear}`} icon={Calendar}>
+          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : currentYear}`} icon={Calendar}>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
