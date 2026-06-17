@@ -224,14 +224,27 @@ export default function Dashboard() {
       [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
-    // Monthly chart
-    const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
-    const visaoMensal = Array.from({ length: 12 }, (_, i) => {
-      const monthDate = new Date(filterYear, i)
-      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
+    // Monthly chart — supports multi-year ranges (scrollable when > 12 months)
+    let startYear: number, startMonth: number, monthCount: number
+    if (filterDataInicio && filterDataFim) {
+      const di = parseLocalDate(filterDataInicio)
+      const df = parseLocalDate(filterDataFim)
+      startYear = di.getFullYear(); startMonth = di.getMonth()
+      monthCount = (df.getFullYear() - di.getFullYear()) * 12 + (df.getMonth() - di.getMonth()) + 1
+      if (monthCount < 1) monthCount = 1
+    } else {
+      const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
+      startYear = filterYear; startMonth = 0; monthCount = 12
+    }
+    const visaoMensal = Array.from({ length: monthCount }, (_, i) => {
+      const mIdx = (startMonth + i) % 12
+      const yOff = Math.floor((startMonth + i) / 12)
+      const y = startYear + yOff
+      const monthDate = new Date(y, mIdx)
+      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(y).slice(2)
       const monthItems = filtered.filter(m => {
         const d = parseLocalDate(m.data_inicio)
-        return d.getMonth() === i && d.getFullYear() === filterYear
+        return d.getMonth() === mIdx && d.getFullYear() === y
       })
       const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
       return { name: monthLabel, manutenções: monthItems.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
