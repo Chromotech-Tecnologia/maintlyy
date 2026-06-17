@@ -225,7 +225,7 @@ export default function Dashboard() {
     )
 
     // Monthly chart
-    const filterYear = filterDataInicio ? new Date(filterDataInicio).getFullYear() : (filterDataFim ? new Date(filterDataFim).getFullYear() : currentYear)
+    const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
     const visaoMensal = Array.from({ length: 12 }, (_, i) => {
       const monthDate = new Date(filterYear, i)
       const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
