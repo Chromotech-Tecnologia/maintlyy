@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { ReportHistory } from "./ReportHistory"
 import { ReportContent, buildAnalyticalRows, type ReportPayload } from "./ReportContent"
+import { formatLocalDateBR } from "@/lib/dateUtils"
 
 interface ReportData {
   chartData: any[]
@@ -96,12 +97,17 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
 
   const periodoLabel = () => {
     if (filters.filterDataInicio && filters.filterDataFim) {
-      return `${new Date(filters.filterDataInicio).toLocaleDateString('pt-BR')} a ${new Date(filters.filterDataFim).toLocaleDateString('pt-BR')}`
+      return `${formatLocalDateBR(filters.filterDataInicio)} a ${formatLocalDateBR(filters.filterDataFim)}`
     }
     return `Ano ${currentYear}`
   }
 
   const analyticalRaw = getAnalyticalData()
+  const analyticalRows = buildAnalyticalRows(analyticalRaw)
+  // Compute KPIs from analytical data so cards and table always match
+  const analyticTotalMin = analyticalRows.reduce((s, r) => s + r.tempoMin, 0)
+  const analyticPendentes = analyticalRaw.filter((m: any) => (m.status || 'Em andamento') === 'Em andamento').length
+  const analyticClientes = new Set(analyticalRaw.map((m: any) => m.cliente_id)).size
 
   const payload: ReportPayload = {
     title: selectedCliente ? selectedCliente.nome_cliente : "Relatório Geral",
@@ -110,15 +116,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
     clienteLogoUrl: selectedCliente?.logo_url || null,
     generatedAt: new Date().toLocaleString('pt-BR'),
     stats: {
-      totalManutencoes: data.stats.totalManutencoes,
-      manutencoesPendentes: data.stats.manutencoesPendentes,
-      totalHoras: data.stats.totalHoras,
-      totalClientes: data.stats.totalClientes,
+      totalManutencoes: analyticalRows.length,
+      manutencoesPendentes: analyticPendentes,
+      totalHoras: analyticTotalMin,
+      totalClientes: analyticClientes,
     },
     chartData: data.chartData,
     weeklyData: data.weeklyData,
     tipoData: data.tipoData,
-    analyticalData: buildAnalyticalRows(analyticalRaw),
+    analyticalData: analyticalRows,
     analyticPeriodo: { inicio: analyticDataInicio, fim: analyticDataFim },
   }
 
