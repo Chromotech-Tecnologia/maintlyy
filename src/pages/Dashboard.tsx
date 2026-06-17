@@ -506,22 +506,26 @@ export default function Dashboard() {
       {/* Main Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
         <div className="lg:col-span-4">
-          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : currentYear}`} icon={Calendar}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="manutenções" position="top" style={{ fontSize: 10, fill: 'hsl(var(--primary))' }} />
-                </Bar>
-                <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 10, fill: 'hsl(142, 76%, 36%)' }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <ChartCard title="Visão Mensal" description={`Manutenções e horas${chartData.length > 12 ? ` — ${chartData.length} meses` : ` — ${filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : currentYear}`}`} icon={Calendar}>
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: chartData.length > 12 ? chartData.length * 70 : '100%', width: chartData.length > 12 ? chartData.length * 70 : '100%' }}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="manutenções" position="top" style={{ fontSize: 10, fill: 'hsl(var(--primary))' }} />
+                    </Bar>
+                    <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 10, fill: 'hsl(142, 76%, 36%)' }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </ChartCard>
         </div>
 
