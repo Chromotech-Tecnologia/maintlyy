@@ -21,6 +21,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { TablePagination } from "@/components/TablePagination"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { fetchAllInBatches } from "@/lib/fetchAll"
+import { parseLocalDate, formatLocalDateBR } from "@/lib/dateUtils"
 
 interface DashboardStats {
   totalManutencoes: number
@@ -229,7 +230,7 @@ export default function Dashboard() {
       const monthDate = new Date(filterYear, i)
       const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
       const monthItems = filtered.filter(m => {
-        const d = new Date(m.data_inicio)
+        const d = parseLocalDate(m.data_inicio)
         return d.getMonth() === i && d.getFullYear() === filterYear
       })
       const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
@@ -276,7 +277,7 @@ export default function Dashboard() {
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekEnd.getDate() + 7)
       const wkItems = filtered.filter(m => {
-        const d = new Date(m.data_inicio)
+        const d = parseLocalDate(m.data_inicio)
         return d >= weekStart && d < weekEnd
       })
       const wkMin = wkItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
@@ -540,7 +541,7 @@ export default function Dashboard() {
                         {m.status}
                       </span>
                       <p className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(m.data_inicio).toLocaleDateString('pt-BR')}
+                        {formatLocalDateBR(m.data_inicio)}
                       </p>
                     </div>
                   </div>
@@ -758,7 +759,7 @@ export default function Dashboard() {
                         <TableRow key={m.id}>
                           <TableCell className="text-xs">{(m as any).tipos_manutencao?.nome_tipo_manutencao || '—'}</TableCell>
                           <TableCell className="text-xs">{(m as any).clientes?.nome_cliente || '—'}</TableCell>
-                          <TableCell className="text-xs">{new Date(m.data_inicio).toLocaleDateString('pt-BR')}</TableCell>
+                          <TableCell className="text-xs">{formatLocalDateBR(m.data_inicio)}</TableCell>
                           <TableCell className="text-xs font-medium">{formatMinutesToHM(mins)}</TableCell>
                           <TableCell className="text-xs max-w-[200px] truncate">{m.descricao || '—'}</TableCell>
                           <TableCell>

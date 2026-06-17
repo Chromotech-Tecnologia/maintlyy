@@ -23,6 +23,7 @@ import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
 import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 import { fetchAllInBatches } from "@/lib/fetchAll"
+import { formatLocalDateBR } from "@/lib/dateUtils"
 
 interface Manutencao {
   id: string
@@ -647,7 +648,7 @@ export default function Manutencoes() {
                 <div><Label className="text-muted-foreground">Equipes</Label><p>{getEquipeNames(viewingManutencao)}</p></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label className="text-muted-foreground">Data/Hora Início</Label><p>{new Date(viewingManutencao.data_inicio).toLocaleDateString()} {viewingManutencao.hora_inicio}</p></div>
+                <div><Label className="text-muted-foreground">Data/Hora Início</Label><p>{formatLocalDateBR(viewingManutencao.data_inicio)} {viewingManutencao.hora_inicio}</p></div>
                 <div><Label className="text-muted-foreground">Data/Hora Fim</Label><p>{viewingManutencao.data_fim ? `${new Date(viewingManutencao.data_fim).toLocaleDateString()} ${viewingManutencao.hora_fim || ''}` : '-'}</p></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -716,7 +717,7 @@ export default function Manutencoes() {
                 </TableCell>
                 <TableCell className="text-sm">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</TableCell>
                 <TableCell>
-                  <div className="text-sm">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-sm">{formatLocalDateBR(manutencao.data_inicio)}</div>
                   <div className="text-xs text-muted-foreground">{manutencao.hora_inicio}</div>
                 </TableCell>
                 <TableCell className="text-sm">{getTempoDisplay(manutencao)}</TableCell>
@@ -764,7 +765,7 @@ export default function Manutencoes() {
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <div><p className="mobile-card-label">Tipo</p><p className="text-xs font-medium truncate">{manutencao.tipos_manutencao?.nome_tipo_manutencao}</p></div>
                   <div><p className="mobile-card-label">Equipes</p><p className="text-xs font-medium">{getEquipeNames(manutencao)}</p></div>
-                  <div><p className="mobile-card-label">Data</p><p className="text-xs font-medium">{new Date(manutencao.data_inicio).toLocaleDateString('pt-BR')} {manutencao.hora_inicio}</p></div>
+                  <div><p className="mobile-card-label">Data</p><p className="text-xs font-medium">{formatLocalDateBR(manutencao.data_inicio)} {manutencao.hora_inicio}</p></div>
                   <div><p className="mobile-card-label">Tempo</p><p className="text-xs font-medium">{getTempoDisplay(manutencao)}</p></div>
                 </div>
                 <div className="flex gap-2 pt-1">
