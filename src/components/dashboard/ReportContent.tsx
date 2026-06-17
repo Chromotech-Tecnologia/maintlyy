@@ -55,7 +55,7 @@ export function buildAnalyticalRows(items: any[]): ReportAnalyticalRow[] {
       t = r >= 0 ? r : r + 24 * 60
     }
     if (t < 0 || t > MAX_MIN) t = 0
-    const d = new Date(m.data_inicio)
+    const d = parseLocalDate(m.data_inicio)
     return {
       id: m.id,
       tipo: m.tipos_manutencao?.nome_tipo_manutencao || '—',
