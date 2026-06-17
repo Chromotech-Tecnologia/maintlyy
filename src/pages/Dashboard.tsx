@@ -21,6 +21,7 @@ import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { TablePagination } from "@/components/TablePagination"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { fetchAllInBatches } from "@/lib/fetchAll"
+import { parseLocalDate, formatLocalDateBR } from "@/lib/dateUtils"
 
 interface DashboardStats {
   totalManutencoes: number
