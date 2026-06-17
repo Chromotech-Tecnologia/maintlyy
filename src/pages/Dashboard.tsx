@@ -224,14 +224,27 @@ export default function Dashboard() {
       [...filtered].sort((a, b) => getSortDate(b as ManutencaoRecente) - getSortDate(a as ManutencaoRecente)).slice(0, 5)
     )
 
-    // Monthly chart
-    const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
-    const visaoMensal = Array.from({ length: 12 }, (_, i) => {
-      const monthDate = new Date(filterYear, i)
-      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(filterYear).slice(2)
+    // Monthly chart — supports multi-year ranges (scrollable when > 12 months)
+    let startYear: number, startMonth: number, monthCount: number
+    if (filterDataInicio && filterDataFim) {
+      const di = parseLocalDate(filterDataInicio)
+      const df = parseLocalDate(filterDataFim)
+      startYear = di.getFullYear(); startMonth = di.getMonth()
+      monthCount = (df.getFullYear() - di.getFullYear()) * 12 + (df.getMonth() - di.getMonth()) + 1
+      if (monthCount < 1) monthCount = 1
+    } else {
+      const filterYear = filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : (filterDataFim ? parseLocalDate(filterDataFim).getFullYear() : currentYear)
+      startYear = filterYear; startMonth = 0; monthCount = 12
+    }
+    const visaoMensal = Array.from({ length: monthCount }, (_, i) => {
+      const mIdx = (startMonth + i) % 12
+      const yOff = Math.floor((startMonth + i) / 12)
+      const y = startYear + yOff
+      const monthDate = new Date(y, mIdx)
+      const monthLabel = monthDate.toLocaleDateString('pt-BR', { month: 'short' }) + '/' + String(y).slice(2)
       const monthItems = filtered.filter(m => {
         const d = parseLocalDate(m.data_inicio)
-        return d.getMonth() === i && d.getFullYear() === filterYear
+        return d.getMonth() === mIdx && d.getFullYear() === y
       })
       const totalMin = monthItems.reduce((s, m) => s + getEffectiveMinutes(m), 0)
       return { name: monthLabel, manutenções: monthItems.length, horas: Math.round((totalMin / 60) * 10) / 10, horasMin: totalMin }
@@ -493,22 +506,26 @@ export default function Dashboard() {
       {/* Main Charts Row */}
       <div className="grid gap-4 lg:grid-cols-7">
         <div className="lg:col-span-4">
-          <ChartCard title="Visão Mensal" description={`Manutenções e horas — ${filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : currentYear}`} icon={Calendar}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="manutenções" position="top" style={{ fontSize: 10, fill: 'hsl(var(--primary))' }} />
-                </Bar>
-                <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 10, fill: 'hsl(142, 76%, 36%)' }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <ChartCard title="Visão Mensal" description={`Manutenções e horas${chartData.length > 12 ? ` — ${chartData.length} meses` : ` — ${filterDataInicio ? parseLocalDate(filterDataInicio).getFullYear() : currentYear}`}`} icon={Calendar}>
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: chartData.length > 12 ? chartData.length * 70 : '100%', width: chartData.length > 12 ? chartData.length * 70 : '100%' }}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', fontSize: '12px' }} formatter={(value: any, name: any, props: any) => name === 'horas' ? [formatMinutesToHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Bar dataKey="manutenções" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="manutenções" position="top" style={{ fontSize: 10, fill: 'hsl(var(--primary))' }} />
+                    </Bar>
+                    <Bar dataKey="horas" fill="hsl(142, 76%, 36%)" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="horasMin" position="top" formatter={(v: any) => formatMinutesToHM(Number(v) || 0)} style={{ fontSize: 10, fill: 'hsl(142, 76%, 36%)' }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </ChartCard>
         </div>
 
