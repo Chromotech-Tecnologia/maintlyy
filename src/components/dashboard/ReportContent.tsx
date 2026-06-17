@@ -117,31 +117,35 @@ export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload
       <div className="mb-8">
         <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">📊 Resumo Mensal</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
-              <defs>
-                <linearGradient id="rcBarGrad1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4} />
-                </linearGradient>
-                <linearGradient id="rcBarGrad2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.4} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
-              <Tooltip formatter={(value: any, name: any, props: any) => name === 'horas' ? [fmtHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="manutenções" fill="url(#rcBarGrad1)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#3b82f6' }} />
-              </Bar>
-              <Bar dataKey="horas" fill="url(#rcBarGrad2)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="horasMin" position="top" formatter={(v: any) => fmtHM(Number(v))} style={{ fontSize: 9, fill: '#22c55e' }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: chartData.length > 12 ? chartData.length * 70 : '100%', width: chartData.length > 12 ? chartData.length * 70 : '100%' }}>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={chartData}>
+                  <defs>
+                    <linearGradient id="rcBarGrad1" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    </linearGradient>
+                    <linearGradient id="rcBarGrad2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity={0.4} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
+                  <Tooltip formatter={(value: any, name: any, props: any) => name === 'horas' ? [fmtHM(props?.payload?.horasMin ?? Math.round(Number(value) * 60)), 'horas'] : [value, name]} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Bar dataKey="manutenções" fill="url(#rcBarGrad1)" radius={[6, 6, 0, 0]}>
+                    <LabelList dataKey="manutenções" position="top" style={{ fontSize: 9, fill: '#3b82f6' }} />
+                  </Bar>
+                  <Bar dataKey="horas" fill="url(#rcBarGrad2)" radius={[6, 6, 0, 0]}>
+                    <LabelList dataKey="horasMin" position="top" formatter={(v: any) => fmtHM(Number(v))} style={{ fontSize: 9, fill: '#22c55e' }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
 
