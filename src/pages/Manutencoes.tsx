@@ -23,6 +23,7 @@ import { BulkActionsBar } from "@/components/BulkActionsBar"
 import { TablePagination } from "@/components/TablePagination"
 import { PrerequisiteWarning } from "@/components/PrerequisiteWarning"
 import { fetchAllInBatches } from "@/lib/fetchAll"
+import { formatLocalDateBR } from "@/lib/dateUtils"
 
 interface Manutencao {
   id: string
