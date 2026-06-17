@@ -1,6 +1,6 @@
 import { forwardRef } from "react"
 import { Separator } from "@/components/ui/separator"
-import { parseLocalDate } from "@/lib/dateUtils"
+import { parseLocalDate, formatLocalDateBR } from "@/lib/dateUtils"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList
@@ -200,7 +200,7 @@ export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload
         <h3 className="text-sm font-semibold text-gray-700 mb-1">📋 Relatório Analítico Detalhado</h3>
         {(analyticPeriodo?.inicio || analyticPeriodo?.fim) && (
           <p className="text-[10px] text-gray-400 mb-2">
-            Período: {analyticPeriodo?.inicio ? new Date(analyticPeriodo.inicio).toLocaleDateString('pt-BR') : '—'} a {analyticPeriodo?.fim ? new Date(analyticPeriodo.fim).toLocaleDateString('pt-BR') : '—'}
+            Período: {analyticPeriodo?.inicio ? formatLocalDateBR(analyticPeriodo.inicio) : '—'} a {analyticPeriodo?.fim ? formatLocalDateBR(analyticPeriodo.fim) : '—'}
           </p>
         )}
         <div className="overflow-x-auto">
