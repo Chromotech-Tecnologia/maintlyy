@@ -116,22 +116,33 @@ export default function Dashboard() {
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))']
   const getSortDate = (m: ManutencaoRecente) => new Date(`${m.data_inicio}T00:00:00`).getTime() || new Date(m.created_at).getTime()
 
-  // Auto-select empresa when a single cliente is selected
-  useEffect(() => {
-    if (filterCliente.length === 1) {
-      const cli = clientes.find(c => c.id === filterCliente[0])
-      if (cli?.empresa_terceira_id) {
-        setFilterEmpresa([cli.empresa_terceira_id])
-      }
-    }
+  // Empresas relacionadas aos clientes selecionados
+  const relatedEmpresaIds = useMemo(() => {
+    if (filterCliente.length === 0) return null
+    return Array.from(new Set(
+      clientes
+        .filter(c => filterCliente.includes(c.id))
+        .map(c => c.empresa_terceira_id)
+        .filter(Boolean) as string[]
+    ))
   }, [filterCliente, clientes])
 
-  // Check if empresa should be locked (single cliente with empresa)
-  const isEmpresaLocked = useMemo(() => {
-    if (filterCliente.length !== 1) return false
-    const cli = clientes.find(c => c.id === filterCliente[0])
-    return !!cli?.empresa_terceira_id
-  }, [filterCliente, clientes])
+  const empresasFiltradas = useMemo(() => {
+    if (!relatedEmpresaIds) return empresas
+    return empresas.filter(e => relatedEmpresaIds.includes(e.id))
+  }, [empresas, relatedEmpresaIds])
+
+  const isEmpresaLocked = !!(relatedEmpresaIds && relatedEmpresaIds.length === 1)
+
+  // Auto-select empresa quando todos os clientes selecionados compartilham uma única empresa
+  useEffect(() => {
+    if (relatedEmpresaIds && relatedEmpresaIds.length === 1) {
+      setFilterEmpresa(relatedEmpresaIds)
+    } else if (relatedEmpresaIds && relatedEmpresaIds.length > 1) {
+      // múltiplas empresas relacionadas — limpa para permitir escolha entre as relacionadas
+      setFilterEmpresa(prev => prev.filter(id => relatedEmpresaIds.includes(id)))
+    }
+  }, [relatedEmpresaIds])
 
   useEffect(() => {
     if (!user) return
@@ -403,10 +414,10 @@ export default function Dashboard() {
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Empresa</Label>
               <MultiSelect
-                options={empresas.map(e => ({ value: e.id, label: e.nome_empresa }))}
+                options={empresasFiltradas.map(e => ({ value: e.id, label: e.nome_empresa }))}
                 value={filterEmpresa}
                 onChange={setFilterEmpresa}
-                allLabel="Todas as empresas"
+                allLabel={relatedEmpresaIds ? "Todas as empresas relacionadas" : "Todas as empresas"}
                 placeholder="Empresa"
                 disabled={isEmpresaLocked}
                 triggerClassName={isEmpresaLocked ? 'opacity-60' : ''}

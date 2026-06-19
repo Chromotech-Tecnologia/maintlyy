@@ -11,6 +11,7 @@ const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', '
 
 export interface ReportAnalyticalRow {
   id: string
+  cliente: string
   tipo: string
   mes: string
   ano: number
@@ -37,6 +38,7 @@ export interface ReportPayload {
   tipoData: any[]
   analyticalData: ReportAnalyticalRow[]
   analyticPeriodo?: { inicio?: string; fim?: string }
+  showClienteColumn?: boolean
 }
 
 const fmtHM = (mins: number) => {
@@ -59,6 +61,7 @@ export function buildAnalyticalRows(items: any[]): ReportAnalyticalRow[] {
     const d = parseLocalDate(m.data_inicio)
     return {
       id: m.id,
+      cliente: m.clientes?.nome_cliente || '—',
       tipo: m.tipos_manutencao?.nome_tipo_manutencao || '—',
       mes: MONTHS_PT[d.getMonth()],
       ano: d.getFullYear(),
@@ -71,7 +74,7 @@ export function buildAnalyticalRows(items: any[]): ReportAnalyticalRow[] {
 }
 
 export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload }>(({ payload }, ref) => {
-  const { stats, chartData, weeklyData, tipoData, analyticalData, analyticPeriodo } = payload
+  const { stats, chartData, weeklyData, tipoData, analyticalData, analyticPeriodo, showClienteColumn } = payload
   const totalAnaliticoMin = analyticalData.reduce((s, r) => s + r.tempoMin, 0)
   const horasTotal = Math.floor(stats.totalHoras / 60)
   const minsTotal = stats.totalHoras % 60
@@ -211,6 +214,7 @@ export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100">
+                {showClienteColumn && <th className="text-left p-2 border border-gray-200 font-semibold">Cliente</th>}
                 <th className="text-left p-2 border border-gray-200 font-semibold">Tipo de Manutenção</th>
                 <th className="text-center p-2 border border-gray-200 font-semibold">Mês</th>
                 <th className="text-center p-2 border border-gray-200 font-semibold">Ano</th>
@@ -223,6 +227,7 @@ export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload
             <tbody>
               {analyticalData.length > 0 ? analyticalData.map((m, i) => (
                 <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {showClienteColumn && <td className="p-2 border border-gray-200">{m.cliente}</td>}
                   <td className="p-2 border border-gray-200">{m.tipo}</td>
                   <td className="p-2 border border-gray-200 text-center">{m.mes}</td>
                   <td className="p-2 border border-gray-200 text-center">{m.ano}</td>
@@ -233,12 +238,12 @@ export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="p-4 text-center text-gray-400 border border-gray-200">Nenhuma manutenção encontrada para o período selecionado</td>
+                  <td colSpan={showClienteColumn ? 8 : 7} className="p-4 text-center text-gray-400 border border-gray-200">Nenhuma manutenção encontrada para o período selecionado</td>
                 </tr>
               )}
               {analyticalData.length > 0 && (
                 <tr className="bg-gray-100 font-bold">
-                  <td className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
+                  <td colSpan={showClienteColumn ? 2 : 1} className="p-2 border border-gray-200">Total: {analyticalData.length}</td>
                   <td colSpan={3} className="p-2 border border-gray-200"></td>
                   <td className="p-2 border border-gray-200 text-center">{fmtHM(totalAnaliticoMin)}</td>
                   <td colSpan={2} className="p-2 border border-gray-200"></td>
