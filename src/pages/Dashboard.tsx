@@ -794,13 +794,13 @@ export default function Dashboard() {
           filterDataInicio: reportFilterDataInicio,
           filterDataFim: reportFilterDataFim,
           onFilterChange: (key, value) => {
-            if (key === 'cliente') setFilterCliente(value)
-            else if (key === 'equipe') setFilterEquipe(value)
-            else if (key === 'tipo') setFilterTipo(value)
-            else if (key === 'empresa') setFilterEmpresa(value)
-            else if (key === 'status') setFilterStatus(value)
-            else if (key === 'dataInicio') setReportFilterDataInicio(value)
-            else if (key === 'dataFim') setReportFilterDataFim(value)
+            if (key === 'cliente') { setFilterCliente(value as string[]); if ((value as string[]).length === 0) setFilterEmpresa([]) }
+            else if (key === 'equipe') setFilterEquipe(value as string[])
+            else if (key === 'tipo') setFilterTipo(value as string[])
+            else if (key === 'empresa') setFilterEmpresa(value as string[])
+            else if (key === 'status') setFilterStatus(value as string[])
+            else if (key === 'dataInicio') setReportFilterDataInicio(value as string)
+            else if (key === 'dataFim') setReportFilterDataFim(value as string)
           }
         }}
         allManutencoes={allManutencoes}
