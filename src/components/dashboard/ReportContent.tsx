@@ -74,7 +74,7 @@ export function buildAnalyticalRows(items: any[]): ReportAnalyticalRow[] {
 }
 
 export const ReportContent = forwardRef<HTMLDivElement, { payload: ReportPayload }>(({ payload }, ref) => {
-  const { stats, chartData, weeklyData, tipoData, analyticalData, analyticPeriodo } = payload
+  const { stats, chartData, weeklyData, tipoData, analyticalData, analyticPeriodo, showClienteColumn } = payload
   const totalAnaliticoMin = analyticalData.reduce((s, r) => s + r.tempoMin, 0)
   const horasTotal = Math.floor(stats.totalHoras / 60)
   const minsTotal = stats.totalHoras % 60
