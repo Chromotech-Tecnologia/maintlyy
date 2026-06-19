@@ -277,10 +277,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
                 value={filters.filterCliente}
                 onChange={v => {
                   filters.onFilterChange('cliente', v)
-                  if (v.length === 1) {
-                    const cli = filters.clientes.find(c => c.id === v[0])
-                    if (cli?.empresa_terceira_id) filters.onFilterChange('empresa', [cli.empresa_terceira_id])
-                  } else if (v.length === 0) {
+                  const ids = Array.from(new Set(
+                    filters.clientes
+                      .filter(c => v.includes(c.id))
+                      .map(c => c.empresa_terceira_id)
+                      .filter(Boolean) as string[]
+                  ))
+                  if (v.length > 0 && ids.length === 1) {
+                    filters.onFilterChange('empresa', ids)
+                  } else {
                     filters.onFilterChange('empresa', [])
                   }
                 }}
@@ -291,14 +296,15 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
             <div className="space-y-1.5">
               <Label className="text-xs">Empresa</Label>
               <MultiSelect
-                options={filters.empresas.map(e => ({ value: e.id, label: e.nome_empresa }))}
+                options={empresaOptions.map(e => ({ value: e.id, label: e.nome_empresa }))}
                 value={filters.filterEmpresa}
                 onChange={v => filters.onFilterChange('empresa', v)}
-                allLabel="Todas as empresas"
+                allLabel={relatedEmpresaIds ? "Todas as empresas relacionadas" : "Todas as empresas"}
                 placeholder="Empresa"
-                disabled={filters.filterCliente.length === 1 && !!filters.clientes.find(c => c.id === filters.filterCliente[0])?.empresa_terceira_id}
-                triggerClassName={filters.filterCliente.length === 1 ? 'opacity-60' : ''}
+                disabled={isEmpresaLocked}
+                triggerClassName={isEmpresaLocked ? 'opacity-60' : ''}
               />
+              {isEmpresaLocked && <p className="text-[10px] text-muted-foreground">Selecionada pelo cliente</p>}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Status</Label>
