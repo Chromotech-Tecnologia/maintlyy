@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { FileDown, Loader2, History, Image as ImageIcon, Link2 } from "lucide-react"
@@ -34,14 +35,14 @@ interface ReportFilters {
   equipes: { id: string; nome_equipe: string }[]
   tipos: { id: string; nome_tipo_manutencao: string }[]
   empresas: { id: string; nome_empresa: string }[]
-  filterCliente: string
-  filterEquipe: string
-  filterTipo: string
-  filterEmpresa: string
-  filterStatus: string
+  filterCliente: string[]
+  filterEquipe: string[]
+  filterTipo: string[]
+  filterEmpresa: string[]
+  filterStatus: string[]
   filterDataInicio: string
   filterDataFim: string
-  onFilterChange: (key: string, value: string) => void
+  onFilterChange: (key: string, value: string | string[]) => void
 }
 
 interface DashboardReportExportProps {
@@ -69,25 +70,29 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
   const [analyticDataInicio, setAnalyticDataInicio] = useState("")
   const [analyticDataFim, setAnalyticDataFim] = useState("")
 
-  const selectedCliente = filters.clientes.find(c => c.id === filters.filterCliente)
+  const selectedCliente = filters.filterCliente.length === 1
+    ? filters.clientes.find(c => c.id === filters.filterCliente[0])
+    : undefined
 
   // Build empresa names for header
   const empresaHeaderLabel = () => {
-    if (filters.filterEmpresa === "todos") {
+    if (filters.filterEmpresa.length === 0) {
       return filters.empresas.map(e => e.nome_empresa).join(", ") || "Todas as empresas"
     }
-    const found = filters.empresas.find(e => e.id === filters.filterEmpresa)
-    return found?.nome_empresa || "Empresa"
+    return filters.empresas
+      .filter(e => filters.filterEmpresa.includes(e.id))
+      .map(e => e.nome_empresa)
+      .join(", ") || "Empresa"
   }
 
   // Build filtered analytical data from allManutencoes
   const getAnalyticalData = useCallback(() => {
     return allManutencoes.filter(m => {
-      if (filters.filterCliente !== "todos" && m.cliente_id !== filters.filterCliente) return false
-      if (filters.filterEquipe !== "todos" && m.equipe_id !== filters.filterEquipe) return false
-      if (filters.filterTipo !== "todos" && m.tipo_manutencao_id !== filters.filterTipo) return false
-      if (filters.filterEmpresa !== "todos" && m.empresa_terceira_id !== filters.filterEmpresa) return false
-      if (filters.filterStatus !== "todos" && m.status !== filters.filterStatus) return false
+      if (filters.filterCliente.length > 0 && !filters.filterCliente.includes(m.cliente_id)) return false
+      if (filters.filterEquipe.length > 0 && !filters.filterEquipe.includes(m.equipe_id)) return false
+      if (filters.filterTipo.length > 0 && !filters.filterTipo.includes(m.tipo_manutencao_id)) return false
+      if (filters.filterEmpresa.length > 0 && !filters.filterEmpresa.includes(m.empresa_terceira_id)) return false
+      if (filters.filterStatus.length > 0 && !filters.filterStatus.includes(m.status || 'Em andamento')) return false
       // Use analytical date filters
       if (analyticDataInicio && m.data_inicio < analyticDataInicio) return false
       if (analyticDataFim && m.data_inicio > analyticDataFim) return false
@@ -252,53 +257,57 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Cliente</Label>
-              <Select value={filters.filterCliente} onValueChange={v => {
-                filters.onFilterChange('cliente', v)
-                if (v !== 'todos') {
-                  const cli = filters.clientes.find(c => c.id === v)
-                  if (cli?.empresa_terceira_id) filters.onFilterChange('empresa', cli.empresa_terceira_id)
-                } else {
-                  filters.onFilterChange('empresa', 'todos')
-                }
-              }}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os clientes</SelectItem>
-                  {filters.clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={filters.clientes.map(c => ({ value: c.id, label: c.nome_cliente }))}
+                value={filters.filterCliente}
+                onChange={v => {
+                  filters.onFilterChange('cliente', v)
+                  if (v.length === 1) {
+                    const cli = filters.clientes.find(c => c.id === v[0])
+                    if (cli?.empresa_terceira_id) filters.onFilterChange('empresa', [cli.empresa_terceira_id])
+                  } else if (v.length === 0) {
+                    filters.onFilterChange('empresa', [])
+                  }
+                }}
+                allLabel="Todos os clientes"
+                placeholder="Cliente"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Empresa</Label>
-              <Select value={filters.filterEmpresa} onValueChange={v => filters.onFilterChange('empresa', v)} disabled={filters.filterCliente !== 'todos' && !!filters.clientes.find(c => c.id === filters.filterCliente)?.empresa_terceira_id}>
-                <SelectTrigger className={`h-9 ${filters.filterCliente !== 'todos' ? 'opacity-60' : ''}`}><SelectValue placeholder="Todas" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as empresas</SelectItem>
-                  {filters.empresas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={filters.empresas.map(e => ({ value: e.id, label: e.nome_empresa }))}
+                value={filters.filterEmpresa}
+                onChange={v => filters.onFilterChange('empresa', v)}
+                allLabel="Todas as empresas"
+                placeholder="Empresa"
+                disabled={filters.filterCliente.length === 1 && !!filters.clientes.find(c => c.id === filters.filterCliente[0])?.empresa_terceira_id}
+                triggerClassName={filters.filterCliente.length === 1 ? 'opacity-60' : ''}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Status</Label>
-              <Select value={filters.filterStatus} onValueChange={v => filters.onFilterChange('status', v)}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="Em andamento">Em andamento</SelectItem>
-                  <SelectItem value="Finalizado">Finalizado</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={[
+                  { value: 'Em andamento', label: 'Em andamento' },
+                  { value: 'Finalizado', label: 'Finalizado' },
+                  { value: 'Cancelado', label: 'Cancelado' },
+                ]}
+                value={filters.filterStatus}
+                onChange={v => filters.onFilterChange('status', v)}
+                allLabel="Todos"
+                placeholder="Status"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Tipo</Label>
-              <Select value={filters.filterTipo} onValueChange={v => filters.onFilterChange('tipo', v)}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {filters.tipos.map(t => <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={filters.tipos.map(t => ({ value: t.id, label: t.nome_tipo_manutencao }))}
+                value={filters.filterTipo}
+                onChange={v => filters.onFilterChange('tipo', v)}
+                allLabel="Todos"
+                placeholder="Tipo"
+              />
             </div>
           </div>
 
