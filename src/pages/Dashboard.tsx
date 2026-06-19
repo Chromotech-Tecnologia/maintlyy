@@ -388,95 +388,67 @@ export default function Dashboard() {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-            {/* Cliente FIRST */}
+            {/* Cliente */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Cliente</Label>
-              <Select value={filterCliente} onValueChange={v => { setFilterCliente(v); if (v === "todos") setFilterEmpresa("todos") }}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Cliente" /></SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchCliente} onChange={e => setSearchCliente(e.target.value)} onClick={e => e.stopPropagation()} />
-                    </div>
-                  </div>
-                  <SelectItem value="todos">Todos os clientes</SelectItem>
-                  {clientes.filter(c => !searchCliente || c.nome_cliente?.toLowerCase().includes(searchCliente.toLowerCase())).map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome_cliente}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={clientes.map(c => ({ value: c.id, label: c.nome_cliente }))}
+                value={filterCliente}
+                onChange={v => { setFilterCliente(v); if (v.length === 0) setFilterEmpresa([]) }}
+                allLabel="Todos os clientes"
+                placeholder="Cliente"
+              />
             </div>
             {/* Empresa */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Empresa</Label>
-              <Select value={filterEmpresa} onValueChange={setFilterEmpresa} disabled={isEmpresaLocked}>
-                <SelectTrigger className={`h-9 ${isEmpresaLocked ? 'opacity-60' : ''}`}><SelectValue placeholder="Empresa" /></SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEmpresa} onChange={e => setSearchEmpresa(e.target.value)} onClick={e => e.stopPropagation()} />
-                    </div>
-                  </div>
-                  <SelectItem value="todos">Todas as empresas</SelectItem>
-                  {empresas.filter(e => !searchEmpresa || e.nome_empresa?.toLowerCase().includes(searchEmpresa.toLowerCase())).map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.nome_empresa}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={empresas.map(e => ({ value: e.id, label: e.nome_empresa }))}
+                value={filterEmpresa}
+                onChange={setFilterEmpresa}
+                allLabel="Todas as empresas"
+                placeholder="Empresa"
+                disabled={isEmpresaLocked}
+                triggerClassName={isEmpresaLocked ? 'opacity-60' : ''}
+              />
               {isEmpresaLocked && <p className="text-[10px] text-muted-foreground">Selecionada pelo cliente</p>}
             </div>
             {/* Equipe */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Equipe</Label>
-              <Select value={filterEquipe} onValueChange={setFilterEquipe}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Equipe" /></SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchEquipe} onChange={e => setSearchEquipe(e.target.value)} onClick={e => e.stopPropagation()} />
-                    </div>
-                  </div>
-                  <SelectItem value="todos">Todas as equipes</SelectItem>
-                  {equipes.filter(e => !searchEquipe || e.nome_equipe?.toLowerCase().includes(searchEquipe.toLowerCase())).map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.nome_equipe}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={equipes.map(e => ({ value: e.id, label: e.nome_equipe }))}
+                value={filterEquipe}
+                onChange={setFilterEquipe}
+                allLabel="Todas as equipes"
+                placeholder="Equipe"
+              />
             </div>
             {/* Tipo */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Tipo</Label>
-              <Select value={filterTipo} onValueChange={setFilterTipo}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Tipo" /></SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded-md bg-background outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar..." value={searchTipo} onChange={e => setSearchTipo(e.target.value)} onClick={e => e.stopPropagation()} />
-                    </div>
-                  </div>
-                  <SelectItem value="todos">Todos os tipos</SelectItem>
-                  {tipos.filter(t => !searchTipo || t.nome_tipo_manutencao?.toLowerCase().includes(searchTipo.toLowerCase())).map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.nome_tipo_manutencao}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={tipos.map(t => ({ value: t.id, label: t.nome_tipo_manutencao }))}
+                value={filterTipo}
+                onChange={setFilterTipo}
+                allLabel="Todos os tipos"
+                placeholder="Tipo"
+              />
             </div>
             {/* Status */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="Em andamento">Em andamento</SelectItem>
-                  <SelectItem value="Finalizado">Finalizado</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={[
+                  { value: 'Em andamento', label: 'Em andamento' },
+                  { value: 'Finalizado', label: 'Finalizado' },
+                  { value: 'Cancelado', label: 'Cancelado' },
+                ]}
+                value={filterStatus}
+                onChange={setFilterStatus}
+                allLabel="Todos"
+                placeholder="Status"
+              />
             </div>
             {/* Datas */}
             <div className="space-y-1">
