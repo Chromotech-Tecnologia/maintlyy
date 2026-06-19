@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LabelList } from "recharts"
 import {
@@ -95,17 +96,13 @@ export default function Dashboard() {
   const [equipes, setEquipes] = useState<{id: string, nome_equipe: string}[]>([])
   const [tipos, setTipos] = useState<{id: string, nome_tipo_manutencao: string}[]>([])
   const [empresas, setEmpresas] = useState<{id: string, nome_empresa: string}[]>([])
-  const [filterCliente, setFilterCliente] = useState("todos")
-  const [filterEquipe, setFilterEquipe] = useState("todos")
-  const [filterTipo, setFilterTipo] = useState("todos")
-  const [filterEmpresa, setFilterEmpresa] = useState("todos")
-  const [filterStatus, setFilterStatus] = useState("todos")
+  const [filterCliente, setFilterCliente] = useState<string[]>([])
+  const [filterEquipe, setFilterEquipe] = useState<string[]>([])
+  const [filterTipo, setFilterTipo] = useState<string[]>([])
+  const [filterEmpresa, setFilterEmpresa] = useState<string[]>([])
+  const [filterStatus, setFilterStatus] = useState<string[]>([])
   const [filterDataInicio, setFilterDataInicio] = useState("")
   const [filterDataFim, setFilterDataFim] = useState("")
-  const [searchCliente, setSearchCliente] = useState("")
-  const [searchEquipe, setSearchEquipe] = useState("")
-  const [searchTipo, setSearchTipo] = useState("")
-  const [searchEmpresa, setSearchEmpresa] = useState("")
   const [reportOpen, setReportOpen] = useState(false)
   const [reportFilterDataInicio, setReportFilterDataInicio] = useState("")
   const [reportFilterDataFim, setReportFilterDataFim] = useState("")
@@ -119,20 +116,20 @@ export default function Dashboard() {
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))']
   const getSortDate = (m: ManutencaoRecente) => new Date(`${m.data_inicio}T00:00:00`).getTime() || new Date(m.created_at).getTime()
 
-  // Auto-select empresa when cliente is selected
+  // Auto-select empresa when a single cliente is selected
   useEffect(() => {
-    if (filterCliente !== "todos") {
-      const selectedClientes = [clientes.find(c => c.id === filterCliente)].filter(Boolean)
-      if (selectedClientes.length === 1 && selectedClientes[0]?.empresa_terceira_id) {
-        setFilterEmpresa(selectedClientes[0].empresa_terceira_id)
+    if (filterCliente.length === 1) {
+      const cli = clientes.find(c => c.id === filterCliente[0])
+      if (cli?.empresa_terceira_id) {
+        setFilterEmpresa([cli.empresa_terceira_id])
       }
     }
   }, [filterCliente, clientes])
 
-  // Check if empresa should be locked
+  // Check if empresa should be locked (single cliente with empresa)
   const isEmpresaLocked = useMemo(() => {
-    if (filterCliente === "todos") return false
-    const cli = clientes.find(c => c.id === filterCliente)
+    if (filterCliente.length !== 1) return false
+    const cli = clientes.find(c => c.id === filterCliente[0])
     return !!cli?.empresa_terceira_id
   }, [filterCliente, clientes])
 
@@ -182,11 +179,11 @@ export default function Dashboard() {
   // Filtered data for table
   const filteredManutencoes = useMemo(() => {
     return allManutencoes.filter(m => {
-      if (filterCliente !== "todos" && m.cliente_id !== filterCliente) return false
-      if (filterEquipe !== "todos" && m.equipe_id !== filterEquipe) return false
-      if (filterTipo !== "todos" && m.tipo_manutencao_id !== filterTipo) return false
-      if (filterEmpresa !== "todos" && m.empresa_terceira_id !== filterEmpresa) return false
-      if (filterStatus !== "todos" && m.status !== filterStatus) return false
+      if (filterCliente.length > 0 && !filterCliente.includes(m.cliente_id)) return false
+      if (filterEquipe.length > 0 && !filterEquipe.includes(m.equipe_id)) return false
+      if (filterTipo.length > 0 && !filterTipo.includes(m.tipo_manutencao_id)) return false
+      if (filterEmpresa.length > 0 && !filterEmpresa.includes(m.empresa_terceira_id)) return false
+      if (filterStatus.length > 0 && !filterStatus.includes(m.status || 'Em andamento')) return false
       if (filterDataInicio && m.data_inicio < filterDataInicio) return false
       if (filterDataFim && m.data_inicio > filterDataFim) return false
       return true
@@ -197,7 +194,7 @@ export default function Dashboard() {
   useEffect(() => {
     const filtered = filteredManutencoes
 
-    const hasFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
+    const hasFilters = filterCliente.length > 0 || filterEquipe.length > 0 || filterTipo.length > 0 || filterEmpresa.length > 0 || filterStatus.length > 0 || filterDataInicio || filterDataFim
 
     if (hasFilters) {
       const totalMin = filtered.reduce((sum, m) => sum + getEffectiveMinutes(m), 0)
@@ -318,12 +315,12 @@ export default function Dashboard() {
   }
 
   const clearFilters = () => {
-    setFilterCliente("todos"); setFilterEquipe("todos"); setFilterTipo("todos")
-    setFilterEmpresa("todos"); setFilterStatus("todos")
+    setFilterCliente([]); setFilterEquipe([]); setFilterTipo([])
+    setFilterEmpresa([]); setFilterStatus([])
     setFilterDataInicio(""); setFilterDataFim("")
   }
 
-  const hasActiveFilters = filterCliente !== "todos" || filterEquipe !== "todos" || filterTipo !== "todos" || filterEmpresa !== "todos" || filterStatus !== "todos" || filterDataInicio || filterDataFim
+  const hasActiveFilters = filterCliente.length > 0 || filterEquipe.length > 0 || filterTipo.length > 0 || filterEmpresa.length > 0 || filterStatus.length > 0 || filterDataInicio || filterDataFim
 
   // Table pagination
   const paginatedManutencoes = useMemo(() => {
