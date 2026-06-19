@@ -414,10 +414,10 @@ export default function Dashboard() {
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Empresa</Label>
               <MultiSelect
-                options={empresas.map(e => ({ value: e.id, label: e.nome_empresa }))}
+                options={empresasFiltradas.map(e => ({ value: e.id, label: e.nome_empresa }))}
                 value={filterEmpresa}
                 onChange={setFilterEmpresa}
-                allLabel="Todas as empresas"
+                allLabel={relatedEmpresaIds ? "Todas as empresas relacionadas" : "Todas as empresas"}
                 placeholder="Empresa"
                 disabled={isEmpresaLocked}
                 triggerClassName={isEmpresaLocked ? 'opacity-60' : ''}
