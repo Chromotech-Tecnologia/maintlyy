@@ -74,10 +74,24 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
     ? filters.clientes.find(c => c.id === filters.filterCliente[0])
     : undefined
 
+  // Empresa filter logic — based on currently selected clients
+  const relatedEmpresaIds = filters.filterCliente.length > 0
+    ? Array.from(new Set(
+        filters.clientes
+          .filter(c => filters.filterCliente.includes(c.id))
+          .map(c => c.empresa_terceira_id)
+          .filter(Boolean) as string[]
+      ))
+    : null
+  const empresaOptions = relatedEmpresaIds
+    ? filters.empresas.filter(e => relatedEmpresaIds.includes(e.id))
+    : filters.empresas
+  const isEmpresaLocked = !!(relatedEmpresaIds && relatedEmpresaIds.length === 1)
+
   // Build empresa names for header
   const empresaHeaderLabel = () => {
     if (filters.filterEmpresa.length === 0) {
-      return filters.empresas.map(e => e.nome_empresa).join(", ") || "Todas as empresas"
+      return empresaOptions.map(e => e.nome_empresa).join(", ") || "Todas as empresas"
     }
     return filters.empresas
       .filter(e => filters.filterEmpresa.includes(e.id))
