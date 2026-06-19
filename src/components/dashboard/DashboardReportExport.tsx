@@ -145,6 +145,7 @@ export function DashboardReportExport({ open, onOpenChange, data, filters, allMa
     tipoData: data.tipoData,
     analyticalData: analyticalRows,
     analyticPeriodo: { inicio: analyticDataInicio, fim: analyticDataFim },
+    showClienteColumn: filters.filterCliente.length !== 1,
   }
 
   const saveReport = useCallback(async (format: 'pdf' | 'png' | 'link') => {
