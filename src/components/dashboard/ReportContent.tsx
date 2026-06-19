@@ -61,6 +61,7 @@ export function buildAnalyticalRows(items: any[]): ReportAnalyticalRow[] {
     const d = parseLocalDate(m.data_inicio)
     return {
       id: m.id,
+      cliente: m.clientes?.nome_cliente || '—',
       tipo: m.tipos_manutencao?.nome_tipo_manutencao || '—',
       mes: MONTHS_PT[d.getMonth()],
       ano: d.getFullYear(),
