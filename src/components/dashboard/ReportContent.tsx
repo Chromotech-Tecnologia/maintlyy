@@ -11,6 +11,7 @@ const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', '
 
 export interface ReportAnalyticalRow {
   id: string
+  cliente: string
   tipo: string
   mes: string
   ano: number
@@ -37,6 +38,7 @@ export interface ReportPayload {
   tipoData: any[]
   analyticalData: ReportAnalyticalRow[]
   analyticPeriodo?: { inicio?: string; fim?: string }
+  showClienteColumn?: boolean
 }
 
 const fmtHM = (mins: number) => {
