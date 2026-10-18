@@ -77,7 +77,7 @@ export default function Clientes() {
     try {
       const [clientesResult, empresasResult] = await Promise.all([
         supabase.from('clientes').select('*, empresas_terceiras(nome_empresa)').order('created_at', { ascending: false }),
-        supabase.from('empresas_terceiras').select('*').eq('user_id', user.id)
+        supabase.from('empresas_terceiras').select('*')
       ])
       if (clientesResult.error) throw clientesResult.error
       if (empresasResult.error) throw empresasResult.error
@@ -91,9 +91,9 @@ export default function Clientes() {
   useEffect(() => { fetchData() }, [user])
 
   const uploadLogo = async (clienteId: string): Promise<string | null> => {
-    if (!logoFile) return null
+    if (!logoFile || !user) return null
     const ext = logoFile.name.split('.').pop()
-    const path = `${user!.id}/${clienteId}.${ext}`
+    const path = `${user.id}/${clienteId}.${ext}`
     const { error } = await supabase.storage.from('client-logos').upload(path, logoFile, { upsert: true })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('client-logos').getPublicUrl(path)
@@ -116,8 +116,9 @@ export default function Clientes() {
         let logoUrl: string | null = null
         if (logoFile) logoUrl = await uploadLogo(editingId)
         const updateData = logoUrl ? { ...sanitizedData, logo_url: logoUrl } : sanitizedData
-        const { error } = await supabase.from('clientes').update(updateData).eq('id', editingId).eq('user_id', user.id)
+        const { data: updated, error } = await supabase.from('clientes').update(updateData).eq('id', editingId).select('id').single()
         if (error) throw error
+        if (!updated) throw new Error('Cliente não atualizado')
         auditLog({ action: 'update', resourceType: 'cliente', resourceId: editingId, resourceName: sanitizedData.nome_cliente, details: updateDetails(oldCliente || {}, updateData, empresaMap) })
         toast.success("Cliente atualizado com sucesso!")
       } else {
@@ -148,8 +149,9 @@ export default function Clientes() {
     try {
       const cliente = clientes.find(c => c.id === id)
       const empresaMap = Object.fromEntries(empresas.map(e => [e.id, e.nome_empresa]))
-      const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
+      const { data: deleted, error } = await supabase.from('clientes').delete().eq('id', id).select('id').single()
       if (error) throw error
+      if (!deleted) throw new Error('Cliente não excluído')
       auditLog({ action: 'delete', resourceType: 'cliente', resourceId: id, resourceName: cliente?.nome_cliente, details: deleteDetails(cliente || {}, empresaMap) })
       toast.success("Cliente excluído com sucesso!"); fetchData()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
@@ -178,8 +180,9 @@ export default function Clientes() {
     if (!confirm(`Excluir ${selectedIds.size} cliente(s)?`)) return
     try {
       for (const id of Array.from(selectedIds)) {
-        const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id)
+        const { data: deleted, error } = await supabase.from('clientes').delete().eq('id', id).select('id').single()
         if (error) throw error
+        if (!deleted) throw new Error('Cliente não excluído')
       }
       toast.success(`${selectedIds.size} cliente(s) excluído(s)!`); setSelectedIds(new Set()); fetchData()
     } catch (error: any) { toast.error(getGenericErrorMessage(error)) }
