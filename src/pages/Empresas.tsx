@@ -51,7 +51,7 @@ export default function Empresas() {
   const fetchEmpresas = async () => {
     if (!user) return
     try {
-      const { data, error } = await supabase.from('empresas_terceiras').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+      const { data, error } = await supabase.from('empresas_terceiras').select('*').order('created_at', { ascending: false })
       if (error) throw error
       setEmpresas(data || [])
     } catch (error: any) {
